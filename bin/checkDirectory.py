@@ -123,14 +123,13 @@ content = out.split("\n")
 nEvents = findAllFilesInDb(requestId)
 
 # get disk resident Ids
-path = ""
+path = directory
 fileIds = []
 for line in content:
     f = line.split(" ")
     if len(f) > 1:
         file = f[1]
         g = file.split('/')
-        path = '/'.join(g[-1])
         g = (g[-1].split('.'))[0]
         fileIds.append(g)
 
@@ -153,9 +152,8 @@ for fileId in fileIds:
     if fileId in nEvents.keys():
         pass
     else:
-        print " Found fileId on disk but not in database yet (%s)."%(fileId)
+        print " Found fileId on disk but not in database yet (%s at %s)."%(fileId,path)
         missingInDb.append(path+'/'+fileId+'.root')
-
 print ''
 
 # process missing files to be added to the database
@@ -163,7 +161,6 @@ for file in missingInDb:
     cmd = "checkFile.py %s"%(file)
     print " %s"%(cmd)
     os.system(cmd)
-
 print ''
 
 sys.exit(0)

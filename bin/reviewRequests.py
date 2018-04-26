@@ -170,7 +170,10 @@ def submitTask(task):
     if len(task.sample.missingJobs) > 0:
     
         # Make the local/remote directories
-        task.createDirectories()
+        if not task.createDirectories():
+            return
+
+        # Prepare the tar ball if needed
         task.makeTarBall()
     
         # Make the submit file

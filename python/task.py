@@ -80,11 +80,8 @@ class Task:
     def condorSubmit(self):
 
         # make sure this condorTask has jobs to be submitted
-        if self.nJobs<1 \
-                or self.scheduler.nMyTotal > self.scheduler.nMyTotalMax \
-                or self.scheduler.nTotal > self.scheduler.nTotalMax:
-            print ' NO SUBMISSION: %d (nJobs)  %d (nMyTotal)  %d (nTotal)\n'\
-                %(self.nJobs,self.scheduler.nMyTotal,self.scheduler.nTotal)
+        if self.nJobs<1:
+            print ' NO SUBMISSION: %d (nJobs)\n'%(self.nJobs)
             return
 
         # start with the base submit script
@@ -102,7 +99,12 @@ class Task:
     #-----------------------------------------------------------------------------------------------
     def createDirectories(self):
 
-        # log and output data dirs
+        # make sure to keep track of the updated number of jobs in the system
+        print " INFO - update number of jobs on scheduler"
+        if not self.scheduler.hasFreeCapacity():
+            return False
+
+        # we have free capacity log and output data dirs
         print " INFO - make local directories "
         cmd = "mkdir -p " + self.logs + " " + self.outputData
         if not self.scheduler.isLocal():
@@ -121,6 +123,7 @@ class Task:
         #print " CHMOD: " + cmd
         os.system(cmd)
 
+        return True
 
     #-----------------------------------------------------------------------------------------------
     # find the present CMSSW version

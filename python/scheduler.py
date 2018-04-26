@@ -185,3 +185,16 @@ class Scheduler:
     def updateNJobs(self):
         (self.nTotal,self.nMyTotal) = self.findNumberOfTotalJobs()
         return
+
+    #-----------------------------------------------------------------------------------------------
+    # determine whether there is free capacity
+    #-----------------------------------------------------------------------------------------------
+    def hasFreeCapacity(self):
+        # get most up-to-date numbers
+        self.updateNJobs()
+        # check whether my or total jobs are within limits
+        if self.nMyTotal > self.nMyTotalMax or self.nTotal > self.nTotalMax:
+            print ' NO CAPACITY: %d (nMyTotal)  %d (nTotal)\n'%(self.nMyTotal,self.nTotal)
+            return False
+        
+        return True

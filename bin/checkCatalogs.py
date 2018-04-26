@@ -321,3 +321,5 @@ for dataset in allDatasets:
         removeFileIdsFromDisk(book,dataset,toDeletionIds)
 
     print "\n ==== Finish fixes ====\n"
+
+    os.system("checkDirectory.py /cms/store/user/paus/%s/%s"%(book,dataset))
