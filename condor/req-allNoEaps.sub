@@ -2,7 +2,8 @@
 Requirements = Arch == "X86_64" && \
                TARGET.OpSys == "LINUX" && \
                TARGET.HasFileTransfer && \
-               (isUndefined(IS_GLIDEIN) || (OSGVO_OS_STRING == "RHEL 6" && HAS_CVMFS_cms_cern_ch == true) || GLIDEIN_REQUIRED_OS == "rhel6" || \
+               (isUndefined(IS_GLIDEIN) || (OSGVO_OS_STRING == "RHEL 6" && HAS_CVMFS_cms_cern_ch == true) || \
+               GLIDEIN_REQUIRED_OS == "rhel6" ||  HAS_SINGULARITY == true || \
                 (Has_CVMFS_cms_cern_ch == true && (BOSCOGroup == "bosco_cms")) \
                ) && \
                (isUndefined(GLIDEIN_Entry_Name) || \
