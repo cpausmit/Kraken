@@ -1,6 +1,6 @@
 # Run on all avalaible resources excluding some that seem to fail a lot
 Requirements = ((OSGVO_OS_STRING == "RHEL 6" && HAS_CVMFS_cms_cern_ch) || \
-                GLIDEIN_REQUIRED_OS == "rhel6" || \
+                GLIDEIN_REQUIRED_OS == "rhel6" || HAS_SINGULARITY == true || \
                 (GLIDEIN_Site == "MIT_CampusFactory" && BOSCOGroup == "bosco_cms" && BOSCOCluster != "t3serv007.mit.edu" && HAS_CVMFS_cms_cern_ch) \
                ) && \
                (isUndefined(GLIDEIN_Entry_Name) ||
