@@ -157,7 +157,7 @@ class Task:
             print ' Make kraken tar ball: ' \
                 + cmsswBase + "/kraken_" + self.cmsswVersion + ".tgz"
             cmd = "cd " + cmsswBase \
-                + "; tar fch kraken_" + self.cmsswVersion + ".tar bin/ lib/ src/"
+                + "; tar fch kraken_" + self.cmsswVersion + ".tar bin/ cfipython/ lib/ src/"
             #print ' CMD: ' + cmd
             os.system(cmd)
             cmd = "cd " + cmsswBase \
