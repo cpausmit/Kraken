@@ -43,6 +43,17 @@ def catalogFile(file):
 
     return (out,err,entry)
 
+def findFileSize(file):
+
+    size = 0
+    cmd = "t2tools.py --action ls --source " +  file
+    print ' LIST: ' + cmd
+    (rc,out,err) = remoteX.executeLocalAction(cmd)
+    size = long((out.split(" ")[0]).split(":")[1])
+    print ' SIZE: %ld'%size 
+
+    return size
+
 def getName(file):
     # extract the unique file name
 
@@ -127,10 +138,10 @@ def numberOfEventsInEntry(entry):
 
     return nEvents
 
-def makeDatabaseEntry(requestId,fileName,nEvents):
+def makeDatabaseEntry(requestId,fileName,nEvents,size):
 
-    sql = "insert into Files(RequestId,FileName,NEvents) " \
-        + " values(%d,'%s',%d)"%(requestId,fileName,nEvents)
+    sql = "insert into Files(RequestId,FileName,NEvents,SizeBytes) " \
+        + " values(%d,'%s',%d,%ld)"%(requestId,fileName,nEvents,size)
     print ' SQL: ' + sql
     try:
         # Execute the SQL command
@@ -202,6 +213,7 @@ remoteX = rex.Rex('none','none')
 if nEvents == nEventsLfn and nEvents>0:
     # now move file to final location
     finalFile = getFinalFile(file)
+    size = findFileSize(file)
     if Prefix in file:
         cmd = "t2tools.py --action mv --source " +  file + " --target " + finalFile
         print ' MOVE: ' + cmd
@@ -216,7 +228,7 @@ if nEvents == nEventsLfn and nEvents>0:
                 
     
     # add a new catalog entry
-    makeDatabaseEntry(requestId,fileName,nEvents)
+    makeDatabaseEntry(requestId,fileName,nEvents,size)
 
 else:
     print ' ERROR: event counts disagree or not positive (LFN %d,File %d). EXIT!'%\
