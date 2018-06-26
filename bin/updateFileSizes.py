@@ -44,7 +44,7 @@ def getRequestId(cursor,config,version,dataset):
         + " DatasetProcess = '%s' and DatasetSetup='%s' and DatasetTier='%s'"%(process,setup,tier) \
         + " and RequestConfig = '%s' and RequestVersion = '%s'"%(config,version)
 
-    print ' SQL - ' + sql
+    #print ' SQL - ' + sql
 
     try:
         # Execute the SQL command
@@ -64,7 +64,7 @@ def updateDatabaseEntry(cursor,requestId,fileName,size):
 
     sql = "update Files set SizeBytes = %d where RequestId = '%s' and FileName = '%s';" \
         %(size,requestId,fileName)
-    print ' SQL: ' + sql
+    #print ' SQL: ' + sql
     try:
         # Execute the SQL command
         cursor.execute(sql)
@@ -96,5 +96,6 @@ if __name__ == '__main__':
     (requestId, datasetId) = getRequestId(cursor,args.config,args.version,args.dataset)
 
     # now loop through the dictionary of filesizes and update the database entries
+    print " [%s,%s]: N:%d %s"%(args.config,args.version,len(fileSizes),args.dataset)
     for fileName in fileSizes.keys():
         updateDatabaseEntry(cursor,requestId,fileName,fileSizes[fileName])

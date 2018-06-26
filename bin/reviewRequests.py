@@ -8,6 +8,7 @@
 import os,sys,getopt,re,string
 import MySQLdb
 import rex
+
 from cleaner import Cleaner
 from request import Request
 from sample import Sample

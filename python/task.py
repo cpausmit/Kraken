@@ -111,17 +111,18 @@ class Task:
             cmd = 'ssh -x ' + self.scheduler.user + '@' + self.scheduler.host + ' ' + cmd
         os.system(cmd)
 
-        # remote directories for kraken output
+        # remote directories for Kraken output (root files)
         print " INFO - make remote directories "
-        cmd = "makedir --p " + self.request.base + "/" + self.request.config + '/' \
+        cmd = "rglexec  hdfs dfs -mkdir -p " + self.request.base + "/" + self.request.config + '/' \
                       + self.request.version + '/' + self.sample.dataset + '/' + self.tag
-        #print " MKDIR: " + cmd
         os.system(cmd)
-        cmd = "changemod --options=a+rwx " + self.request.base + "/" \
-                      + self.request.config + '/' + self.request.version + '/' \
-                      + self.sample.dataset + '/' + self.tag
-        #print " CHMOD: " + cmd
-        os.system(cmd)
+
+        # this is obsolte because Kraken should not own the data
+        #cmd = "changemod --options=a+rwx " + self.request.base + "/" \
+        #              + self.request.config + '/' + self.request.version + '/' \
+        #              + self.sample.dataset + '/' + self.tag
+        ##print " CHMOD: " + cmd
+        #os.system(cmd)
 
         return True
 

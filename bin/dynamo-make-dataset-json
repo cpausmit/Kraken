@@ -51,17 +51,24 @@ def prepare_request(request_id, cursor):
         if block_name != _block_name:
             _block_name = block_name
 
-            blocks.append({'name': block_name, 'size': 0, 'num_files': 0, 'is_open': True, 'last_update': now, 'files': []})
-            blockreplicas.append({'block': block_name, 'last_update': now})
+            blocks.append({'name': block_name,
+                           'is_open': True,
+                           'last_update': now,
+                           'size': 0,
+                           'num_files': 0,
+                           'files': []})
+            blockreplicas.append({'block': block_name, 'last_update': now, 'group': 'analysis'})
             block_data = blocks[-1]
 
         if file_name is not None:
             block_data['files'].append({'name': '/store/user/paus/%s/%s.root' % (dataset_name, file_name), 'size': file_size})
+            block_data['size'] += file_size
+            block_data['num_files'] += 1
 
     return data
 
 if __name__ == '__main__':
-    import MySQLdb    
+    import MySQLdb
     from argparse import ArgumentParser
     
     # getting the commend line parameters

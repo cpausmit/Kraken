@@ -136,6 +136,9 @@ def remove(dataset,config,version,dbs,py,exe):
     datasetId = getDatasetId(process,setup,tier,cursor,debug)
     requestId = getRequestId(datasetId,config,version,py,cursor,debug)
     print ' Ids: dataset=%d  request=%d'%(datasetId,requestId)
+    if requestId < 0:
+        print ' ERROR - no request id was found to match your request. (Is your python config correct?)'
+        sys.exit(1)
     
     # Is this a complete dataset?
     if fileName == '':
@@ -152,25 +155,27 @@ def remove(dataset,config,version,dbs,py,exe):
 
         # Remove the files and all records of them
         if fileName == '':
-            removeDataOnDisk(process,setup,tier,datasetId,requestId,config,version)
+            
+            removeDataset(          process,setup,tier,datasetId,requestId,config,version)
+
+            # Remove the request from the request table
+            cmd = 'addRequest.py --delete=1 --config=%s --version=%s --py=%s --dataset=%s'%\
+                (config,version,py,dataset)
+            print ' drq: %s'%(cmd)
+            os.system(cmd)
+
         else:
-            removeDataInDb(fileList,process,setup,tier,datasetId,requestId,config,version)
+            removeFiles  (fileList,process,setup,tier,datasetId,requestId,config,version)
     
         # Re-generate the catalog after the deletion
         cmd = 'generateCatalogs.py %s/%s %s'%(config,version,dataset)
         print ' ctg: %s'%(cmd)
         os.system(cmd)
-
-        # Remove the request from the request table
-        cmd = 'addRequest.py --delete=1 --config=%s --version=%s --py=%s --dataset=%s'%\
-            (config,version,py,dataset)
-        print ' drq: %s'%(cmd)
-        os.system(cmd)
         
     else:
         print ' To execute please add --exec option\n'
     
-def removeDataInDb(fileList,process,setup,tier,datasetId,requestId,config,version):
+def removeFiles(fileList,process,setup,tier,datasetId,requestId,config,version):
     # Delete thoroughly the given list of files from the disks (T2/3 and the database)
 
     dataset = process + '+' + setup + '+' + tier
@@ -179,15 +184,17 @@ def removeDataInDb(fileList,process,setup,tier,datasetId,requestId,config,versio
 
         fullFile = '%s/%s/%s/%s/%s.root'%(BASE,config,version,dataset,file)
 
-        # delete from T2
-        cmd = 't2tools.py --action=rm --source=%s'%(fullFile)
-        print ' t2t: %s'%(cmd)
-        os.system(cmd)
-        
-        # delete from T3
-        cmd = 'hdfs dfs -rm %s'%(fullFile)
-        print ' loc: %s'%(cmd)
-        os.system(cmd)
+        ## Dynamo is now in charge
+
+        # # delete from T2
+        # cmd = 't2tools.py --action=rm --source=%s'%(fullFile)
+        # print ' t2t: %s'%(cmd)
+        # os.system(cmd)
+        # 
+        # # delete from T3
+        # cmd = 'hdfs dfs -rm %s'%(fullFile)
+        # print ' loc: %s'%(cmd)
+        # os.system(cmd)
 
         # delete from the database (for catalogs)
         sql  = "delete from Files where RequestId=%d and fileName='%s'"%(requestId,file)
@@ -198,26 +205,25 @@ def removeDataInDb(fileList,process,setup,tier,datasetId,requestId,config,versio
         except:
             print " Error (%s): unable to delete data."%(sql)
 
-def removeDataOnDisk(process,setup,tier,datasetId,requestId,config,version):
+def removeDataset(process,setup,tier,datasetId,requestId,config,version):
     # Delete the given dataset from the disks (T2/3 and the database)
 
-
-    catalog = '/home/cmsprod/catalog/t2mit'
     dataset = process + '+' + setup + '+' + tier
-
+    catalog = '/home/cmsprod/catalog/t2mit'
     fullFile = '%s/%s/%s/%s'%(BASE,config,version,dataset)
-
     logs = '/local/cmsprod/Kraken/agents/reviewd/%s/%s/%s'%(config,version,dataset)
 
-    # delete from T2
-    cmd = 'removedir %s'%(fullFile)
-    print ' t2t: %s'%(cmd)
-    os.system(cmd)
-        
-    # delete from T3
-    cmd = 'hdfs dfs -rm -r %s'%(fullFile)
-    print ' loc: %s'%(cmd)
-    os.system(cmd)
+    ## Dynamo is now in charge
+
+    # # delete from T2
+    # cmd = 'rglexec hdfs dfs -rm -r %s'%(fullFile)
+    # print ' t2t: %s'%(cmd)
+    # os.system(cmd)
+    #     
+    # # delete from T3
+    # cmd = 'hdfs dfs -rm -r %s'%(fullFile)
+    # print ' loc: %s'%(cmd)
+    # os.system(cmd)
 
     # delete from the database (for catalogs)
     sql  = "delete from Files where RequestId=%d"%(requestId)

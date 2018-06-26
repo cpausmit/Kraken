@@ -11,13 +11,16 @@
 # The script relies on the catalogFile.sh script to be in its path. This script is responsible to
 # perfrom the various tests on the file.
 #===================================================================================================
-import os,sys,subprocess
+import os,sys,subprocess,time,json,requests
 import MySQLdb
 import rex
 
 Prefix = os.getenv('KRAKEN_TMP_PREFIX')
 Db = MySQLdb.connect(read_default_file="/etc/my.cnf",read_default_group="mysql",db="Bambu")
 Cursor = Db.cursor()
+
+DYNAMO_HOST = 't3serv009.mit.edu'
+CERT = '/tmp/x509up_u%d' % os.getuid()
 
 usage = "\n   usage:  checkFile.py  <file> \n"
 
@@ -76,7 +79,7 @@ def getFinalFile(file):
         
     return finalFile
 
-def getRequestId(file):
+def getFileInfo(file):
     # extract the unique request id this file is part of
 
     requestId = -1
@@ -88,15 +91,10 @@ def getRequestId(file):
     if len(f) < 6:
         return (requestId, datasetId)
         
-
-    if Prefix in file:
-        dataset = f[-3]
-        version = f[-4]
-        mitcfg = f[-5]
-    else:
-        dataset = f[-2]
-        version = f[-3]
-        mitcfg = f[-4]
+    # decode the config, version and dataset
+    dataset = f[-2]
+    version = f[-3]
+    mitcfg = f[-4]
 
     # decode the dataset
     f = dataset.split('+')
@@ -107,10 +105,14 @@ def getRequestId(file):
     setup = f[1]
     tier = f[2]
 
-    sql = "select RequestId, Datasets.DatasetId from Requests inner join Datasets on " \
-        + " Datasets.DatasetId = Requests.DatasetId where " \
+    sql = "select RequestId, Datasets.DatasetId, BlockName, Lfns.NEvents from Requests" \
+        + " inner join Datasets on Datasets.DatasetId = Requests.DatasetId" \
+        + " inner join Blocks on Blocks.DatasetId = Datasets.DataSetId" \
+        + " inner join Lfns on Lfns.BlockId = Blocks.BlockId" \
+        + " where " \
         + " DatasetProcess = '%s' and DatasetSetup='%s' and DatasetTier='%s'"%(process,setup,tier) \
-        + " and RequestConfig = '%s' and RequestVersion = '%s'"%(mitcfg,version)
+        + " and RequestConfig = '%s' and RequestVersion = '%s'"%(mitcfg,version) \
+        + " and Lfns.FileName = '%s' "%(getName(file))
 
     print ' SQL - ' + sql
 
@@ -125,8 +127,10 @@ def getRequestId(file):
     for row in results:
         requestId = int(row[0])
         datasetId = int(row[1])
+        blockName = row[2]
+        nEventsLfn = int(row[3])
 
-    return (requestId, datasetId)
+    return (requestId, datasetId, blockName, nEventsLfn, mitcfg, version, dataset)
 
 def numberOfEventsInEntry(entry):
     # extract the number of events in a given catalog entry
@@ -153,27 +157,27 @@ def makeDatabaseEntry(requestId,fileName,nEvents,size):
         else:
             print " WARNING -- entry was already in table." 
 
-def getNEventsLfn(datasetId,fileName):
+def inject(data):
 
-    nEvents = -1
+    jsondata = json.dumps(data)
+    session = requests.Session()
+    headers = {'Accept': 'application/json', 'Content-Type': 'application/json'}
+    requests.packages.urllib3.disable_warnings()
 
-    sql = "select FileName, PathName, NEvents from Lfns where DatasetId = %d and FileName = '%s'"\
-        %(datasetId,fileName)
-    print ' SQL - ' + sql
-    try:
-        # Execute the SQL command
-        Cursor.execute(sql)
-        results = Cursor.fetchall()
-    except:
-        print 'ERROR(%s) - could not find request id.'%(sql)
+    while True:
+        response = session.request(
+            method = 'POST', url = 'https://%s/data/inventory/inject' % DYNAMO_HOST,
+            data = jsondata, headers = headers, verify = False,
+            timeout = 600, cert = (CERT, CERT))
 
-    # found the request Id
-    for row in results:
-        name = row[0]
-        path = row[1]
-        nEvents = int(row[2])
-
-    return nEvents
+        if response.status_code == 200:
+            return json.loads(response.text)
+        elif response.status_code == 503:
+            print 'Server is unavailable:', response.text
+            time.sleep(2)
+            continue
+        else:
+            raise RuntimeError(response.text)
 
 #===================================================================================================
 #  M A I N
@@ -187,7 +191,7 @@ if len(sys.argv) < 1:
 file = sys.argv[1]
 print " INFO - checkFile.py %s"%(file)     
             
-# doing the cataloging here
+# doing the cataloging here: result is the number of events found in the file
 (out,err,entry) = catalogFile(file)
 nEvents = numberOfEventsInEntry(entry)
 
@@ -198,12 +202,9 @@ if "Object is in 'zombie' state" in out:
 
 print ' CATALOG: %d -- %s'%(nEvents,file)
 
-# find all relevant Ids
+# find all relevant infromation about the file
 fileName = getName(file)
-(requestId,datasetId) = getRequestId(file)
-
-# find corresponding lfn
-nEventsLfn = getNEventsLfn(datasetId,fileName)
+(requestId,datasetId,blockName,nEventsLfn,config,version,dataset) = getFileInfo(file)
 
 print ' Compare: %d [lfn] and %d [output]'%(nEventsLfn,nEvents)
 
@@ -229,6 +230,8 @@ if nEvents == nEventsLfn and nEvents>0:
     
     # add a new catalog entry
     makeDatabaseEntry(requestId,fileName,nEvents,size)
+    # add the file to dynamo
+    os.system("dynamo-inject-one-file %s"%(finalFile))
 
 else:
     print ' ERROR: event counts disagree or not positive (LFN %d,File %d). EXIT!'%\
