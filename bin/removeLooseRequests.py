@@ -1,35 +1,65 @@
 #!/usr/bin/python
 #---------------------------------------------------------------------------------------------------
-# Find requests that are not 
+# Find requests that are used in the Files catalog table but are not available in the Requests
+# table and delete those entries from the Files table with the unknown Ids.
 #
 # v1.0                                                                                  Sep 19, 2014
 #---------------------------------------------------------------------------------------------------
 import sys,os,subprocess,getopt,time
 import MySQLdb
 
-def removeRequest(cursor,id,config,version,py):
-    sql  = "delete from Requests where "
-    sql += "DatasetId=%d and RequestConfig='%s' and RequestVersion='%s' and RequestPy='%s' ;"\
-        %(id,config,version,py)
-    
-    if debug>0:
-        print ' delete: ' + sql
-    try:
-        # Execute the SQL command
-        cursor.execute(sql)
-    except:
-        print " Error (%s): unable to delete data."%(sql)
+def findAllIds(db,cursor):
 
-def removeDataset(cursor,id):
-    sql  = "delete from Datasets where DatasetId=%d;"%(id)
-    
-    if debug>0:
-        print ' delete: ' + sql
+    # find requestIds from Files
+    sql = "select distinct RequestId from Files";
+    print " SQL: " + sql
     try:
         # Execute the SQL command
         cursor.execute(sql)
+        results = cursor.fetchall()
     except:
-        print " Error (%s): unable to delete data."%(sql)
+        print " Error (%s): unable to fetch data."%(sql)
+        sys.exit(0)
+    
+    allIds = []
+    for row in results:
+        id = int(row[0])
+        allIds.append(id)
+
+    return allIds
+
+def findKnownIds(db,cursor):
+
+    # find known requestIds
+    sql = "select RequestId from Requests";
+    print " SQL: " + sql
+    try:
+        # Execute the SQL command
+        cursor.execute(sql)
+        results = cursor.fetchall()
+    except:
+        print " Error (%s): unable to fetch data."%(sql)
+        sys.exit(0)
+    
+    knownIds = []
+    for row in results:
+        id = int(row[0])
+        knownIds.append(id)
+
+    return knownIds
+
+def findUnknownIds(allIds,knownIds):
+
+    # find unknown Ids (they are in all but not in known)
+    unknownIds = []
+    for id in allIds:
+        if id in knownIds:
+            pass
+        else:
+            unknownIds.append(id)
+            print ' Unknown: %s'%(id)
+
+    return unknownIds
 
 #===================================================================================================
 # Main starts here
@@ -65,63 +95,11 @@ db = MySQLdb.connect(read_default_file="/etc/my.cnf",read_default_group="mysql",
 # Prepare a cursor object using cursor() method
 cursor = db.cursor()
 
-if not os.path.exists(".unknownIds"):
-    # find requestIds from Files
-    sql = "select distinct RequestId from Files";
-    print " SQL: " + sql
-    try:
-        # Execute the SQL command
-        cursor.execute(sql)
-        results = cursor.fetchall()
-    except:
-        print " Error (%s): unable to fetch data."%(sql)
-        sys.exit(0)
-    
-    allIds = []
-    for row in results:
-        id = int(row[0])
-        allIds.append(id)
-    
-    # find known requestIds
-    sql = "select RequestId from Requests";
-    print " SQL: " + sql
-    try:
-        # Execute the SQL command
-        cursor.execute(sql)
-        results = cursor.fetchall()
-    except:
-        print " Error (%s): unable to fetch data."%(sql)
-        sys.exit(0)
-    
-    knownIds = []
-    for row in results:
-        id = int(row[0])
-        if id in knownIds:
-            pass
-        else:
-            knownIds.append(id)
-    
-    unknownIds = []
-    i = 0
-    for id in allIds:
-        if id in knownIds:
-            pass
-        else:
-            unknownIds.append(id)
-            print ' Unknown: %s'%(id)
-        i += 1
-else:
-    unknownIds = []
-    with open(".unknownIds",'r') as f:
-        for line in f:
-            line = line[:-1]
-            f = line.split(' ')
-            unknownIds.append(int(f[0]))
-    
-i = 0
-for id in unknownIds:
+allIds = findAllIds(db,cursor)
+knownIds = findKnownIds(db,cursor)
+unknownIds = findUnknownIds(allIds,knownIds)
 
-    #print " Unknown request id: %s"%(id)
+for id in unknownIds:
 
     # find known requestIds
     sql = "delete from Files where Files.RequestId = %d"%(int(id));
