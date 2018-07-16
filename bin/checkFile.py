@@ -84,6 +84,7 @@ def getFileInfo(file):
 
     requestId = -1
     datasetId = -1
+    blockName = ""
 
     f = file.split('/')
 
@@ -91,10 +92,15 @@ def getFileInfo(file):
     if len(f) < 6:
         return (requestId, datasetId)
         
-    # decode the config, version and dataset
-    dataset = f[-2]
-    version = f[-3]
-    mitcfg = f[-4]
+
+    if Prefix in file:
+        dataset = f[-3]
+        version = f[-4]
+        mitcfg = f[-5]
+    else:
+        dataset = f[-2]
+        version = f[-3]
+        mitcfg = f[-4]
 
     # decode the dataset
     f = dataset.split('+')

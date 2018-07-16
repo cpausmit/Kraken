@@ -61,6 +61,29 @@ def findUnknownIds(allIds,knownIds):
 
     return unknownIds
 
+def findInvalidRequestIds(db,cursor):
+
+    # find known requestIds
+    sql = "select Datasets.DatasetProcess,Datasets.DatasetSetup,Datasets.DatasetTier,Requests.DatasetId,RequestId from Requests left join Datasets on Requests.DatasetId = Datasets.DatasetId";
+    print " SQL: " + sql
+
+    try:
+        # Execute the SQL command
+        cursor.execute(sql)
+        results = cursor.fetchall()
+    except:
+        print " Error (%s): unable to fetch data."%(sql)
+        sys.exit(0)
+    
+    # find invalid Ids (they are in the table but the associated dataset id does not exist)
+    invalidIds = []
+    for row in results:
+        if row[0] == None:
+            invalidIds.append(int(row[4]))
+            print row
+
+    return invalidIds
+
 #===================================================================================================
 # Main starts here
 #===================================================================================================
@@ -95,10 +118,29 @@ db = MySQLdb.connect(read_default_file="/etc/my.cnf",read_default_group="mysql",
 # Prepare a cursor object using cursor() method
 cursor = db.cursor()
 
+invalidIds = findInvalidRequestIds(db,cursor)
+
+# remove loose registered files
+for id in invalidIds:
+
+    # find known requestIds
+    sql = "delete from Requests where RequestId = %d"%(id);
+    print ' SQL: ' + sql
+    try:
+        # Execute the SQL command
+        cursor.execute(sql)
+        db.commit()
+    except:
+        print " ERROR (%s): deletion failed."%(sql)
+        sys.exit(0)
+
+# remove loose request Ids (datasets do not exist anymore)
+
 allIds = findAllIds(db,cursor)
 knownIds = findKnownIds(db,cursor)
 unknownIds = findUnknownIds(allIds,knownIds)
 
+# remove loose registered files
 for id in unknownIds:
 
     # find known requestIds

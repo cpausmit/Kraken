@@ -161,6 +161,7 @@ for file in missingInDb:
     cmd = "checkFile.py %s"%(file)
     print " %s"%(cmd)
     os.system(cmd)
+
 print ''
 
 sys.exit(0)

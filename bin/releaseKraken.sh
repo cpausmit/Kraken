@@ -8,6 +8,36 @@
 #----------------------------------------------------------------------------------------------------
 #  U S E F U L   F U N C T I O N S
 #----------------------------------------------------------------------------------------------------
+function report_start {
+  # provide a small frame for each command, also allows further steering
+
+  # read command line parameters
+  host="$1"
+  book="$2"
+  job_id="$3"
+  args_hash="$4"
+  now=`date +%s`
+  echo " Report job as: $*"
+  curl --header "Content-Type: application/json" \
+       --request POST \
+       --data "{\"starttime\": \"$now\", \"host\": \"$host\", \"task\": \"Kraken:$book\", \"job_id\": \"$job_id\", \"args\": [ \"$args_hash\" ] }" \
+       http://t3desk001.mit.edu:5000/condor/start
+}  
+
+function report_done {
+  # provide a small frame for each command, also allows further steering
+  # read command line parameters
+  host="$1"
+  book="$2"
+  job_id="$3"
+  args_hash="$4"
+  now=`date +%s`
+  echo " Report job as: $*"
+  curl --header "Content-Type: application/json" \
+       --request POST \
+       --data "{\"timestamp\": \"$now\", \"host\": \"$host\", \"task\": \"Kraken:$book\", \"job_id\": \"$job_id\", \"args\": [ \"$args_hash\" ] }" \
+       http://t3desk001.mit.edu:5000/condor/done
+}  
 
 function exeCmd {
   # provide a small frame for each command, also allows further steering
@@ -102,6 +132,7 @@ function downloadFiles {
     inputLfns=`grep $gpack $BASEDIR/$task.lfns | cut -d' ' -f2`
   else
     echo ' ERROR -- unexpected GPACK: $gpack'
+    report_done $host $book $GPACK $args_hash
     exit 253
   fi
   echo " Input LFNs: $inputLfns"
@@ -118,6 +149,7 @@ function downloadFiles {
     if ! [ -e "./$fileId.root" ]
     then
       echo " EXIT(255) -- download failed."
+      report_done $host $book $GPACK $args_hash
       exit 255
     fi
 
@@ -297,14 +329,22 @@ GPACK="$6"      # 6EBC0286-34EE-E611-832F-0025905B8600
 LFN="$7"        # /store/data/Run2016B/ ... /6EBC0286-34EE-E611-832F-0025905B8600.root
 TMP_PREFIX="$8" # tmp_0_170302_132124                               
 
+# get some variables for monitoring
+host=`hostname`
+book=$CONFIG/$VERSION
+args_hash=`echo $LFN | md5sum |cut -d' ' -f1`
+report_start $host $book $GPACK $args_hash
+
 # load all parameters relevant to this task
 echo " Initialize package"
 test=`ls kraken_*tgz 2> /dev/null`
 if [ "$test" == "" ]
 then
   echo ' ERROR - Kraken tar ball is missing. No point to continue.'
+  report_done $host $book $GPACK $args_hash
   exit 1
 fi
+
 
 cmsswVersion=`echo kraken_*.tgz | sed -e 's@kraken_@@' -e 's@.tgz@@'`
 
@@ -369,6 +409,7 @@ then
   echo " ERROR -- Return code is not zero: $rc"
   echo "          EXIT, no file copies!!"
   echo ""
+  report_done $host $book $GPACK $args_hash
   exit $rc
 fi
 
@@ -382,6 +423,7 @@ if ! [ -e "${GPACK}_tmp.root" ]
 then
   echo " ERROR -- kraken production failed. No output file: ${GPACK}_tmp.root"
   echo "          EXIT(254) now because there is no KRAKEN file."
+  report_done $host $book $GPACK $args_hash
   exit 254
 fi
 
@@ -448,4 +490,5 @@ pwd
 ls -lhrt
 echo " ---- D O N E ----"
 
+report_done $host $book $GPACK $args_hash
 exit 0

@@ -350,8 +350,15 @@ nMissingTotal = 0
 
 # initial filter and calculation loop
 for row in results:
+
     if debug:
         print row
+
+    if row[0] is None:
+        print " Row[0] is null"
+        print row
+        continue
+
     process = row[0]
     setup = row[1]
     tier = row[2]
