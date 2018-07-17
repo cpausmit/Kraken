@@ -4,33 +4,19 @@
 #
 # v1.0                                                                                  Sep 19, 2014
 #---------------------------------------------------------------------------------------------------
-import sys,os,subprocess,getopt,time
+import sys,os,getopt,time
 import MySQLdb
-
-from dynamo.core.executable import inventory
-
-sys.path.append("/home/cmsprod/Tools/Dools/python")
 import rex
 
-LIST_FILES = "/home/cmsprod/Tools/Kraken/.last_listing"
 EXEC_FILE = "/home/cmsprod/Tools/Kraken/fixMissingFiles"
-sites = inventory.sites['T3_US_MIT']
-
-os.putenv("T2_TOOLS_TICKET","paus")
-os.putenv("T2_TOOLS_USER","paus")
-os.putenv("T2TOOLS_SERVER","t2srv0017.cmsaf.mit.edu")
-os.putenv("T2TOOLS_BASE","/home/cmsprod/Tools/T2Tools")
 
 def findAllFiles(dir):
 
-    cmd = "list %s/* "%(dir) + "|grep root>%s"%(LIST_FILES)
-    print " CMD: " + cmd
-    #os.system(cmd)
+    print " INFO - loading all physical files."
 
-    with open(LIST_FILES,"r") as fH:
-        out = fH.read()
-    if out == "":
-        sys.exit(0)
+    cmd = "list %s/* "%(dir) + "|grep root"
+    myRx = rex.Rex()  
+    (rc,out,err) = myRx.executeLocalAction(cmd)
 
     # find list
     files = set()
@@ -39,11 +25,12 @@ def findAllFiles(dir):
             continue
         filename = "/".join((row.split(" ")[-1]).split('/')[-2:])
         files.add(filename)
-        #print " FILE: %s"%(filename)
 
     return files
 
 def findAllCatalogedFiles(config,version):
+
+    print " INFO - loading all files from Kraken database."
 
     # find all files cataloged at some point
     sql = "select Datasets.DatasetProcess,Datasets.DatasetSetup,Datasets.DatasetTier,Files.FileName" \
@@ -52,7 +39,6 @@ def findAllCatalogedFiles(config,version):
         + " inner join Files on Files.RequestId = Requests.RequestId where" \
         + " Requests.RequestConfig = '%s' and"%config \
         + " Requests.RequestVersion = '%s'"%version
-    print ' SQL: ' + sql
     try:
         # Execute the SQL command
         cursor.execute(sql)
@@ -65,7 +51,6 @@ def findAllCatalogedFiles(config,version):
     for row in results:
         dataset = row[0]+'+'+row[1]+'+'+row[2]
         filename = row[3]
-        #lfn = "/cms/store/user/paus/%s/%s/%s/%s.root"%(config,version,dataset,filename)
         lfn = "%s/%s.root"%(dataset,filename)
         #print " LFN: %s"%(lfn)
         lfns.add(lfn)
@@ -74,15 +59,33 @@ def findAllCatalogedFiles(config,version):
 
 def findAllDynamoFiles(config,version):
 
-    # find all files injected into dynamo
+    # say what we do
+    print " INFO - loading all files from Dynamo database."
+
+    # spawn a dynamo process
+    cmd = "%s/bin/makeListOfFileFromInventory.py --book %s/%s"%(os.getenv('KRAKEN_BASE'),config,version)
+    os.system("dynamo '%s' 2> /dev/null"%(cmd))
+
+    # read the fle produced
     dlfns = set()
-    for dataset in inventory.datasets.itervalues():
-        if dataset.name.startswith('%s/%s'%(config,version)):
-            for dlfn in dataset.files:
-                dlfn = "/".join((dlfn.lfn).split("/")[-2:])
+    # extract the unique file name
+    try:
+        with open("/tmp/.inventory_%s_%s.tmp"%(config,version),"r") as fH:
+            data = fH.read()
+        for line in data.split("\n"):
+            if len(line)>10:
+                dlfn = "/".join(line.split("/")[-2:])
                 dlfns.add(dlfn)
-                #if 'SinglePhoton+Run2017' in dlfn:
-                #    print " DLFN: %s"%(dlfn)
+    except:
+        print " WARNING - file list (%s) not available."%(fileName)
+
+    ## find all files injected into dynamo
+    #dlfns = set()
+    #for dataset in inventory.datasets.itervalues():
+    #    if dataset.name.startswith('%s/%s'%(config,version)):
+    #        for dlfn in dataset.files:
+    #            dlfn = "/".join((dlfn.lfn).split("/")[-2:])
+    #            dlfns.add(dlfn)
 
     return dlfns
 
@@ -129,6 +132,9 @@ cursor = db.cursor()
 files = findAllFiles("/cms/store/user/paus/%s"%(book))
 lfns = findAllCatalogedFiles(config,version)
 dlfns = findAllDynamoFiles(config,version)
+
+# disconnect from server
+db.close()
 
 # CONSISTENCY -- Files versus BambuDb
 
@@ -177,7 +183,6 @@ with open("%s.dynamo"%EXEC_FILE,"w") as fH:
         else:
             nMissing += 1
             print " missing: %s"%(lfn)
-            #print "/home/cmsprod/Tools/FiBS/task/checkFile.py /cms/store/user/paus/%s/%s"%(book,lfn)
             fH.write("dynamo-inject-one-file /cms/store/user/paus/%s/%s\n"%(book,lfn))
     print " missing total: %d"%(nMissing)
     
@@ -193,6 +198,3 @@ with open("%s.dynamo-orphan"%EXEC_FILE,"w") as fH:
             print " orphan: %s"%(dlfn)
             fH.write("dynamo-delete-one-file /cms/store/user/paus/%s/%s\n"%(book,dlfn))
     print " orphan total: %d"%(nOrphan)
-
-# disconnect from server
-db.close()
