@@ -1,0 +1,191 @@
+#!/usr/bin/env python
+#===================================================================================================
+# This script generates a json file for dynamo injection for a given file (argument) which is
+# assumed to be located on the remote Tier-2 storage. The only argument for the script is the
+# file name.
+#===================================================================================================
+import os,sys,subprocess,time,json,requests
+import MySQLdb
+import rex
+
+import dynamo_inject
+
+Db = MySQLdb.connect(read_default_file="/etc/my.cnf",read_default_group="mysql",db="Bambu")
+Cursor = Db.cursor()
+DYNAMO_HOST = 't3serv009.mit.edu'
+CERT = '/tmp/x509up_u%d' % os.getuid()
+
+usage = "\n   usage:  dynamo-inject-one-file  <file> \n"
+
+#===================================================================================================
+#  H E L P E R S
+#===================================================================================================
+
+def getCache(fileName):
+    sizes = {}
+    # extract the unique file name
+    try:
+        with open(fileName,"r") as fH:
+            data = fH.read()
+        for line in data.split("\n"):
+            f = line.split(" ")
+            if len(f) > 1:
+                size = int(f[0])
+                name = f[1]
+                sizes[name] = size
+    except:
+        print " WARNING - cache file (%s) not available."%(fileName)
+    
+    return sizes
+
+def getFiles(fileName):
+    files = []
+    # extract the unique file name
+    try:
+        with open(fileName,"r") as fH:
+            data = fH.read()
+        for line in data.split("\n"):
+            f = line.split(" ")
+            if len(f) > 1:
+                cmd = f[0]
+                name = f[1]
+                files.append(name)
+    except:
+        print " WARNING - file list (%s) not available."%(fileName)
+    
+    return files
+
+def getName(file):
+    # extract the unique file name
+
+    f = file.split('/')
+    name = (f.pop()).replace('.root','')
+
+    return name
+
+def getFileInfo(file):
+    # extract the unique request id this file is part of
+
+    requestId = -1
+    datasetId = -1
+
+    f = file.split('/')
+
+    # make sure we have a good file name
+    if len(f) < 6:
+        return (requestId, datasetId)
+        
+    # decode the config, version and dataset
+    dataset = f[-2]
+    version = f[-3]
+    mitcfg = f[-4]
+
+    # decode the dataset
+    f = dataset.split('+')
+    if len(f) < 3:
+        print " ERROR - dataset name not correctly formed: " + dataset
+        sys.exit(0)
+    process = f[0]
+    setup = f[1]
+    tier = f[2]
+
+    sql = "select RequestId, Datasets.DatasetId, BlockName from Requests" \
+        + " inner join Datasets on Datasets.DatasetId = Requests.DatasetId" \
+        + " inner join Blocks on Blocks.DatasetId = Datasets.DataSetId" \
+        + " inner join Lfns on Lfns.BlockId = Blocks.BlockId" \
+        + " where " \
+        + " DatasetProcess = '%s' and DatasetSetup='%s' and DatasetTier='%s'"%(process,setup,tier) \
+        + " and RequestConfig = '%s' and RequestVersion = '%s'"%(mitcfg,version) \
+        + " and Lfns.FileName = '%s' "%(getName(file))
+
+    #print ' SQL - ' + sql
+
+    try:
+        # Execute the SQL command
+        Cursor.execute(sql)
+        results = Cursor.fetchall()
+    except:
+        print 'ERROR(%s) - could not find request id.'%(sql)
+
+    # found the request Id
+    for row in results:
+        requestId = int(row[0])
+        datasetId = int(row[1])
+        blockName = row[2]
+
+    return (requestId, datasetId, blockName, mitcfg, version, dataset)
+
+def findFileSize(file):
+
+    size = 0
+    cmd = "t2tools.py --action ls --source " +  file
+    print ' LIST: ' + cmd
+    remoteX = rex.Rex('none','none')
+    (rc,out,err) = remoteX.executeLocalAction(cmd)
+    size = long((out.split(" ")[0]).split(":")[1])
+
+    return size
+
+#===================================================================================================
+#  M A I N
+#===================================================================================================
+# make sure command line is complete
+if len(sys.argv) < 1:
+    print " ERROR -- " + usage
+    sys.exit(1)
+
+# read cache
+sizes = getCache(".files")
+
+# read file list
+files = getFiles("fixMissingFiles.dynamo")
+# use command line arguments is no file list available
+if len(files) < 1:
+    files = sys.argv[1:]
+            
+# loop through all of our files
+for file in files:
+    print " INFO - dynamno-inject-one-file %s"%(file)
+    
+    # find all relevant infromation about the file
+    (requestId,datasetId,blockName,config,version,dataset) = getFileInfo(file)
+    
+    # find logical filename
+    lfn = "/"+"/".join(file.split("/")[2:])
+
+    # find filesize
+    if file in sizes:
+        fileSize = sizes[file]
+    else:
+        fileSize = findFileSize(file)
+    print ' SIZE: %ld'%fileSize 
+    
+    # generate the data structure
+    data = \
+        { 'dataset':
+              [ { 'name': "%s/%s/%s"%(config,version,dataset),
+                  'status': 'production',
+                  'data_type': 'panda',
+                  'software_version': (config, version),
+                  'blocks':
+                      [ { 'name': blockName,
+                          'files': 
+                          [ { 'name': lfn,
+                              'size': fileSize,
+                              'site': 'T2_US_MIT' } ]
+                          } ]
+                  } ],
+          'datasetreplica':
+              [ { 'site': 'T2_US_MIT',
+                  'growing': True,
+                  'group': 'analysis',
+                  'dataset': "%s/%s/%s"%(config,version,dataset),
+                  'blockreplicas': [ { 'last_update': int(time.time()),
+                                       'group': 'analysis',
+                                       'block': blockName
+                                       } ]
+                  } ]
+          }
+        
+    # inject into Dynamo
+    print dynamo_inject.inject(DYNAMO_HOST,CERT,CERT,json.dumps(data))

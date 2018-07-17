@@ -1,0 +1,113 @@
+#!/usr/bin/env python
+#===================================================================================================
+# This script generates a json file for dynamo injection for a given file (argument) which is
+# assumed to be located on the remote Tier-2 storage. The only argument for the script is the
+# file name.
+#===================================================================================================
+import os,sys,subprocess,time,json,requests
+import MySQLdb
+import rex
+
+import dynamo_inject
+
+Db = MySQLdb.connect(read_default_file="/etc/my.cnf",read_default_group="mysql",db="Bambu")
+Cursor = Db.cursor()
+DYNAMO_HOST = 't3serv009.mit.edu'
+CERT = '/tmp/x509up_u%d' % os.getuid()
+
+usage = "\n   usage:  dynamo-inject-one-file  <file> \n"
+
+#===================================================================================================
+#  H E L P E R S
+#===================================================================================================
+
+def getName(file):
+    # extract the unique file name
+
+    f = file.split('/')
+    name = (f.pop()).replace('.root','')
+
+    return name
+
+def getFileInfo(file):
+    # extract the unique request id this file is part of
+
+    requestId = -1
+    datasetId = -1
+
+    f = file.split('/')
+
+    # make sure we have a good file name
+    if len(f) < 6:
+        return (requestId, datasetId)
+        
+    # decode the config, version and dataset
+    dataset = f[-2]
+    version = f[-3]
+    mitcfg = f[-4]
+
+    # decode the dataset
+    f = dataset.split('+')
+    if len(f) < 3:
+        print " ERROR - dataset name not correctly formed: " + dataset
+        sys.exit(0)
+    process = f[0]
+    setup = f[1]
+    tier = f[2]
+
+    sql = "select RequestId, Datasets.DatasetId, BlockName from Requests" \
+        + " inner join Datasets on Datasets.DatasetId = Requests.DatasetId" \
+        + " inner join Blocks on Blocks.DatasetId = Datasets.DataSetId" \
+        + " inner join Lfns on Lfns.BlockId = Blocks.BlockId" \
+        + " where " \
+        + " DatasetProcess = '%s' and DatasetSetup='%s' and DatasetTier='%s'"%(process,setup,tier) \
+        + " and RequestConfig = '%s' and RequestVersion = '%s'"%(mitcfg,version) \
+        + " and Lfns.FileName = '%s' "%(getName(file))
+
+    print ' SQL - ' + sql
+
+    try:
+        # Execute the SQL command
+        Cursor.execute(sql)
+        results = Cursor.fetchall()
+    except:
+        print 'ERROR(%s) - could not find request id.'%(sql)
+
+    # found the request Id
+    for row in results:
+        requestId = int(row[0])
+        datasetId = int(row[1])
+        blockName = row[2]
+
+    return (requestId, datasetId, blockName, mitcfg, version, dataset)
+
+#===================================================================================================
+#  M A I N
+#===================================================================================================
+# make sure command line is complete
+if len(sys.argv) < 1:
+    print " ERROR -- " + usage
+    sys.exit(1)
+
+# command line variables
+file = sys.argv[1]
+print " INFO - dynamo-delete-one-file %s"%(file)     
+            
+# find all relevant infromation about the file
+(requestId,datasetId,blockName,config,version,dataset) = getFileInfo(file)
+
+# delete from Dynamo
+
+lfn = file[file.find("/store/user"):]
+data = \
+    { 'dataset':
+          [ { 'name': "%s/%s/%s"%(config,version,dataset),
+              'blocks':
+                  [ { 'name': blockName,
+                      'files': 
+                      [ { 'name': lfn } ]
+                      } ]
+              } ]
+      }
+    
+print dynamo_inject.inject(DYNAMO_HOST,CERT,CERT,json.dumps(data),True)

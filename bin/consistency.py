@@ -8,7 +8,7 @@ import sys,os,getopt,time
 import MySQLdb
 import rex
 
-EXEC_FILE = "/home/cmsprod/Tools/Kraken/fixMissingFiles"
+EXEC_FILE = "/home/cmsprod/Tools/Kraken/fixFiles"
 
 def findAllFiles(dir):
 
@@ -28,7 +28,7 @@ def findAllFiles(dir):
 
     return files
 
-def findAllCatalogedFiles(config,version):
+def findAllKrakenFiles(config,version):
 
     print " INFO - loading all files from Kraken database."
 
@@ -47,15 +47,15 @@ def findAllCatalogedFiles(config,version):
         print " ERROR (%s): select failed."%(sql)
         sys.exit(0)
     
-    lfns = set()
+    klfns = set()
     for row in results:
         dataset = row[0]+'+'+row[1]+'+'+row[2]
         filename = row[3]
-        lfn = "%s/%s.root"%(dataset,filename)
-        #print " LFN: %s"%(lfn)
-        lfns.add(lfn)
+        klfn = "%s/%s.root"%(dataset,filename)
+        #print " KLFN: %s"%(klfn)
+        klfns.add(klfn)
 
-    return lfns
+    return klfns
 
 def findAllDynamoFiles(config,version):
 
@@ -66,7 +66,7 @@ def findAllDynamoFiles(config,version):
     cmd = "%s/bin/makeListOfFileFromInventory.py --book %s/%s"%(os.getenv('KRAKEN_BASE'),config,version)
     os.system("dynamo '%s' 2> /dev/null"%(cmd))
 
-    # read the fle produced
+    # read the file produced
     dlfns = set()
     # extract the unique file name
     try:
@@ -78,14 +78,6 @@ def findAllDynamoFiles(config,version):
                 dlfns.add(dlfn)
     except:
         print " WARNING - file list (%s) not available."%(fileName)
-
-    ## find all files injected into dynamo
-    #dlfns = set()
-    #for dataset in inventory.datasets.itervalues():
-    #    if dataset.name.startswith('%s/%s'%(config,version)):
-    #        for dlfn in dataset.files:
-    #            dlfn = "/".join((dlfn.lfn).split("/")[-2:])
-    #            dlfns.add(dlfn)
 
     return dlfns
 
@@ -130,7 +122,7 @@ cursor = db.cursor()
 
 # find files and cataloged entries
 files = findAllFiles("/cms/store/user/paus/%s"%(book))
-lfns = findAllCatalogedFiles(config,version)
+klfns = findAllKrakenFiles(config,version)
 dlfns = findAllDynamoFiles(config,version)
 
 # disconnect from server
@@ -143,28 +135,31 @@ print ""
 print " XXXX oooo XXXX oooo XXXX oooo XXXX"
 print "   PHYSICAL FILE VS BAMBUDB"
 print " XXXX oooo XXXX oooo XXXX oooo XXXX"
-with open("%s.kraken"%EXEC_FILE,"w") as fH:
+with open("%s.kraken-missing"%EXEC_FILE,"w") as fH:
     nMissing = 0
-    print ' Search for missing files (nP: %d, mL: %d).'%(len(files),len(lfns))
-    for lfn in lfns:
-        if lfn in files:
+    print ' Search for missing files (nP: %d, mL: %d).'%(len(files),len(klfns))
+    for klfn in klfns:
+        if klfn in files:
             continue
         else:
             nMissing += 1
-            print " missing: %s"%(lfn)
-            fH.write("removeFile.py --exe --fileName /cms/store/user/paus/%s/%s\n"%(book,lfn))
+            print " missing: %s"%(klfn)
+            fH.write("removeFile.py --exe --fileName /cms/store/user/paus/%s/%s\n"%(book,klfn))
     print " missing total: %d"%(nMissing)
 
 # find orphan files
-nOrphan = 0
-print ' Search for orphan files (nP: %d, mL: %d).'%(len(files),len(lfns))
-for file in files:
-    if file in lfns:
-        continue
-    else:
-        nOrphan += 1
-        print " orphan: %s"%(file)
-print " orphan total: %d"%(nOrphan)
+
+with open("%s.kraken-orphan"%EXEC_FILE,"w") as fH:
+    nOrphan = 0
+    print ' Search for orphan files (nP: %d, mL: %d).'%(len(files),len(klfns))
+    for file in files:
+        if file in klfns:
+            continue
+        else:
+            nOrphan += 1
+            print " orphan: %s"%(file)
+            fH.write("checkFile.py /cms/store/user/paus/%s/%s\n"%(book,klfn))
+    print " orphan total: %d"%(nOrphan)
 
 # CONSISTENCY -- BambuDB versus Dynamo
 
@@ -174,24 +169,24 @@ print "   BAMBUDB VERSUS DYNAMO"
 print " XXXX oooo XXXX oooo XXXX oooo XXXX"
 
 # find missing files
-with open("%s.dynamo"%EXEC_FILE,"w") as fH:
+with open("%s.dynamo-missing"%EXEC_FILE,"w") as fH:
     nMissing = 0
-    print ' Search for missing files (nD: %d, mB: %d).'%(len(dlfns),len(lfns))
-    for lfn in lfns:
-        if lfn in dlfns:
+    print ' Search for missing files (nD: %d, mB: %d).'%(len(dlfns),len(klfns))
+    for klfn in klfns:
+        if klfn in dlfns:
             continue
         else:
             nMissing += 1
-            print " missing: %s"%(lfn)
-            fH.write("dynamo-inject-one-file /cms/store/user/paus/%s/%s\n"%(book,lfn))
+            print " missing: %s"%(klfn)
+            fH.write("dynamo-inject-one-file /cms/store/user/paus/%s/%s\n"%(book,klfn))
     print " missing total: %d"%(nMissing)
     
 # find orphan files
 with open("%s.dynamo-orphan"%EXEC_FILE,"w") as fH:
     nOrphan = 0
-    print ' Search for orphan files (nD: %d, mB: %d).'%(len(dlfns),len(lfns))
+    print ' Search for orphan files (nD: %d, mB: %d).'%(len(dlfns),len(klfns))
     for dlfn in dlfns:
-        if dlfn in lfns:
+        if dlfn in klfns:
             continue
         else:
             nOrphan += 1
