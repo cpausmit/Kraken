@@ -2,7 +2,7 @@
 #---------------------------------------------------------------------------------------------------
 # Find missing data and orphan data on disk.
 #
-# v1.0                                                                                  Sep 19, 2014
+# v1.0                                                                                  Jul 20, 2018
 #---------------------------------------------------------------------------------------------------
 import sys,os,getopt,time
 import MySQLdb
@@ -24,8 +24,6 @@ def findAllFiles(book,dataset):
         filename = "%s/%s"%(dataset,row)
         files.add(filename)
 
-        #print "T2:" + filename
-
     return files
 
 def findLocalFiles(book,dataset):
@@ -37,10 +35,9 @@ def findLocalFiles(book,dataset):
     (rc,out,err) = myRx.executeLocalAction(cmd)
 
     lines = out.split("\n")
+    # in case hdfs is not installed
     if len(lines)<2:
-        #print ' Trying /mnt/hadoop....'
         cmd = "ls -1 /mnt/hadoop/cms/store/user/paus/%s/%s "%(book,dataset) + "|grep root"
-        #print " CMD: " + cmd
         myRx = rex.Rex()  
         (rc,out,err) = myRx.executeLocalAction(cmd)
 
@@ -58,8 +55,6 @@ def findLocalFiles(book,dataset):
             filename = "%s/%s"%(dataset,row)
         lFiles.add(filename)
 
-        #print "T3:" + filename
-
     return lFiles
 
 #===================================================================================================
@@ -67,10 +62,11 @@ def findLocalFiles(book,dataset):
 #===================================================================================================
 # Define string to explain usage of the script
 usage  = "\n"
-usage += " Usage: consistency.py  [ --book=pandaf/004  [ --dataset=SinglePhoton+Run2017B-31Mar2018-v1+MINIAOD [ --help ] ] ]\n\n"
+usage += " Usage: consistency.py  [ --book=pandaf/004" \
+       + "  [ --dataset=SinglePhoton+Run2017B-31Mar2018-v1+MINIAOD [ --] [ --help ] ] ]\n\n"
 
 # Define the valid options which can be specified and check out the command line
-valid = ['book=','dataset=','help']
+valid = ['book=','dataset=','verbose=','help']
 try:
     opts, args = getopt.getopt(sys.argv[1:], "", valid)
 except getopt.GetoptError, ex:
@@ -82,7 +78,7 @@ except getopt.GetoptError, ex:
 # Get all parameters for the production
 # --------------------------------------------------------------------------------------------------
 # Set defaults for each command line parameter/option
-debug = 0
+verbose = 0
 book = "pandaf/010"
 dataset = "SinglePhoton+Run2017B-31Mar2018-v1+MINIAOD"
 
@@ -96,6 +92,13 @@ for opt, arg in opts:
     if opt == "--dataset":
         dataset = arg
 
+# say what we are looking at
+print ''
+print ' Book:    %s'%(book)
+print ' Dataset: %s'%(dataset)
+print ''
+
+# split up thebook as usual
 config = book.split("/")[0]
 version = book.split("/")[1]
 
@@ -114,7 +117,8 @@ for file in files:
         nTotal += 1
     else:
         nMissing += 1
-        print " missing: %s"%(file)
+        if verbose>0:
+            print " missing: %s"%(file)
 
 print " Number of files (total):   %d"%(nTotal)
 print " Number of files (missing): %d"%(nMissing)
