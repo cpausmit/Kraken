@@ -4,11 +4,12 @@
 #
 # v1.0                                                                                  Jul 12, 2018
 #---------------------------------------------------------------------------------------------------
-import sys,os,getopt,time
+import sys,os,socket,getopt,time
 import MySQLdb
 import rex
 
 EXEC_FILE = "/home/cmsprod/Tools/Kraken/fixFiles"
+DYNAMO_SERVER = "t3serv009.mit.edu"
 
 def findAllFiles(dir):
 
@@ -19,12 +20,14 @@ def findAllFiles(dir):
     (rc,out,err) = myRx.executeLocalAction(cmd)
 
     # find list
-    files = set()
+    files = {}
     for row in out.split("\n"):
         if len(row) < 2:
             continue
+        size = row.split(":")[0]
         filename = "/".join((row.split(" ")[-1]).split('/')[-2:])
-        files.add(filename)
+
+        files[filename] = size
 
     return files
 
@@ -47,13 +50,13 @@ def findAllKrakenFiles(config,version):
         print " ERROR (%s): select failed."%(sql)
         sys.exit(0)
     
-    klfns = set()
+    klfns = {}
     for row in results:
         dataset = row[0]+'+'+row[1]+'+'+row[2]
         filename = row[3]
         klfn = "%s/%s.root"%(dataset,filename)
         #print " KLFN: %s"%(klfn)
-        klfns.add(klfn)
+        klfns[klfn] = -1      # for now no size comparison planned
 
     return klfns
 
@@ -67,17 +70,19 @@ def findAllDynamoFiles(config,version):
     os.system("dynamo '%s' 2> /dev/null"%(cmd))
 
     # read the file produced
-    dlfns = set()
+    dlfns = {}
     # extract the unique file name
+    inventory =  "/tmp/.inventory_%s_%s.tmp"%(config,version)
     try:
-        with open("/tmp/.inventory_%s_%s.tmp"%(config,version),"r") as fH:
+        with open(inventory,"r") as fH:
             data = fH.read()
         for line in data.split("\n"):
             if len(line)>10:
                 dlfn = "/".join(line.split("/")[-2:])
-                dlfns.add(dlfn)
+                size = line.split(" ")[0]
+                dlfns[dlfn] = size
     except:
-        print " WARNING - file list (%s) not available."%(fileName)
+        print " WARNING - file list (%s) not available."%(inventory)
 
     return dlfns
 
@@ -85,8 +90,9 @@ def findAllDynamoFiles(config,version):
 # Main starts here
 #===================================================================================================
 # Define string to explain usage of the script
-usage  = "\n"
-usage += " Usage: consistency.py  [ --book=pandaf/004 [ --help ] ]\n\n"
+usage = "\n" \
+    + " Usage: consistency.py  [ --book=pandaf/004 [ --help ] ]\n\n" \
+    + "        this script has to run on the dynamo server node (%s)\n\n"%(DYNAMO_SERVER)
 
 # Define the valid options which can be specified and check out the command line
 valid = ['book=','help']
@@ -95,6 +101,12 @@ try:
 except getopt.GetoptError, ex:
     print usage
     print str(ex)
+    sys.exit(1)
+
+# Make sure we run on the correct server
+if socket.gethostname().lower() != DYNAMO_SERVER:
+    print usage
+    print " ERROR -- You are working on: %s\n"%(socket.gethostname().lower())
     sys.exit(1)
 
 # --------------------------------------------------------------------------------------------------
@@ -115,6 +127,12 @@ for opt, arg in opts:
 config = book.split("/")[0]
 version = book.split("/")[1]
 
+print ""
+print "   CONSISTENCY FOR  ---- Book:%s ----"%book
+print " XoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoX"
+print ""
+
+
 # Open database connection
 db = MySQLdb.connect(read_default_file="/etc/my.cnf",read_default_group="mysql",db="Bambu")
 # Prepare a cursor object using cursor() method
@@ -132,9 +150,8 @@ db.close()
 
 # find missing files
 print ""
-print " XXXX oooo XXXX oooo XXXX oooo XXXX"
 print "   PHYSICAL FILE VS BAMBUDB"
-print " XXXX oooo XXXX oooo XXXX oooo XXXX"
+print " ............................."
 with open("%s.kraken-missing"%EXEC_FILE,"w") as fH:
     nMissing = 0
     print ' Search for missing files (nP: %d, mL: %d).'%(len(files),len(klfns))
@@ -143,7 +160,7 @@ with open("%s.kraken-missing"%EXEC_FILE,"w") as fH:
             continue
         else:
             nMissing += 1
-            print " missing: %s"%(klfn)
+            #print " missing: %s"%(klfn)
             fH.write("removeFile.py --exe --fileName /cms/store/user/paus/%s/%s\n"%(book,klfn))
     print " missing total: %d"%(nMissing)
 
@@ -157,16 +174,15 @@ with open("%s.kraken-orphan"%EXEC_FILE,"w") as fH:
             continue
         else:
             nOrphan += 1
-            print " orphan: %s"%(file)
-            fH.write("checkFile.py /cms/store/user/paus/%s/%s\n"%(book,klfn))
+            #print " orphan: %s"%(file)
+            fH.write("checkFile.py /cms/store/user/paus/%s/%s\n"%(book,file))
     print " orphan total: %d"%(nOrphan)
 
 # CONSISTENCY -- BambuDB versus Dynamo
 
 print ""
-print " XXXX oooo XXXX oooo XXXX oooo XXXX"
 print "   BAMBUDB VERSUS DYNAMO"
-print " XXXX oooo XXXX oooo XXXX oooo XXXX"
+print " ............................."
 
 # find missing files
 with open("%s.dynamo-missing"%EXEC_FILE,"w") as fH:
@@ -177,7 +193,7 @@ with open("%s.dynamo-missing"%EXEC_FILE,"w") as fH:
             continue
         else:
             nMissing += 1
-            print " missing: %s"%(klfn)
+            #print " missing: %s"%(klfn)
             fH.write("dynamo-inject-one-file /cms/store/user/paus/%s/%s\n"%(book,klfn))
     print " missing total: %d"%(nMissing)
     
@@ -190,6 +206,6 @@ with open("%s.dynamo-orphan"%EXEC_FILE,"w") as fH:
             continue
         else:
             nOrphan += 1
-            print " orphan: %s"%(dlfn)
+            #print " orphan: %s"%(dlfn)
             fH.write("dynamo-delete-one-file /cms/store/user/paus/%s/%s\n"%(book,dlfn))
     print " orphan total: %d"%(nOrphan)

@@ -11,13 +11,12 @@ from dynamo.core.executable import inventory
 def findAllDynamoFiles(config,version):
 
     # find all files injected into dynamo
-    dlfns = set()
+    dlfns = {}
     for dataset in inventory.datasets.itervalues():
         if dataset.name.startswith('%s/%s'%(config,version)):
             for dlfn in dataset.files:
-                dlfn = "/".join((dlfn.lfn).split("/")[-2:])
-                dlfns.add(dlfn)
-
+                name = "/".join((dlfn.lfn).split("/")[-2:])
+                dlfns[name] = dlfn.size
     return dlfns
 
 #===================================================================================================
@@ -41,7 +40,7 @@ except getopt.GetoptError, ex:
 # --------------------------------------------------------------------------------------------------
 # Set defaults for each command line parameter/option
 debug = 0
-book = "pandaf/004"
+book = "pandaf/012"
 
 # Read new values from the command line
 for opt, arg in opts:
@@ -57,5 +56,5 @@ version = book.split("/")[1]
 dlfns = findAllDynamoFiles(config,version)
 
 with open("/tmp/.inventory_%s_%s.tmp"%(config,version),"w") as fH:
-    for dlfn in dlfns:
-        fH.write("/cms/store/user/paus/%s/%s\n"%(book,dlfn))
+    for dlfn in sorted(dlfns):
+        fH.write("%d /cms/store/user/paus/%s/%s\n"%(dlfns[dlfn],book,dlfn))

@@ -12,7 +12,8 @@ def findAllFiles(book,dataset):
 
     print " INFO - loading all physical files (Tier-2)."
 
-    cmd = "gfal-ls gsiftp://se01.cmsaf.mit.edu:2811/cms/store/user/paus/%s/%s "%(book,dataset) + "|grep root"
+    cmd = "gfal-ls gsiftp://se01.cmsaf.mit.edu:2811/cms/store/user/paus/%s/%s "%(book,dataset) \
+        + "|grep root"
     myRx = rex.Rex()  
     (rc,out,err) = myRx.executeLocalAction(cmd)
 
@@ -63,7 +64,7 @@ def findLocalFiles(book,dataset):
 # Define string to explain usage of the script
 usage  = "\n"
 usage += " Usage: consistency.py  [ --book=pandaf/004" \
-       + "  [ --dataset=SinglePhoton+Run2017B-31Mar2018-v1+MINIAOD [ --] [ --help ] ] ]\n\n"
+       + "  [ --dataset=SinglePhoton+Run2017B-31Mar2018-v1+MINIAOD [ --help ] ] ]\n\n"
 
 # Define the valid options which can be specified and check out the command line
 valid = ['book=','dataset=','verbose=','help']

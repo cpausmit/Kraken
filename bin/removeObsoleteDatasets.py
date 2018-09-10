@@ -8,6 +8,7 @@ import sys,os,getopt,time
 import rex
 
 BASE = '/cms/store/user/paus'
+COMPLETION_MIN = 0.90         # 90% completion required before deleting the old dataset
 
 # Define string to explain usage of the script
 usage  = "\n"
@@ -62,7 +63,6 @@ def numberOfFiles(config,version,dataset):
     myRx = rex.Rex()
     (rc,out,err) = myRx.executeLocalAction("list %s/%s/%s/%s/*.root 2> /dev/null"
                                            %(BASE,config,version,dataset))
-
     nFiles = len(out.split("\n"))
     return nFiles
 
@@ -122,11 +122,15 @@ for dataset in oldDatasetsList:
         nFilesOld = numberOfFiles(config,oldVersion,dataset)
         nFilesNew = numberOfFiles(config,newVersion,dataset)
 
-        if nFilesNew > 0.9 * nFilesOld:
+        py = 'data'
+        if 'AODSIM' in dataset:
+            py = 'mc'
+
+        if nFilesNew > COMPLETION_MIN * nFilesOld:
             print ' Deleting obsolete data: (%3d) %s -- %s (%d/%d)' \
                 %(i,oldVersion,dataset,nFilesNew,nFilesOld)
-            cmd = 'removeData.py --exec --config=%s --version=%s --pattern=%s' \
-                %(config,oldVersion,dataset)
+            cmd = 'removeData.py --exec --config=%s --version=%s --py=%s --pattern=%s' \
+                %(config,oldVersion,py,dataset)
             print ' rmr: ' + cmd
             if exe:
                 os.system(cmd)

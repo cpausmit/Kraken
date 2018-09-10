@@ -84,6 +84,7 @@ def getFileInfo(file):
 
     requestId = -1
     datasetId = -1
+    nEventsLfn = -1
     blockName = ""
 
     f = file.split('/')

@@ -8,6 +8,7 @@ import json
 import time
 
 def inject(host, cert, key, jsondata, delete = False):
+
     session = requests.Session()
 
     headers = {'Accept': 'application/json', 'Content-Type': 'application/json'}

@@ -15,68 +15,27 @@ Cursor = Db.cursor()
 DYNAMO_HOST = 't3serv009.mit.edu'
 CERT = '/tmp/x509up_u%d' % os.getuid()
 
-usage = "\n   usage:  dynamo-inject-one-file  <file> \n"
+usage = "\n   usage:  dynamo-delete-dataset  <file> \n"
 
 #===================================================================================================
 #  H E L P E R S
 #===================================================================================================
 
-def getName(file):
-    # extract the unique file name
-
-    f = file.split('/')
-    name = (f.pop()).replace('.root','')
-
-    return name
-
 def getFileInfo(file):
     # extract the unique request id this file is part of
-
-    datasetId = -1
 
     f = file.split('/')
 
     # make sure we have a good file name
-    if len(f) < 6:
+    if len(f) < 5:
         return ()
         
     # decode the config, version and dataset
-    dataset = f[-2]
-    version = f[-3]
-    mitcfg = f[-4]
+    dataset = f[-1]
+    version = f[-2]
+    mitcfg = f[-3]
 
-    # decode the dataset
-    f = dataset.split('+')
-    if len(f) < 3:
-        print " ERROR - dataset name not correctly formed: " + dataset
-        sys.exit(0)
-    process = f[0]
-    setup = f[1]
-    tier = f[2]
-
-    sql = "select Datasets.DatasetId, BlockName from Datasets" \
-        + " inner join Blocks on Blocks.DatasetId = Datasets.DataSetId" \
-        + " inner join Lfns on Lfns.BlockId = Blocks.BlockId" \
-        + " where " \
-        + " DatasetProcess = '%s' and DatasetSetup='%s' and DatasetTier='%s'"%(process,setup,tier) \
-        + " and Lfns.FileName = '%s' "%(getName(file))
-
-    print ' SQL - ' + sql
-
-    try:
-        # Execute the SQL command
-        Cursor.execute(sql)
-        results = Cursor.fetchall()
-    except:
-        print 'ERROR(%s) - could not find request id.'%(sql)
-
-    # found the request Id
-    blockName = ''
-    for row in results:
-        datasetId = int(row[0])
-        blockName = row[1]
-
-    return (datasetId, blockName, mitcfg, version, dataset)
+    return (mitcfg, version, dataset)
 
 #===================================================================================================
 #  M A I N
@@ -88,23 +47,17 @@ if len(sys.argv) < 1:
 
 # command line variables
 file = sys.argv[1]
-print " INFO - dynamo-delete-one-file %s"%(file)     
+print " INFO - dynamo-delete-dataset %s"%(file)
             
 # find all relevant infromation about the file
-(datasetId,blockName,config,version,dataset) = getFileInfo(file)
+(config,version,dataset) = getFileInfo(file)
 
 # delete from Dynamo
 
 lfn = file[file.find("/store/user"):]
 data = \
     { 'dataset':
-          [ { 'name': "%s/%s/%s"%(config,version,dataset),
-              'blocks':
-                  [ { 'name': blockName,
-                      'files': 
-                      [ { 'name': lfn } ]
-                      } ]
-              } ]
+          [ { 'name': "%s/%s/%s"%(config,version,dataset) } ]
       }
     
 print dynamo_inject.inject(DYNAMO_HOST,CERT,CERT,json.dumps(data),True)

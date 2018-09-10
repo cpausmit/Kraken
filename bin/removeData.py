@@ -125,7 +125,7 @@ def remove(dataset,config,version,dbs,py,exe):
         (rc,out,err) = scheduler.executeCondorCmd(cmd,False)
         ds = process+'+'+setup+'+'+tier
         for line in out.split('\n'):
-            if ds in line:
+            if ds in line and version in line and config in line:
                 clusterIds = clusterIds + " " + line.split(' ')[0]
         if clusterIds != "":
             print " Running jobs: " + clusterIds
@@ -156,7 +156,7 @@ def remove(dataset,config,version,dbs,py,exe):
         # Remove the files and all records of them
         if fileName == '':
             
-            removeDataset(          process,setup,tier,datasetId,requestId,config,version)
+            removeDataset(process,setup,tier,datasetId,requestId,config,version)
 
             # Remove the request from the request table
             cmd = 'addRequest.py --delete=1 --config=%s --version=%s --py=%s --dataset=%s'%\
@@ -165,7 +165,7 @@ def remove(dataset,config,version,dbs,py,exe):
             os.system(cmd)
 
         else:
-            removeFiles  (fileList,process,setup,tier,datasetId,requestId,config,version)
+            removeFiles(fileList,process,setup,tier,datasetId,requestId,config,version)
     
         # Re-generate the catalog after the deletion
         cmd = 'generateCatalogs.py %s/%s %s'%(config,version,dataset)
@@ -184,17 +184,17 @@ def removeFiles(fileList,process,setup,tier,datasetId,requestId,config,version):
 
         fullFile = '%s/%s/%s/%s/%s.root'%(BASE,config,version,dataset,file)
 
-        ## Dynamo is now in charge
+        ## Dynamo is now in charge (MODIFY?)
 
-        # # delete from T2
-        # cmd = 't2tools.py --action=rm --source=%s'%(fullFile)
-        # print ' t2t: %s'%(cmd)
-        # os.system(cmd)
-        # 
-        # # delete from T3
-        # cmd = 'hdfs dfs -rm %s'%(fullFile)
-        # print ' loc: %s'%(cmd)
-        # os.system(cmd)
+        # delete from T2
+        cmd = 't2tools.py --action=rm --source=%s'%(fullFile)
+        print ' t2t: %s'%(cmd)
+        os.system(cmd)
+        
+        # delete from T3
+        cmd = 'hdfs dfs -rm %s'%(fullFile)
+        print ' loc: %s'%(cmd)
+        os.system(cmd)
 
         # delete from the database (for catalogs)
         sql  = "delete from Files where RequestId=%d and fileName='%s'"%(requestId,file)
@@ -213,17 +213,17 @@ def removeDataset(process,setup,tier,datasetId,requestId,config,version):
     fullFile = '%s/%s/%s/%s'%(BASE,config,version,dataset)
     logs = '/local/cmsprod/Kraken/agents/reviewd/%s/%s/%s'%(config,version,dataset)
 
-    ## Dynamo is now in charge
+    ## Dynamo is now in charge (MODIFY?)
 
-    # # delete from T2
-    # cmd = 'rglexec hdfs dfs -rm -r %s'%(fullFile)
-    # print ' t2t: %s'%(cmd)
-    # os.system(cmd)
-    #     
-    # # delete from T3
-    # cmd = 'hdfs dfs -rm -r %s'%(fullFile)
-    # print ' loc: %s'%(cmd)
-    # os.system(cmd)
+    # delete from T2
+    cmd = 'rglexec hdfs dfs -rm -r %s'%(fullFile)
+    print ' t2t: %s'%(cmd)
+    os.system(cmd)
+        
+    # delete from T3
+    cmd = 'hdfs dfs -rm -r %s'%(fullFile)
+    print ' loc: %s'%(cmd)
+    os.system(cmd)
 
     # delete from the database (for catalogs)
     sql  = "delete from Files where RequestId=%d"%(requestId)

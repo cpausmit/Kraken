@@ -188,4 +188,7 @@ for file in files:
           }
         
     # inject into Dynamo
+    with open("/tmp/lastInject.json","w") as fH:
+        fH.write(json.dumps(data))
+        
     print dynamo_inject.inject(DYNAMO_HOST,CERT,CERT,json.dumps(data))

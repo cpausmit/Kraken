@@ -5,6 +5,8 @@
 #
 #===================================================================================================
 
+JOBREPORT_SERVER=t3serv004.mit.edu
+
 #----------------------------------------------------------------------------------------------------
 #  U S E F U L   F U N C T I O N S
 #----------------------------------------------------------------------------------------------------
@@ -21,7 +23,7 @@ function report_start {
   curl --header "Content-Type: application/json" \
        --request POST \
        --data "{\"starttime\": \"$now\", \"host\": \"$host\", \"task\": \"Kraken:$book\", \"job_id\": \"$job_id\", \"args\": [ \"$args_hash\" ] }" \
-       http://t3desk001.mit.edu:5000/condor/start
+       http://$JOBREPORT_SERVER:5000/condor/start
 }  
 
 function report_done {
@@ -36,7 +38,7 @@ function report_done {
   curl --header "Content-Type: application/json" \
        --request POST \
        --data "{\"timestamp\": \"$now\", \"host\": \"$host\", \"task\": \"Kraken:$book\", \"job_id\": \"$job_id\", \"args\": [ \"$args_hash\" ] }" \
-       http://t3desk001.mit.edu:5000/condor/done
+       http://$JOBREPORT_SERVER:5000/condor/done
 }  
 
 function exeCmd {
