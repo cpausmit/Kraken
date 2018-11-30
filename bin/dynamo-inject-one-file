@@ -30,7 +30,7 @@ def getCache(fileName):
         for line in data.split("\n"):
             f = line.split(" ")
             if len(f) > 1:
-                size = int(f[0])
+                size = int(f[0].split(':')[1])
                 name = f[1]
                 sizes[name] = size
     except:
@@ -135,10 +135,11 @@ if len(sys.argv) < 1:
     sys.exit(1)
 
 # read cache
-sizes = getCache(".files")
+sizes = getCache(".sizes")
+print " Cache contains: %d files."%(len(sizes))
 
 # read file list
-files = getFiles("fixMissingFiles.dynamo")
+files = getFiles("fixFiles.dynamo-missing")
 # use command line arguments is no file list available
 if len(files) < 1:
     files = sys.argv[1:]
@@ -147,7 +148,7 @@ if len(files) < 1:
 for file in files:
     print " INFO - dynamno-inject-one-file %s"%(file)
     
-    # find all relevant infromation about the file
+    # find all relevant information about the file
     (requestId,datasetId,blockName,config,version,dataset) = getFileInfo(file)
     
     # find logical filename
@@ -158,7 +159,7 @@ for file in files:
         fileSize = sizes[file]
     else:
         fileSize = findFileSize(file)
-    print ' SIZE: %ld'%fileSize 
+    print ' SIZE: %ld'%fileSize
     
     # generate the data structure
     data = \

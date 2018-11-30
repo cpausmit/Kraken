@@ -19,29 +19,57 @@ def findAllFiles(dir):
     myRx = rex.Rex()  
     (rc,out,err) = myRx.executeLocalAction(cmd)
 
-    # find list
-    files = {}
-    for row in out.split("\n"):
-        if len(row) < 2:
-            continue
-        size = row.split(":")[0]
-        filename = "/".join((row.split(" ")[-1]).split('/')[-2:])
 
-        files[filename] = size
+    with open(".sizes","w") as fH:
+        # find list
+        files = {}
+        for row in out.split("\n"):
+            if len(row) < 2:
+                continue
 
+            fH.write(row+'\n')
+            size = row.split(":")[0]
+            filename = "/".join((row.split(" ")[-1]).split('/')[-2:])
+    
+            files[filename] = size
+    
     return files
 
 def findAllKrakenFiles(config,version):
 
     print " INFO - loading all files from Kraken database."
 
-    # find all files cataloged at some point
+    # all possibly produced lfns
+    sql = "select Datasets.DatasetProcess,Datasets.DatasetSetup,Datasets.DatasetTier,Blocks.BlockName,Lfns.FileName" \
+        + " from Datasets" \
+        + " inner join Lfns on Lfns.DatasetId = Datasets.DatasetId" \
+        + " inner join Blocks on Blocks.BlockId = Lfns.BlockId"
+
+    #print " SLQ: " + sql
+    try:
+        # Execute the SQL command
+        cursor.execute(sql)
+        results = cursor.fetchall()
+    except:
+        print " ERROR (%s): select failed."%(sql)
+        sys.exit(0)
+    
+    with open(".blocks","w") as fH:
+        for row in results:
+            dataset = row[0]+'+'+row[1]+'+'+row[2]
+            block_name = row[3]
+            file_name = row[4]
+            klfn = "%s/%s.root"%(dataset,file_name)
+            fH.write("%s %s\n"%(block_name,klfn))
+
+    # find all files cataloged at this point
     sql = "select Datasets.DatasetProcess,Datasets.DatasetSetup,Datasets.DatasetTier,Files.FileName" \
         + " from Requests" \
         + " inner join Datasets on Requests.DatasetId = Datasets.DatasetId" \
         + " inner join Files on Files.RequestId = Requests.RequestId where" \
         + " Requests.RequestConfig = '%s' and"%config \
         + " Requests.RequestVersion = '%s'"%version
+    #print " SLQ: " + sql
     try:
         # Execute the SQL command
         cursor.execute(sql)
@@ -53,8 +81,8 @@ def findAllKrakenFiles(config,version):
     klfns = {}
     for row in results:
         dataset = row[0]+'+'+row[1]+'+'+row[2]
-        filename = row[3]
-        klfn = "%s/%s.root"%(dataset,filename)
+        file_name = row[3]
+        klfn = "%s/%s.root"%(dataset,file_name)
         #print " KLFN: %s"%(klfn)
         klfns[klfn] = -1      # for now no size comparison planned
 
@@ -67,6 +95,7 @@ def findAllDynamoFiles(config,version):
 
     # spawn a dynamo process
     cmd = "%s/bin/makeListOfFileFromInventory.py --book %s/%s"%(os.getenv('KRAKEN_BASE'),config,version)
+    #print " CMD> " + cmd
     os.system("dynamo '%s' 2> /dev/null"%(cmd))
 
     # read the file produced
