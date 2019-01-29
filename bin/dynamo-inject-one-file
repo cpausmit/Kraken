@@ -138,9 +138,11 @@ if len(sys.argv) < 1:
 sizes = getCache(".sizes")
 print " Cache contains: %d files."%(len(sizes))
 
-# read file list
-files = getFiles("fixFiles.dynamo-missing")
+## read file list
+#files = getFiles("fixFiles.dynamo-missing")
+
 # use command line arguments is no file list available
+files = []
 if len(files) < 1:
     files = sys.argv[1:]
             
@@ -187,7 +189,20 @@ for file in files:
                                        } ]
                   } ]
           }
-        
+
+#    data_replica = \
+#        { 'datasetreplica':
+#              [ { 'site': 'T3_US_MIT',
+#                  'growing': True,
+#                  'group': 'analysis',
+#                  'dataset': "%s/%s/%s"%(config,version,dataset),
+#                  'blockreplicas': [ { 'last_update': int(time.time()),
+#                                       'group': 'analysis',
+#                                       'block': blockName
+#                                       } ]
+#                  } ]
+#          }
+#        
     # inject into Dynamo
     with open("/tmp/lastInject.json","w") as fH:
         fH.write(json.dumps(data))

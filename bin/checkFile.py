@@ -202,7 +202,8 @@ print " INFO - checkFile.py %s"%(file)
 (out,err,entry) = catalogFile(file)
 nEvents = numberOfEventsInEntry(entry)
 
-delete = False
+# check whether to delete in case of mismatch or zombie state
+delete = os.environ.get('DELETE',False)
 if "Object is in 'zombie' state" in out:
     delete = True
     print '\n o=o=o=o File corrupt, schedule deletion. o=o=o=o \n'

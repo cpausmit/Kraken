@@ -13,7 +13,7 @@ DYNAMO_SERVER = "t3serv009.mit.edu"
 
 def findAllFiles(dir):
 
-    print " INFO - loading all physical files."
+    print " INFO - loading all physical files on T2."
 
     cmd = "list %s/* "%(dir) + "|grep root"
     myRx = rex.Rex()  
@@ -28,10 +28,40 @@ def findAllFiles(dir):
                 continue
 
             fH.write(row+'\n')
-            size = row.split(":")[0]
+            size = int((row.split(" ")[0]).split(":")[1])
             filename = "/".join((row.split(" ")[-1]).split('/')[-2:])
     
             files[filename] = size
+
+            if size < 10:
+                print " ERROR - zero size file found: " + filename
+    
+    return files
+
+def findAllT3Files(dir):
+
+    print " INFO - loading all physical files on T3."
+
+    cmd  = "export T2TOOLS_SERVER=t3serv015.mit.edu; export T2TOOLS_USER=cmsprod;"
+    cmd += "list %s/* "%(dir) + "|grep root"
+    myRx = rex.Rex()  
+    (rc,out,err) = myRx.executeLocalAction(cmd)
+
+    with open(".sizes-t3","w") as fH:
+        # find list
+        files = {}
+        for row in out.split("\n"):
+            if len(row) < 2:
+                continue
+
+            fH.write(row+'\n')
+            size = int((row.split(" ")[0]).split(":")[1])
+            filename = "/".join((row.split(" ")[-1]).split('/')[-2:])
+    
+            files[filename] = size
+
+            if size < 10:
+                print " ERROR - zero size file found: %s/%s"%(dir,filename)
     
     return files
 
@@ -88,13 +118,14 @@ def findAllKrakenFiles(config,version):
 
     return klfns
 
-def findAllDynamoFiles(config,version):
+def findAllDynamoFiles(config,version,site="T2_US_MIT"):
 
     # say what we do
-    print " INFO - loading all files from Dynamo database."
+    print " INFO - loading all %s files from Dynamo database."%(site)
 
     # spawn a dynamo process
-    cmd = "%s/bin/makeListOfFileFromInventory.py --book %s/%s"%(os.getenv('KRAKEN_BASE'),config,version)
+    cmd  = "%s/bin/makeListOfFileFromInventory.py --book %s/%s"%(os.getenv('KRAKEN_BASE'),config,version)
+    cmd += " --site %s"%(site)
     #print " CMD> " + cmd
     os.system("dynamo '%s' 2> /dev/null"%(cmd))
 
@@ -108,7 +139,7 @@ def findAllDynamoFiles(config,version):
         for line in data.split("\n"):
             if len(line)>10:
                 dlfn = "/".join(line.split("/")[-2:])
-                size = line.split(" ")[0]
+                size = int(line.split(" ")[0])
                 dlfns[dlfn] = size
     except:
         print " WARNING - file list (%s) not available."%(inventory)
@@ -161,7 +192,6 @@ print "   CONSISTENCY FOR  ---- Book:%s ----"%book
 print " XoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoXoX"
 print ""
 
-
 # Open database connection
 db = MySQLdb.connect(read_default_file="/etc/my.cnf",read_default_group="mysql",db="Bambu")
 # Prepare a cursor object using cursor() method
@@ -169,8 +199,10 @@ cursor = db.cursor()
 
 # find files and cataloged entries
 files = findAllFiles("/cms/store/user/paus/%s"%(book))
+filesT3 = findAllT3Files("/cms/store/user/paus/%s"%(book))
 klfns = findAllKrakenFiles(config,version)
 dlfns = findAllDynamoFiles(config,version)
+dlfnsT3 = findAllDynamoFiles(config,version,"T3_US_MIT")
 
 # disconnect from server
 db.close()
@@ -179,8 +211,8 @@ db.close()
 
 # find missing files
 print ""
-print "   PHYSICAL FILE VS BAMBUDB"
-print " ............................."
+print "   PHYSICAL FILE T2 VS BAMBUDB"
+print " ..............................."
 with open("%s.kraken-missing"%EXEC_FILE,"w") as fH:
     nMissing = 0
     print ' Search for missing files (nP: %d, mL: %d).'%(len(files),len(klfns))
@@ -237,4 +269,46 @@ with open("%s.dynamo-orphan"%EXEC_FILE,"w") as fH:
             nOrphan += 1
             #print " orphan: %s"%(dlfn)
             fH.write("dynamo-delete-one-file /cms/store/user/paus/%s/%s\n"%(book,dlfn))
+    print " orphan total: %d"%(nOrphan)
+
+# CONSISTENCY -- Tier-3 Files versus DynamoDb
+
+print ""
+print "   PHYSICAL FILE T3 VS DYNAMODB"
+print " ................................"
+with open("%s.dynamo-t3-mismatch"%EXEC_FILE,"w") as fHM:
+    with open("%s.dynamo-t3-missing"%EXEC_FILE,"w") as fH:
+        nMissing = 0
+        nMismatch = 0
+        print ' Search for missing files (nP: %d, mL: %d).'%(len(filesT3),len(dlfnsT3))
+        for dlfn in dlfnsT3:
+            if dlfn in filesT3:
+                sizeT3 = filesT3[dlfn]
+                sizeD  = dlfnsT3[dlfn]
+                if sizeD != sizeT3:
+                    nMismatch += 1
+                    #print '# Size mismatch: D:%d <> P:%d'%(sizeD,sizeT3)
+                    if sizeT3 < sizeD:
+                        fHM.write("hdfs dfs -rm  /cms/store/user/paus/%s/%s\n"%(book,dlfn))
+                continue
+            else:
+                nMissing += 1
+                #print " missing: %s"%(klfn)
+                fH.write("t2tools.py --action=down --source /cms/store/user/paus/%s/%s "%(book,dlfn))
+                fH.write(" --target /mnt/hadoop/cms/store/user/paus/%s/%s\n"%(book,dlfn))
+        print " mismtch total: %d"%(nMismatch)
+        print " missing total: %d"%(nMissing)
+
+# find orphan files
+
+with open("%s.dynamo-t3-orphan"%EXEC_FILE,"w") as fH:
+    nOrphan = 0
+    print ' Search for orphan files (nP: %d, mL: %d).'%(len(filesT3),len(dlfnsT3))
+    for file in filesT3:
+        if file in dlfnsT3:
+            continue
+        else:
+            nOrphan += 1
+            #print " orphan: %s"%(file)
+            fH.write("hdfs dfs -rm /cms/store/user/paus/%s/%s\n"%(book,file))
     print " orphan total: %d"%(nOrphan)

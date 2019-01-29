@@ -8,15 +8,30 @@ import sys
 import getopt
 from dynamo.core.executable import inventory
 
-def findAllDynamoFiles(config,version):
+def findAllDynamoFiles(config,version,site=0):
 
     # find all files injected into dynamo
     dlfns = {}
     for dataset in inventory.datasets.itervalues():
+        files = []
         if dataset.name.startswith('%s/%s'%(config,version)):
-            for dlfn in dataset.files:
-                name = "/".join((dlfn.lfn).split("/")[-2:])
-                dlfns[name] = dlfn.size
+            # only consider one site?
+            selected = True
+            if site != 0:
+                selected = False
+                for replica in dataset.replicas:
+                    if site == replica.site.name:
+                        #print ' Matched: ' + site + ' ' + replica.site.name
+                        selected = True
+                        for br in replica.block_replicas:
+                            for f in br.files():
+                                files.append(f)
+                        break
+            if selected:
+                for dlfn in dataset.files:
+                    name = "/".join((dlfn.lfn).split("/")[-2:])
+                    dlfns[name] = dlfn.size
+
     return dlfns
 
 #===================================================================================================
@@ -24,10 +39,11 @@ def findAllDynamoFiles(config,version):
 #===================================================================================================
 # Define string to explain usage of the script
 usage  = "\n"
-usage += " Usage: makeListOfFilesFromInventory.py  [ --book=pandaf/004 [ --help ] ]\n\n"
+usage += " Usage: makeListOfFilesFromInventory.py"
+usage += "  [ --book=pandaf/004 [ --site=T3_US_MIT [ --help ] ] ]\n\n"
 
 # Define the valid options which can be specified and check out the command line
-valid = ['book=','help']
+valid = ['book=','site=','help']
 try:
     opts, args = getopt.getopt(sys.argv[1:], "", valid)
 except getopt.GetoptError, ex:
@@ -41,6 +57,7 @@ except getopt.GetoptError, ex:
 # Set defaults for each command line parameter/option
 debug = 0
 book = "pandaf/012"
+site = 0
 
 # Read new values from the command line
 for opt, arg in opts:
@@ -49,11 +66,13 @@ for opt, arg in opts:
         sys.exit(0)
     if opt == "--book":
         book = arg
+    if opt == "--site":
+        site = arg
 
 config = book.split("/")[0]
 version = book.split("/")[1]
 
-dlfns = findAllDynamoFiles(config,version)
+dlfns = findAllDynamoFiles(config,version,site)
 
 with open("/tmp/.inventory_%s_%s.tmp"%(config,version),"w") as fH:
     for dlfn in sorted(dlfns):
