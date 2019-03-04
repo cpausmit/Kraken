@@ -74,6 +74,6 @@ version = book.split("/")[1]
 
 dlfns = findAllDynamoFiles(config,version,site)
 
-with open("/tmp/.inventory_%s_%s.tmp"%(config,version),"w") as fH:
+with open("/tmp/.inventory_%s_%s_%s.tmp"%(site,config,version),"w") as fH:
     for dlfn in sorted(dlfns):
         fH.write("%d /cms/store/user/paus/%s/%s\n"%(dlfns[dlfn],book,dlfn))

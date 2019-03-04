@@ -76,6 +76,19 @@ def getFileInfo(file):
         datasetId = int(row[0])
         blockName = row[1]
 
+    if blockName == '':
+        print ' WARNING -- Could not find block name. Trying to recover.'
+        print "D:%s B:%s C:%s V:%s D:%s"%(datasetId, blockName, mitcfg, version, dataset)
+        cmd = " ssh t3serv015 \"grep %s /home/cmsprod/cms/jobs/lfns/%s.lfns|cut -d\# -f2|cut -d' ' -f1\""%(getName(file),dataset)
+        for line in os.popen(cmd).readlines():
+            blockName = line[:-1]
+            print "Block>" + blockName + "<"
+
+    if blockName == '':
+        print ' ERROR -- Could not find block name. Recovery failed.'
+        sys.exit(0)
+        
+
     return (datasetId, blockName, mitcfg, version, dataset)
 
 #===================================================================================================
@@ -107,4 +120,7 @@ data = \
               } ]
       }
     
+#print " ===== \n"
+#print data
+#print " ===== \n"
 print dynamo_inject.inject(DYNAMO_HOST,CERT,CERT,json.dumps(data),True)

@@ -45,6 +45,7 @@ def findAllT3Files(dir):
     cmd  = "export T2TOOLS_SERVER=t3serv015.mit.edu; export T2TOOLS_USER=cmsprod;"
     cmd += "list %s/* "%(dir) + "|grep root"
     myRx = rex.Rex()  
+    #print " CMD: " + cmd
     (rc,out,err) = myRx.executeLocalAction(cmd)
 
     with open(".sizes-t3","w") as fH:
@@ -127,12 +128,12 @@ def findAllDynamoFiles(config,version,site="T2_US_MIT"):
     cmd  = "%s/bin/makeListOfFileFromInventory.py --book %s/%s"%(os.getenv('KRAKEN_BASE'),config,version)
     cmd += " --site %s"%(site)
     #print " CMD> " + cmd
-    os.system("dynamo '%s' 2> /dev/null"%(cmd))
+    os.system("dynamo '%s' 2> /tmp/last_dynamo.log"%(cmd))
 
     # read the file produced
     dlfns = {}
     # extract the unique file name
-    inventory =  "/tmp/.inventory_%s_%s.tmp"%(config,version)
+    inventory =  "/tmp/.inventory_%s_%s_%s.tmp"%(site,config,version)
     try:
         with open(inventory,"r") as fH:
             data = fH.read()
