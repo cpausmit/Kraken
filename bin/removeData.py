@@ -1,7 +1,9 @@
 #!/usr/bin/python
-# ---------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------------------
 # Remove data and any record of them from the system. This can be just a corrupted file or an entire
 # dataset.
+#
+# Include dynamo deletions (per file or per dataset)
 #
 # v1.0                                                                                  Apr 28, 2017
 #---------------------------------------------------------------------------------------------------
@@ -137,7 +139,7 @@ def remove(dataset,config,version,dbs,py,exe):
     requestId = getRequestId(datasetId,config,version,py,cursor,debug)
     print ' Ids: dataset=%d  request=%d'%(datasetId,requestId)
     if requestId < 0:
-        print ' ERROR - no request id was found to match your request. (Is your python config correct?)'
+        print ' ERROR - no request id was found to match request. (Python config correct?)'
         sys.exit(1)
     
     # Is this a complete dataset?
@@ -184,8 +186,6 @@ def removeFiles(fileList,process,setup,tier,datasetId,requestId,config,version):
 
         fullFile = '%s/%s/%s/%s/%s.root'%(BASE,config,version,dataset,file)
 
-        ## Dynamo is now in charge (MODIFY?)
-
         # delete from T2
         cmd = 't2tools.py --action=rm --source=%s'%(fullFile)
         print ' t2t: %s'%(cmd)
@@ -200,10 +200,16 @@ def removeFiles(fileList,process,setup,tier,datasetId,requestId,config,version):
         sql  = "delete from Files where RequestId=%d and fileName='%s'"%(requestId,file)
         print ' sql: %s'%(sql)
         try:
-            # Execute the SQL command
+            # execute the SQL command
             cursor.execute(sql)
         except:
             print " Error (%s): unable to delete data."%(sql)
+
+        # delete meta data from Dynamo
+        cmd = 'dynamo-delete-one-file %s'%(fullFile)
+        print ' logs: %s'%(cmd)
+        os.system(cmd)
+
 
 def removeDataset(process,setup,tier,datasetId,requestId,config,version):
     # Delete the given dataset from the disks (T2/3 and the database)
@@ -212,8 +218,6 @@ def removeDataset(process,setup,tier,datasetId,requestId,config,version):
     catalog = '/home/cmsprod/catalog/t2mit'
     fullFile = '%s/%s/%s/%s'%(BASE,config,version,dataset)
     logs = '/local/cmsprod/Kraken/agents/reviewd/%s/%s/%s'%(config,version,dataset)
-
-    ## Dynamo is now in charge (MODIFY?)
 
     # delete from T2
     cmd = 'rglexec hdfs dfs -rm -r %s'%(fullFile)
@@ -240,6 +244,11 @@ def removeDataset(process,setup,tier,datasetId,requestId,config,version):
 
     # delete all logs
     cmd = 'rm -rf %s'%(logs)
+    print ' logs: %s'%(cmd)
+    os.system(cmd)
+
+    # delete meta data from Dynamo
+    cmd = 'dynamo-delete-dataset %s/%s/%s'%(config,version,dataset)
     print ' logs: %s'%(cmd)
     os.system(cmd)
 

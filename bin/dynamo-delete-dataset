@@ -27,8 +27,9 @@ def getFileInfo(file):
     f = file.split('/')
 
     # make sure we have a good file name
-    if len(f) < 5:
-        return ()
+    if len(f) < 3:
+        print " ERROR - dataset not properly specified."
+        sys.exit(0)
         
     # decode the config, version and dataset
     dataset = f[-1]

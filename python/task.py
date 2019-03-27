@@ -228,7 +228,7 @@ class Task:
         self.nJobs = 0
 
         # start with the base submit script
-        cmd = 'cat ' + os.getenv('KRAKEN_BASE') + '/condor/req-allNoEaps.sub ' \
+        cmd = 'cat ' + os.getenv('KRAKEN_BASE') + '/condor/req.sub ' \
             +          os.getenv('KRAKEN_BASE') + '/condor/base.sub > ' \
             +  self.submitCmd
         os.system(cmd)

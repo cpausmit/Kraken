@@ -1,0 +1,2 @@
+# Run on all avalaible resources excluding some that seem to fail a lot
+Requirements = (BOSCOCluster == "eofe5.mit.edu") && (BOSCOGroup == "paus")
