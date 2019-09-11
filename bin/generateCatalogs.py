@@ -66,22 +66,27 @@ def writeRawFile(rawFile,book,dataset):
     nFiles = 0
 
     try:
+        output = []
+        if DEBUG>0:
+            print ' Get files'
+        catalogedIds = getFiles(book,dataset)
+    
+        for id in sorted(catalogedIds.getIds()):
+            fileId = catalogedIds.getFileId(id)
+            nEvents = fileId.getNEvents()
+            fileName = fileId.getFileName()
+            output.append('%s/store/user/paus/%s/%s/%s %d %d 1 1 1 1\n' \
+                              %(XRDSE,book,dataset,fileName,nEvents,nEvents))
+            if DEBUG>0:
+                print ' file: %s'%(fileName)
+            nFiles += 1
+
         if DEBUG>0:
             print ' Open Raw'
         with open(rawFile,'w') as fHandle:
-            if DEBUG>0:
-                print ' Get files'
-            catalogedIds = getFiles(book,dataset)
-    
-            for id in sorted(catalogedIds.getIds()):
-                fileId = catalogedIds.getFileId(id)
-                nEvents = fileId.getNEvents()
-                fileName = fileId.getFileName()
-                fHandle.write('%s/store/user/paus/%s/%s/%s %d %d 1 1 1 1\n' \
-                                  %(XRDSE,book,dataset,fileName,nEvents,nEvents))
-                if DEBUG>0:
-                    print ' file: %s'%(fileName)
-                nFiles += 1
+            for line in output:
+                fHandle.write(line)
+
     except:
         print ' ERROR-- could not write raw file.'
 
