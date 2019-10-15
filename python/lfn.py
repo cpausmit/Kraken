@@ -20,11 +20,12 @@ class Lfn:
     #-----------------------------------------------------------------------------------------------
     def __init__(self,fullFileName):
         self.lfn = fullFileName[fullFileName.find("/store/user"):]
-        f = self.lfn.split("/")
-        self.fileId = f[-1].replace(".root","")
-        self.dataset = f[-2]
-        self.version = f[-3]
-        self.config = f[-4]
+        if self.lfn != "":
+            f = self.lfn.split("/")
+            self.fileId = f[-1].replace(".root","")
+            self.dataset = f[-2]
+            self.version = f[-3]
+            self.config = f[-4]
 
     #-----------------------------------------------------------------------------------------------
     # present the full lfn information

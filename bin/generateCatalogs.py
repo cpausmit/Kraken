@@ -188,8 +188,8 @@ for dataset in allDatasets:
             print ' Making catalog DONE'
     else:
         if   nFiles > 400:
-            makeCatalog(catalogDir,10)
-        elif nFiles > 200:
             makeCatalog(catalogDir,5)
+        elif nFiles > 200:
+            makeCatalog(catalogDir,3)
         else:
             makeCatalog(catalogDir,2)

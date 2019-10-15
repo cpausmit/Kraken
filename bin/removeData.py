@@ -220,7 +220,7 @@ def removeDataset(process,setup,tier,datasetId,requestId,config,version):
     logs = '/local/cmsprod/Kraken/agents/reviewd/%s/%s/%s'%(config,version,dataset)
 
     # delete from T2
-    cmd = 'rglexec hdfs dfs -rm -r %s'%(fullFile)
+    cmd = 'ssh paus@t2srv0017.cmsaf.mit.edu hdfs dfs -rm -r %s'%(fullFile)
     print ' t2t: %s'%(cmd)
     os.system(cmd)
         

@@ -108,13 +108,13 @@ def removeFile(lfn,requestId):
     # Delete thoroughly the given file from the disks (T2/3 and the database)
 
     # delete from T2
-    cmd = 't2tools.py --action=rm --source=/cms/%s'%(lfn.lfn)
+    cmd = 't2tools.py --action=rm --source=/cms%s'%(lfn.lfn)
     print ' t2t: %s'%(cmd)
     if exe:
         os.system(cmd)
     
     # delete from T3
-    cmd = 'hdfs dfs -rm /cms/%s'%(lfn.lfn)
+    cmd = 'hdfs dfs -rm /cms%s'%(lfn.lfn)
     print ' loc: %s'%(cmd)
     if exe:
         os.system(cmd)

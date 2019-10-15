@@ -288,7 +288,7 @@ with open("%s.dynamo-t3-mismatch"%EXEC_FILE,"w") as fHM:
                 sizeD  = dlfnsT3[dlfn]
                 if sizeD != sizeT3:
                     nMismatch += 1
-                    #print '# Size mismatch: D:%d <> P:%d'%(sizeD,sizeT3)
+                    print '# Size mismatch: D:%d <> P:%d - %s'%(sizeD,sizeT3,dlfn)
                     if sizeT3 < sizeD:
                         fHM.write("hdfs dfs -rm  /cms/store/user/paus/%s/%s\n"%(book,dlfn))
                 continue

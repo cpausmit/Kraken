@@ -111,18 +111,21 @@ class Task:
             cmd = 'ssh -x ' + self.scheduler.user + '@' + self.scheduler.host + ' ' + cmd
         os.system(cmd)
 
-        # remote directories for Kraken output (root files)
-        print " INFO - make remote directories "
-        cmd = "rglexec  hdfs dfs -mkdir -p " + self.request.base + "/" + self.request.config + '/' \
-                      + self.request.version + '/' + self.sample.dataset + '/' + self.tag
-        os.system(cmd)
+        ## rglexec does not work anymore need to fix this, for now directory is created on
+        ## the fly by the gfal copy command.
+        ##
+        ## # remote directories for Kraken output (root files)
+        ## print " INFO - make remote directories "
+        ## cmd = "rglexec  hdfs dfs -mkdir -p " + self.request.base + "/" + self.request.config + '/' \
+        ##               + self.request.version + '/' + self.sample.dataset + '/' + self.tag
+        ## os.system(cmd)
 
-        # this is obsolte because Kraken should not own the data
-        #cmd = "changemod --options=a+rwx " + self.request.base + "/" \
-        #              + self.request.config + '/' + self.request.version + '/' \
-        #              + self.sample.dataset + '/' + self.tag
-        ##print " CHMOD: " + cmd
-        #os.system(cmd)
+        ## # this is obsolete because Kraken should not own the data
+        ## cmd = "changemod --options=a+rwx " + self.request.base + "/" \
+        ##               + self.request.config + '/' + self.request.version + '/' \
+        ##               + self.sample.dataset + '/' + self.tag
+        ## #print " CHMOD: " + cmd
+        ## os.system(cmd)
 
         return True
 

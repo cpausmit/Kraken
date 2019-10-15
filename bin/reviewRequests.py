@@ -350,7 +350,7 @@ nMissingTotal = 0
 
 # initial filter and calculation loop
 for row in results:
-
+    
     if debug:
         print row
 

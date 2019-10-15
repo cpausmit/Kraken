@@ -10,6 +10,96 @@ JOBREPORT_SERVER=t3serv004.mit.edu
 #----------------------------------------------------------------------------------------------------
 #  U S E F U L   F U N C T I O N S
 #----------------------------------------------------------------------------------------------------
+function customise {
+  # provide string for the customise command
+
+  # read command line parameters
+  version="$1"
+
+  if [ "$version" == "501" ]
+  then
+    echo "PhysicsTools/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu"
+  else
+    echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu"
+  fi
+}
+
+function era {
+  # provide string for the era
+
+  # read command line parameters
+  dataset="$1"
+
+  #echo ERA : $dataset
+  ## +RunIISpring16
+  ## +RunIISummer17
+  
+  if   [ "`echo $dataset | grep +Run2016`" != "" ]
+  then
+    echo Run2_2016,run2_nanoAOD_94X2016
+  elif [ "`echo $dataset | grep +Run2017`" != "" ]
+  then
+    echo Run2_2017,run2_nanoAOD_94XMiniAODv2
+  elif [ "`echo $dataset | grep +Run2018`" != "" ]
+  then
+    echo Run2_2018,run2_nanoAOD_102Xv1
+  elif [ "`echo $dataset | grep +RunIISummer16`" != "" ]
+  then
+    if [ "`echo $dataset | grep MiniAODv2`" != "" ]
+    then
+      echo Run2_2016,run2_miniAOD_80XLegacy
+    else
+      echo Run2_2016,run2_nanoAOD_94X2016
+    fi
+  elif [ "`echo $dataset | grep +RunIIFall17`" != "" ]
+  then
+    echo Run2_2017,run2_nanoAOD_94XMiniAODv2
+  elif [ "`echo $dataset | grep +RunIIAutumn18`" != "" ]
+  then
+    echo Run2_2018,run2_nanoAOD_102Xv1
+  else
+    echo UNKNOWN
+  fi
+}
+
+function conditions {
+  # provide string for the conditions
+
+  # read command line parameters
+  dataset="$1"
+  #echo CONDITIONS : $dataset
+
+  if   [ "`echo $dataset | grep +Run2016`" != "" ]
+  then
+    echo 102X_dataRun2_v11
+  elif [ "`echo $dataset | grep +Run2017`" != "" ]
+  then
+    echo 102X_dataRun2_v11
+  elif [ "`echo $dataset | grep +Run2018[A-C]`" != "" ]
+  then
+    echo 102X_dataRun2_v11
+  elif [ "`echo $dataset | grep +Run2018D`" != "" ]
+  then
+    echo 102X_dataRun2_Prompt_v14
+  elif [ "`echo $dataset | grep +RunIISummer16`" != "" ]
+  then
+    if [ "`echo $dataset | grep MiniAODv2`" != "" ]
+    then
+      echo 94X_mcRun2_asymptotic_v2
+    else
+      echo 102X_mcRun2_asymptotic_v7
+    fi
+  elif [ "`echo $dataset | grep +RunIIFall17`" != "" ]
+  then
+    echo 102X_mc2017_realistic_v7
+  elif [ "`echo $dataset | grep +RunIIAutumn18`" != "" ]
+  then
+    echo 102X_upgrade2018_realistic_v19
+  else
+    echo UNKNOWN
+  fi
+}
+
 function report_start {
   # provide a small frame for each command, also allows further steering
 
@@ -65,6 +155,16 @@ function configureSite {
   # -- ATTENTION -- CMSSW has to be setup before calling configure site
   #
   link="/cvmfs/cms.cern.ch/SITECONF/local"
+  if ! [ -e "$link" ]                          # recover other setups
+  then
+    echo " Link does not exist: $link."
+    echo " - try IN2P3: /etc/cvmfs/SITECONF/T1_VO_CMS_SW_DIR/SITECONF/local"
+    link="/etc/cvmfs/SITECONF/T1_VO_CMS_SW_DIR/SITECONF/local"
+    if ! [ -e "$link" ]                       # recover other setups
+    then
+      echo " ERROR  -- config does not exist locally"
+    fi
+  fi
   xml="$link/JobConfig/site-local-config.xml"
 
   echo "---- Setup SiteConfig ----"
@@ -323,9 +423,9 @@ echo " Executing: $0 $* "
 # command line arguments
                 # -- example
 EXE="$1"        # cmsRun
-CONFIG="$2"     # pandaf
-VERSION="$3"    # 002
-PY="$4"	        # data-03feb2017
+CONFIG="$2"     # nanoao -- pandaf
+VERSION="$3"    # 500    -- 002
+PY="$4"	        # nano   -- data-03feb2017
 TASK="$5"       # MET+Run2016B-03Feb2017_ver2-v2+MINIAOD
 GPACK="$6"      # 6EBC0286-34EE-E611-832F-0025905B8600
 LFN="$7"        # /store/data/Run2016B/ ... /6EBC0286-34EE-E611-832F-0025905B8600.root
@@ -346,7 +446,6 @@ then
   report_done $host $book $GPACK $args_hash
   exit 1
 fi
-
 
 cmsswVersion=`echo kraken_*.tgz | sed -e 's@kraken_@@' -e 's@.tgz@@'`
 
@@ -371,10 +470,51 @@ setupCmssw $cmsswVersion
 # download all input files to have them local
 downloadFiles $TASK $GPACK $LFN
 
-# prepare the python config from the given templates
-cat $CMSSW_BASE/$CONFIG/$VERSION/${PY}.py \
-    | sed -e "s@XX-LFN-XX@$LFN@g" -e "s@XX-GPACK-XX@$GPACK@g" \
-    > $WORKDIR/${PY}.py
+if [ ${PY} == "nano" ]
+then
+  era=`era $TASK`
+  conditions=`conditions $TASK`
+  customise=`customize $VERSION`
+
+  if [ "`echo $TASK | grep AODSIM`" != "" ]
+  then
+
+    echo "\
+    cmsDriver.py step1 --step NANO --nThreads 1 --number=-1 --no_exec --python_filename $WORKDIR/nano.py \
+      --filein file:${GPACK}.root \
+      --fileout file:kraken_000.root \
+      --mc --eventcontent NANOAODSIM --datatier NANOAODSIM \
+      --era $era --conditions $conditions --customise=$customise \
+      --customise_commands=\"process.add_(cms.Service('InitRootHandlers', EnableIMT = cms.untracked.bool(False)))\"
+         "
+    cmsDriver.py step1 --step NANO --nThreads 1 --number=-1 --no_exec --python_filename $WORKDIR/nano.py \
+      --filein file:${GPACK}.root \
+      --fileout file:kraken_000.root \
+      --mc --eventcontent NANOAODSIM --datatier NANOAODSIM \
+      --era $era --conditions $conditions --customise=$customise \
+      --customise_commands="process.add_(cms.Service('InitRootHandlers', EnableIMT = cms.untracked.bool(False)))"
+  else
+    echo "\
+    cmsDriver.py step1 --step NANO --nThreads 1 --number=-1 --no_exec --python_filename $WORKDIR/nano.py \
+      --filein file:${GPACK}.root \
+      --fileout file:kraken_000.root \
+      --data --eventcontent NANOAOD --datatier NANOAOD \
+      --era $era --conditions $conditions --customise=$customise \
+      --customise_commands=\"process.add_(cms.Service('InitRootHandlers', EnableIMT = cms.untracked.bool(False)))\" \
+         "
+    cmsDriver.py step1 --step NANO --nThreads 1 --number=-1 --no_exec --python_filename $WORKDIR/nano.py \
+      --filein file:${GPACK}.root \
+      --fileout file:kraken_000.root \
+      --data --eventcontent NANOAOD --datatier NANOAOD \
+      --era $era --conditions $conditions --customise=$customise \
+      --customise_commands="process.add_(cms.Service('InitRootHandlers', EnableIMT = cms.untracked.bool(False)))"
+  fi
+else
+  # prepare the python config from the given templates
+  cat $CMSSW_BASE/$CONFIG/$VERSION/${PY}.py \
+      | sed -e "s@XX-LFN-XX@$LFN@g" -e "s@XX-GPACK-XX@$GPACK@g" \
+      > $WORKDIR/${PY}.py
+fi
 
 # create the local links
 cd $WORKDIR
@@ -453,7 +593,8 @@ do
   # always first show the proxy
   voms-proxy-info -all
   # now do the copy
-  gfal-copy file:///$pwd/${file} gsiftp://$REMOTE_SERVER:2811/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}
+  gfal-copy file:///$pwd/${file} \
+            gsiftp://$REMOTE_SERVER:2811/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}
   rcCmsCp=$?
   echo " Copying: $file"
   echo " Copy RC: $rcCmsCp"
@@ -464,8 +605,9 @@ do
     gfal-rm gsiftp://$REMOTE_SERVER:2811/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}
     rcSrmRm=$?
     echo " Remove RC: $rcSrmRm"
-    echo " Try again: cmscp.py .... srm://$REMOTE_SERVER:8443/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}"
-    gfal-copy file:///$pwd/${file} gsiftp://$REMOTE_SERVER:2811/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}
+    echo " Try again: gfal-copy gsiftp://$REMOTE_SERVER:2881/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}"
+    gfal-copy file:///$pwd/${file} \
+              gsiftp://$REMOTE_SERVER:2811/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}
     rcCmsCp=$?
     echo " ReCopying: $file"
     echo " ReCopy RC: $rcCmsCp"
