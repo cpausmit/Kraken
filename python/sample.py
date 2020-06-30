@@ -47,7 +47,9 @@ class Sample:
         # fill contents
         self.loadAllLfns(self.makeLfnFile())
         self.loadAllJobs(self.makeJobFile())
-        self.loadSites(self.makeSiteFile())
+
+        #self.loadSites(self.makeSiteFile())
+        self.Sites = []
 
     #-----------------------------------------------------------------------------------------------
     # generate the lfn file and return it's location

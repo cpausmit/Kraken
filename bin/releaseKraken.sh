@@ -5,8 +5,6 @@
 #
 #===================================================================================================
 
-JOBREPORT_SERVER=t3serv004.mit.edu
-
 #----------------------------------------------------------------------------------------------------
 #  U S E F U L   F U N C T I O N S
 #----------------------------------------------------------------------------------------------------
@@ -19,8 +17,23 @@ function customise {
   if [ "$version" == "501" ]
   then
     echo "PhysicsTools/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu"
-  else
+  elif [ "$version" == "502" ]
+  then
     echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu"
+  elif [ "$version" == "503" ]
+  then
+    echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu"
+  elif [ "$version" == "504" ]
+  then
+    echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu"
+  elif [ "$version" == "505" ]
+  then
+    echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu"
+  elif [ "$version" == "506" ]
+  then
+    echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu"
+  else
+    echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeV0ForMuonFake"
   fi
 }
 
@@ -34,12 +47,20 @@ function era {
   ## +RunIISpring16
   ## +RunIISummer17
   
-  if   [ "`echo $dataset | grep +Run2016`" != "" ]
+  if   [ "`echo $dataset | grep +RunIISummer19UL17`" != "" ]
+  then
+    echo Run2_2017,run2_nanoAOD_106Xv1
+  elif [ "`echo $dataset | grep +Run2016`" != "" ]
   then
     echo Run2_2016,run2_nanoAOD_94X2016
   elif [ "`echo $dataset | grep +Run2017`" != "" ]
   then
-    echo Run2_2017,run2_nanoAOD_94XMiniAODv2
+    if [ "`echo $dataset | grep 09Aug2019_UL2017`" != "" ]
+    then
+      echo Run2_2017,run2_nanoAOD_106Xv1
+    else
+      echo Run2_2017,run2_nanoAOD_94XMiniAODv2
+    fi
   elif [ "`echo $dataset | grep +Run2018`" != "" ]
   then
     echo Run2_2018,run2_nanoAOD_102Xv1
@@ -69,18 +90,26 @@ function conditions {
   dataset="$1"
   #echo CONDITIONS : $dataset
 
-  if   [ "`echo $dataset | grep +Run2016`" != "" ]
+  if   [ "`echo $dataset | grep +RunIISummer19UL17`" != "" ]
   then
-    echo 102X_dataRun2_v11
+    echo 106X_dataRun2_v20
+  elif [ "`echo $dataset | grep +Run2016`" != "" ]
+  then
+    echo 102X_dataRun2_v12
   elif [ "`echo $dataset | grep +Run2017`" != "" ]
   then
-    echo 102X_dataRun2_v11
+    if [ "`echo $dataset | grep 09Aug2019_UL2017`" != "" ]
+    then
+      echo 106X_dataRun2_v20
+    else
+      echo 102X_dataRun2_v12
+    fi
   elif [ "`echo $dataset | grep +Run2018[A-C]`" != "" ]
   then
-    echo 102X_dataRun2_v11
+    echo 102X_dataRun2_v12
   elif [ "`echo $dataset | grep +Run2018D`" != "" ]
   then
-    echo 102X_dataRun2_Prompt_v14
+    echo 102X_dataRun2_Prompt_v15
   elif [ "`echo $dataset | grep +RunIISummer16`" != "" ]
   then
     if [ "`echo $dataset | grep MiniAODv2`" != "" ]
@@ -94,42 +123,11 @@ function conditions {
     echo 102X_mc2017_realistic_v7
   elif [ "`echo $dataset | grep +RunIIAutumn18`" != "" ]
   then
-    echo 102X_upgrade2018_realistic_v19
+    echo 102X_upgrade2018_realistic_v20
   else
     echo UNKNOWN
   fi
 }
-
-function report_start {
-  # provide a small frame for each command, also allows further steering
-
-  # read command line parameters
-  host="$1"
-  book="$2"
-  job_id="$3"
-  args_hash="$4"
-  now=`date +%s`
-  echo " Report job as: $*"
-  curl --header "Content-Type: application/json" \
-       --request POST \
-       --data "{\"starttime\": \"$now\", \"host\": \"$host\", \"task\": \"Kraken:$book\", \"job_id\": \"$job_id\", \"args\": [ \"$args_hash\" ] }" \
-       http://$JOBREPORT_SERVER:5000/condor/start
-}  
-
-function report_done {
-  # provide a small frame for each command, also allows further steering
-  # read command line parameters
-  host="$1"
-  book="$2"
-  job_id="$3"
-  args_hash="$4"
-  now=`date +%s`
-  echo " Report job as: $*"
-  curl --header "Content-Type: application/json" \
-       --request POST \
-       --data "{\"timestamp\": \"$now\", \"host\": \"$host\", \"task\": \"Kraken:$book\", \"job_id\": \"$job_id\", \"args\": [ \"$args_hash\" ] }" \
-       http://$JOBREPORT_SERVER:5000/condor/done
-}  
 
 function exeCmd {
   # provide a small frame for each command, also allows further steering
@@ -234,10 +232,11 @@ function downloadFiles {
     inputLfns=`grep $gpack $BASEDIR/$task.lfns | cut -d' ' -f2`
   else
     echo ' ERROR -- unexpected GPACK: $gpack'
-    report_done $host $book $GPACK $args_hash
     exit 253
   fi
   echo " Input LFNs: $inputLfns"
+  echo " "
+  echo " VOMS-PROXY-INFO "
   voms-proxy-info -all
   cd $WORKDIR; pwd; ls -lhrt
 
@@ -251,7 +250,6 @@ function downloadFiles {
     if ! [ -e "./$fileId.root" ]
     then
       echo " EXIT(255) -- download failed."
-      report_done $host $book $GPACK $args_hash
       exit 255
     fi
 
@@ -338,6 +336,7 @@ function iniState {
   echo " start time    : "`date`
   echo " user executing: "`id`
   echo " running on    : "`hostname`
+  echo " uname -a      : "`uname -a`
   echo " executing in  : "`pwd`
   echo " submitted from: $HOSTNAME"
   echo ""
@@ -350,10 +349,24 @@ function initialState {
   echo ""
   echo " HOME:" ~/
   echo " "
-  env
-  ls -lhrt
+  env | sort -u
+  ls -lhrta
   showDiskSpace
-}  
+  haveCvmfs
+}
+
+function haveCvmfs {
+  # check whether we have CVMFS available on the node
+
+  echo ""
+  echo " Checking CVMFS "
+  echo " ============== "
+  if [ -f "/cvmfs/cms.cern.ch/cmsset_default.sh" ]
+  then
+    echo " -> cvmfs found: /cvmfs/cms.cern.ch/cmsset_default.sh"
+    source /cvmfs/cms.cern.ch/cmsset_default.sh
+  fi
+}
 
 function setupCmssw {
   # setup a specific CMSSW release and add the local python path
@@ -363,12 +376,12 @@ function setupCmssw {
   echo ""
   echo "============================================================"
   echo " Initialize CMSSW $THIS_CMSSW_VERSION"
-  source /cvmfs/cms.cern.ch/cmsset_default.sh
   if     [ "`echo $THIS_CMSSW_VERSION | grep ^8_`" != "" ] \
      ||  [ "`echo $THIS_CMSSW_VERSION | grep ^9_`" != "" ]
   then
     export SCRAM_ARCH=slc6_amd64_gcc530
   fi
+  echo " -- SCRAM_ARCH: $SCRAM_ARCH"
   scram project CMSSW CMSSW_$THIS_CMSSW_VERSION
   pwd
   ls -lhrt
@@ -380,6 +393,18 @@ function setupCmssw {
     cd ..
     tar fzx $BASEDIR/kraken_$THIS_CMSSW_VERSION.tgz
   fi
+
+  if [ -d "$WORKDIR/CMSSW_$THIS_CMSSW_VERSION/src/Bmm5" ]
+  then
+    echo " -- SCRAM: setup - rabit, xgboost"
+    ## is needed for SL6 ?!
+    ##export LD_PRELOAD=$CMSSW_BASE/external/$SCRAM_ARCH/lib/libxgboost.so
+    cd $WORKDIR/CMSSW_$THIS_CMSSW_VERSION/src
+    scram setup Bmm5/NanoAOD/external-tools/rabit.xml
+    scram setup Bmm5/NanoAOD/external-tools/xgboost.xml
+    cd -
+  fi
+
   cd $PWD
   echo "============================================================"
   configureSite
@@ -415,6 +440,20 @@ function testBatch {
 #----------------------------------------------------------------------------------------------------
 #  M A I N   S T A R T S   H E R E
 #----------------------------------------------------------------------------------------------------
+echo ""
+echo " ============================================================================ "
+echo " Job ads in $PWD/.job.ad"
+cat $PWD/.job.ad | sort -u
+echo ""
+echo " ============================================================================ "
+echo " Machine ads in $PWD/.machine.ad"
+cat $PWD/.machine.ad | sort -u
+echo ""
+echo " ============================================================================ "
+echo ""
+echo " ============================================================================ "
+echo " Which singularity?"
+which singularity
 
 # make sure we are locked and loaded
 export BASEDIR=`pwd`
@@ -435,7 +474,6 @@ TMP_PREFIX="$8" # tmp_0_170302_132124
 host=`hostname`
 book=$CONFIG/$VERSION
 args_hash=`echo $LFN | md5sum |cut -d' ' -f1`
-report_start $host $book $GPACK $args_hash
 
 # load all parameters relevant to this task
 echo " Initialize package"
@@ -443,7 +481,6 @@ test=`ls kraken_*tgz 2> /dev/null`
 if [ "$test" == "" ]
 then
   echo ' ERROR - Kraken tar ball is missing. No point to continue.'
-  report_done $host $book $GPACK $args_hash
   exit 1
 fi
 
@@ -474,7 +511,7 @@ if [ ${PY} == "nano" ]
 then
   era=`era $TASK`
   conditions=`conditions $TASK`
-  customise=`customize $VERSION`
+  customise=`customise $VERSION`
 
   if [ "`echo $TASK | grep AODSIM`" != "" ]
   then
@@ -540,8 +577,16 @@ ls -lhrt
 
 echo " Exe: python ${PY}.py" 
 python ${PY}.py
-echo " Exe: $EXE ${PY}.py inputFiles="`cat ./inputFiles | tr "\n" "," | sed 's/,$//'`" outputFile=kraken_000.root" 
-$EXE ${PY}.py inputFiles=`cat ./inputFiles | tr "\n" "," | sed 's/,$//'` outputFile=kraken_000.root
+if [ "$CONFIG" == "testit" ] && [ "$PY" == "test" ]
+then
+  # very special case to allow more scalable tests
+  echo " ---- SUPER QUICK TEST ----"
+  echo " ---- SUPER QUICK TEST ----" > kraken_000.root
+else
+  echo " Exe: \
+  $EXE ${PY}.py inputFiles="`cat ./inputFiles | tr "\n" "," | sed 's/,$//'`" outputFile=kraken_000.root" 
+  $EXE ${PY}.py inputFiles=`cat ./inputFiles | tr "\n" "," | sed 's/,$//'` outputFile=kraken_000.root
+fi
 
 rc=$?
 
@@ -551,7 +596,6 @@ then
   echo " ERROR -- Return code is not zero: $rc"
   echo "          EXIT, no file copies!!"
   echo ""
-  report_done $host $book $GPACK $args_hash
   exit $rc
 fi
 
@@ -565,7 +609,6 @@ if ! [ -e "${GPACK}_tmp.root" ]
 then
   echo " ERROR -- kraken production failed. No output file: ${GPACK}_tmp.root"
   echo "          EXIT(254) now because there is no KRAKEN file."
-  report_done $host $book $GPACK $args_hash
   exit 254
 fi
 
@@ -586,26 +629,51 @@ REMOTE_USER_DIR="/user/paus/$CONFIG/$VERSION"
 
 sample=`echo $GPACK | sed 's/\(.*\)_nev.*/\1/'`
 
+# unset CMS environment
+eval `scram unsetenv -sh`
+
+# setup gfal tools
+which gfal-copy
+if [ "$?" != "0" ]
+then
+  echo " setting up gfal-copy"
+  source /cvmfs/grid.cern.ch/centos7-ui-test/etc/profile.d/setup-c7-ui-example.sh
+  ls -lhrt /cvmfs/grid.cern.ch/centos7-ui-test/etc/profile.d
+  which gfal-copy
+  #ln -s /cvmfs/singularity.opensciencegrid.org/opensciencegrid/osgvo-el7\:latest/usr/bin $WORKDIR/bin
+  #export PATH="$PATH:$WORKDIR/bin"
+  #echo " env | grep PATH"
+fi
+
 # this is somewhat overkill but works very reliably, I suppose
 pwd=`pwd`
 for file in `echo ${GPACK}*`
 do
-  # always first show the proxy
+  # always first show the proxy and remove the CMSSW environment
   voms-proxy-info -all
+  echo " Which gfal-copy are we using? \
+  which gfal-copy"
+  which gfal-copy
   # now do the copy
-  gfal-copy file:///$pwd/${file} \
-            gsiftp://$REMOTE_SERVER:2811/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}
+  echo "\
+  gfal-copy -p file:///$pwd/${file} \
+          gsiftp://$REMOTE_SERVER:2811/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}"
+  gfal-copy -p file:///$pwd/${file} \
+          gsiftp://$REMOTE_SERVER:2811/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}
   rcCmsCp=$?
   echo " Copying: $file"
   echo " Copy RC: $rcCmsCp"
   if [ "$rcCmsCp" != "0" ]
   then
     # now do the backup copy
-    echo "Remove file remainders: srm-rm  srm://$REMOTE_SERVER:8443/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}"
+    echo "Remove file remainders:\
+    gfal-rm gsiftp://$REMOTE_SERVER:2811/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}"
     gfal-rm gsiftp://$REMOTE_SERVER:2811/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}
     rcSrmRm=$?
     echo " Remove RC: $rcSrmRm"
-    echo " Try again: gfal-copy gsiftp://$REMOTE_SERVER:2881/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}"
+    echo " Try again:\
+    gfal-copy file:///$pwd/${file} \
+              gsiftp://$REMOTE_SERVER:2811/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}"
     gfal-copy file:///$pwd/${file} \
               gsiftp://$REMOTE_SERVER:2811/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}
     rcCmsCp=$?
@@ -618,7 +686,6 @@ done
 executeCmd mv $WORKDIR/*.root $BASEDIR/
 
 # leave the worker super clean
-
 testBatch
 if [ "$?" == "1" ]
 then
@@ -627,12 +694,10 @@ then
 fi
 
 # create the pickup output file for condor
-
 echo " ---- D O N E ----" > $BASEDIR/${GPACK}.empty
 
 pwd
 ls -lhrt
 echo " ---- D O N E ----"
 
-report_done $host $book $GPACK $args_hash
 exit 0

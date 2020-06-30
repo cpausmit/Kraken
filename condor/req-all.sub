@@ -4,9 +4,10 @@ Requirements = Arch == "X86_64"        && \
                TARGET.HasFileTransfer  && \
                (isUndefined(IS_GLIDEIN) || \
                 (OSGVO_OS_STRING == "RHEL 6" && HAS_CVMFS_cms_cern_ch == true ) || \
-                GLIDEIN_REQUIRED_OS == "rhel6" || HAS_SINGULARITY == true || \
-                (Has_CVMFS_cms_cern_ch == true && (BOSCOGroup == "bosco_cms" || BOSCOGroup == "paus")) \
-               ) && \
+                GLIDEIN_REQUIRED_OS == "rhel6" || \
+                HAS_SINGULARITY == true || \
+                (Has_CVMFS_cms_cern_ch == true && (BOSCOGroup == "bosco_cms" || BOSCOGroup == "paus"))
+	       ) && \
                (isUndefined(GLIDEIN_Entry_Name) || \
                 !stringListMember(GLIDEIN_Entry_Name,"CMS_T2_US_Nebraska_Red,CMS_T2_US_Nebraska_Red_op,CMS_T2_US_Nebraska_Red_gw1,CMS_T2_US_Nebraska_Red_gw1_op,CMS_T2_US_Nebraska_Red_gw2,CMS_T2_US_Nebraska_Red_gw2_op,CMS_T3_MX_Cinvestav_proton_work,CMS_T3_US_Omaha_tusker,CMSHTPC_T3_US_Omaha_tusker,Engage_US_MWT2_iut2_condce,Engage_US_MWT2_iut2_condce_mcore,Engage_US_MWT2_osg_condce,Engage_US_MWT2_osg_condce_mcore,Engage_US_MWT2_uct2_condce,Engage_US_MWT2_uct2_condce_mcore,Glow_US_Syracuse_condor,Glow_US_Syracuse_condor-ce01,Gluex_US_NUMEP_grid1,HCC_US_BNL_gk01,HCC_US_BNL_gk02,HCC_US_BU_atlas-net2,HCC_US_BU_atlas-net2_long,HCC_US_SWT2_gk01,IceCube_US_Wisconsin_osg-ce,OSG_US_Clemson-Palmetto_condce,OSG_US_Clemson-Palmetto_condce_mcore,OSG_US_FIU_HPCOSGCE,OSG_US_Hyak_osg,OSG_US_IIT_iitgrid_rhel6,OSG_US_MWT2_mwt2_condce,OSG_US_MWT2_mwt2_condce_mcore,OSG_US_UConn_gluskap,OSG_US_SMU_mfosgce",",") \
                ) && \

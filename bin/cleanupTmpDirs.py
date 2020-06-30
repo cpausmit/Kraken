@@ -33,44 +33,50 @@ def findActiveStubs():
     
     return stubs
 
+def cleanupBook(book,activeStubs):
+
+    # make a list of all tmp directories
+    allTmpDirs = []
+    print ' Find all tmp directories in book: %s.'%(book)
+    
+    cmd = 'list ' + DIR + "/" + book + "/*/ | grep %s"%(PREFIX)
+    if DEBUG>0:
+        print ' CMD: ' + cmd
+    
+    for line in os.popen(cmd).readlines():
+        f = (line[:-1].split("/"))[-2:]
+        stub = f[-1]
+        sample = "/".join(f)
+        if stub in activeStubs:
+            print ' Active stub will not be touched: ' + stub
+        else:
+            allTmpDirs.append(sample)
+            print ' Found directory: ' + sample
+    
+    # say what we found
+    print ' --> number of stubs to delete: %d'%(len(allTmpDirs))
+    
+    for sample in allTmpDirs:
+        cmd = 'removedir ' + DIR + "/" + book + "/" + sample
+        if DEBUG>0:
+            print ' CMD: ' + cmd
+        # make sure it really is just the tmp directory
+        if cmd.find(PREFIX) != -1:
+            os.system(cmd)
+        else:
+            print ' ERROR -- it looks like a wrong directory was up for deletion.'
+            print '       -- directory:  %s  is not deleting a tmp directory.'%(cmd)
+            sys.exit(1)
+    
+
 #---------------------------------------------------------------------------------------------------
 #  M A I N
 #---------------------------------------------------------------------------------------------------
-book = sys.argv[1]
+books = sys.argv[1:]
 activeStubs = findActiveStubs()
 
 # hi, here we are!
 os.system("date")
 
-# make a list of all tmp directories
-allTmpDirs = []
-print ' Find all tmp directories.'
-
-cmd = 'list ' + DIR + "/" + book + "/*/ | grep %s"%(PREFIX)
-if DEBUG>0:
-    print ' CMD: ' + cmd
-
-for line in os.popen(cmd).readlines():
-    f = (line[:-1].split("/"))[-2:]
-    stub = f[-1]
-    sample = "/".join(f)
-    if stub in activeStubs:
-        print ' Active stub will not be touched: ' + stub
-    else:
-        allTmpDirs.append(sample)
-        print ' Found directory: ' + sample
-
-# say what we found
-print ' Number of stubs to delete: %d'%(len(allTmpDirs))
-
-for sample in allTmpDirs:
-    cmd = 'removedir ' + DIR + "/" + book + "/" + sample
-    if DEBUG>0:
-        print ' CMD: ' + cmd
-    # make sure it really is just the tmp directory
-    if cmd.find(PREFIX) != -1:
-        os.system(cmd)
-    else:
-        print ' ERROR -- it looks like a wrong directory was up for deletion.'
-        print '       -- directory:  %s  is not deleting a tmp directory.'%(cmd)
-        sys.exit(1)
+for book in books:
+    cleanupBook(book,activeStubs)

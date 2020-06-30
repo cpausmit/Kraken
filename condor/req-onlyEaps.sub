@@ -1,2 +1,3 @@
-# Run on all avalaible resources excluding some that seem to fail a lot
-Requirements = (BOSCOCluster == "eofe5.mit.edu") && (BOSCOGroup == "paus")
+Requirements = Has_CVMFS_cms_cern_ch == true && \
+               BOSCOCluster == "eofe5.mit.edu" && \
+               ( BOSCOGroup == "paus" || BOSCOGroup == "boj")

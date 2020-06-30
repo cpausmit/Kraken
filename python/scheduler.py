@@ -62,9 +62,10 @@ class Scheduler:
     #-----------------------------------------------------------------------------------------------
     def findNumberOfTotalJobs(self):
 
-        cmd = 'condor_q -all | grep running| cut -d\' \' -f1  2> /dev/null'
+        cmd = 'condor_q -all|grep running|cut -d\' \' -f13|tail -1  2> /dev/null'
         if not self.isLocal():
             cmd = 'ssh -x ' + self.user + '@' + self.host + ' \"' + cmd + '\"'
+            #print "findNumberOfTotalJobs: %s"%(cmd)
 
         nJobs = 1000000
         if DEBUG > 0:
@@ -72,11 +73,14 @@ class Scheduler:
         for line in os.popen(cmd).readlines():  # run command
             nJobs = int(line[:-1])
 
-        cmd = 'condor_q ' + self.user + '| grep running| cut -d\' \' -f1  2> /dev/null'
+        cmd = 'condor_q ' + self.user + '|grep running|grep query|cut -d\' \' -f12 2> /dev/null'
         if not self.isLocal():
             cmd = 'ssh -x ' + self.user + '@' + self.host + ' \"' + cmd + '\"'
+            #print "findNumberOfTotalJobs: %s"%(cmd)
 
         nMyJobs = 1000000
+        if DEBUG > 0:
+            print " CMD " + cmd
         for line in os.popen(cmd).readlines():  # run command
             nMyJobs = int(line[:-1])
 
@@ -88,6 +92,7 @@ class Scheduler:
     def findHome(self,host,user):
 
         cmd = 'ssh -x ' + user + '@' + host + ' pwd'
+        #print "findHome: %s"%(cmd)
         home = ''
         for line in os.popen(cmd).readlines():  # run command
             line = line[:-1]
@@ -101,6 +106,7 @@ class Scheduler:
     def findRemoteUid(self,host,user):
 
         cmd = 'ssh -x ' + user + '@' + host + ' id -u'
+        #print "findRemoteUid: %s"%(cmd)
         ruid = ''
         for line in os.popen(cmd).readlines():  # run command
             line = line[:-1]

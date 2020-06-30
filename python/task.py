@@ -35,6 +35,7 @@ class Task:
 
         # derived
         self.cmsswVersion = self.findCmsswVersion()
+        self.osVersion = self.findOsVersion()
         self.nJobs = 0
         self.submitCmd = 'submit_' +  self.tag + '.cmd'
         self.logs = self.scheduler.base + '/cms/logs/' + self.request.config + '/' \
@@ -133,8 +134,8 @@ class Task:
     # find the present CMSSW version
     #-----------------------------------------------------------------------------------------------
     def findCmsswVersion(self):
-        cmd = "ls -1rt %s/%s/"%(os.getenv('KRAKEN_CMSSW'),self.request.version)
-        print " CMD: " + cmd
+        cmd = "ls -1rt %s/%s/ |grep ^CMSSW"%(os.getenv('KRAKEN_CMSSW'),self.request.version)
+        #print " CMD: " + cmd
         myRex = rex.Rex()
         (rc,out,err) = myRex.executeLocalAction(cmd)
         cmsswVersion = ""
@@ -146,12 +147,29 @@ class Task:
         return (cmsswVersion.replace('CMSSW_',''))
 
     #-----------------------------------------------------------------------------------------------
+    # find the OS version of given CMSSW release
+    #-----------------------------------------------------------------------------------------------
+    def findOsVersion(self):
+        cmd = "ls -1 %s/%s/CMSSW_%s/lib|cut -d_ -f1|tail -1"%\
+            (os.getenv('KRAKEN_CMSSW'),self.request.version,self.cmsswVersion)
+        #print " CMD: " + cmd
+        myRex = rex.Rex()
+        (rc,out,err) = myRex.executeLocalAction(cmd)
+        osVersion = ""
+        osVersion = out[:-1]
+        print " OS: " + osVersion
+    
+        return osVersion
+
+    #-----------------------------------------------------------------------------------------------
     # generate actual tarball, or leave as is if already up to date
     #-----------------------------------------------------------------------------------------------
     def makeTarBall(self):
 
         cmsswBase = "%s/%s/CMSSW_%s"%\
             (os.getenv('KRAKEN_CMSSW'),self.request.version,self.cmsswVersion)
+
+        #osVersion = ""
 
         # check if the tar ball exists locally
         if os.path.exists(cmsswBase + "/kraken_" + self.cmsswVersion + ".tgz"):
@@ -161,7 +179,7 @@ class Task:
             print ' Make kraken tar ball: ' \
                 + cmsswBase + "/kraken_" + self.cmsswVersion + ".tgz"
             cmd = "cd " + cmsswBase \
-                + "; tar fch kraken_" + self.cmsswVersion + ".tar bin/ cfipython/ lib/ src/"
+                + "; tar fch kraken_" + self.cmsswVersion + ".tar --exclude=src/.git bin/ cfipython/ lib/ src/"
             #print ' CMD: ' + cmd
             os.system(cmd)
             cmd = "cd " + cmsswBase \
@@ -212,11 +230,13 @@ class Task:
 
         print ' ==== C o n d o r  T a s k  I n f o r m a t i o n  ===='
         print ' '
-        print ' Tag     : ' + self.tag
-        print ' Base    : ' + self.request.base
-        print ' Config  : ' + self.request.config
-        print ' Version : ' + self.request.version
-        print ' CMSSW py: ' + self.request.py
+        print ' Tag          : ' + self.tag
+        print ' Base         : ' + self.request.base
+        print ' Config       : ' + self.request.config
+        print ' Version      : ' + self.request.version
+        print ' OS Version   : ' + self.osVersion
+        print ' CMSSW Version: ' + self.cmsswVersion
+        print ' CMSSW py     : ' + self.request.py
         print ' '
         self.sample.show()
         print ' '
@@ -230,10 +250,14 @@ class Task:
         # make sure to keep track of the number of jobs created
         self.nJobs = 0
 
+        # select requirement
+        reqFile = os.getenv('KRAKEN_BASE') + '/condor/req-%s.sub '%(self.osVersion)
+        if (os.getenv('KRAKEN_CONDOR_REQ') != ""):
+            reqFile = '%s/condor/%s'%(os.getenv('KRAKEN_BASE'),os.getenv('KRAKEN_CONDOR_REQ'))
+
         # start with the base submit script
-        cmd = 'cat ' + os.getenv('KRAKEN_BASE') + '/condor/req.sub ' \
-            +          os.getenv('KRAKEN_BASE') + '/condor/base.sub > ' \
-            +  self.submitCmd
+        cmd = 'cat %s %s/condor/base.sub > %s; cat %s'%\
+            (reqFile,os.getenv('KRAKEN_BASE'),self.submitCmd,self.submitCmd)
         os.system(cmd)
 
         # attach the additional processing lines defining the specifc JOB productions
