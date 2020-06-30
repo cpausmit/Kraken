@@ -1,0 +1,6 @@
+Requirements = Has_CVMFS_cms_cern_ch == true && \
+               BOSCOCluster == "ce03.cmsaf.mit.edu" && \
+               ( BOSCOGroup == "bosco_cms" || BOSCOGroup == "bosco_cmshi" )
+
+# This is using Centos7
++SingularityImage = "/cvmfs/singularity.opensciencegrid.org/opensciencegrid/osgvo-el7:latest"

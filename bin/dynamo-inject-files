@@ -1,0 +1,244 @@
+#!/usr/bin/env python
+#===================================================================================================
+# This script generates a json file for dynamo injection for a given file (argument) which is
+# assumed to be located on the remote Tier-2 storage. The only argument for the script is the
+# file name.
+#===================================================================================================
+import os,sys,subprocess,time,json,requests
+import MySQLdb
+import rex
+
+import dynamo_inject
+
+DYNAMO_HOST = 't3serv009.mit.edu'
+CERT = '/tmp/x509up_u%d' % os.getuid()
+
+usage = "\n   usage:  dynamo-inject-one-files <file> [ <site>='T2_US_MIT' ]\n"
+
+#===================================================================================================
+#  C L A S S E S
+#===================================================================================================
+class Datasets:
+    "Collection of datasets."
+    def __init__(self):
+        self.datasets = {}
+
+    def add_dataset(self,dataset_name):
+        if dataset_name not in self.datasets:
+            self.datasets[dataset_name] = Dataset(dataset_name)
+        return self.datasets[dataset_name]
+
+    def show(self):
+        for dataset_name in self.datasets:
+            self.datasets[dataset_name].show()
+
+class Dataset:
+    "Minimal dataset description."
+    def __init__(self,name):
+        self.name = name
+        self.blocks = {}
+
+    def add_block(self,block_name):
+        if block_name not in self.blocks:
+            self.blocks[block_name] = Block(block_name)
+        return self.blocks[block_name]
+
+    def add_block_file(self,block_name,file_name,file_size):
+        block = self.add_block(block_name)
+        block.add_file(file_name,file_size)
+
+    def show(self):
+        print " # Dataset: %s"%(self.name)
+        for block_name in self.blocks:
+            self.blocks[block_name].show()
+
+    def json(self,time,site="T2_US_MIT"):
+
+        (config,version,parent_dataset) = self.name.split('/')
+
+        print " Injecting into: %s"%(site)
+
+        # fundamental json with blocks and files to be added
+        json = { 'dataset':
+                     [ { 'name': "%s"%(self.name),
+                         'status': 'production',
+                         'data_type': 'panda',
+                         'software_version': (config, version),
+                         'blocks': [ ]
+                         } ],
+                 'datasetreplica':
+                     [ { 'site': site,
+                         'growing': True,
+                         'group': 'analysis',
+                         'dataset': "%s"%(self.name),
+                         'blockreplicas': [ ]
+                         } ]
+                 }
+
+        # add the block components to the dataset and the datasetreplica
+        for block_name in self.blocks:
+            jb_dataset = { 'name': block_name,
+                           'files': self.blocks[block_name].json(site)
+                           }
+            jb_replica = { 'last_update': time,
+                           'group': 'analysis',
+                           'block': block_name }
+
+            # append the two pieces to the json
+            json['dataset'][0]['blocks'].append(jb_dataset)
+            json['datasetreplica'][0]['blockreplicas'].append(jb_replica)
+
+        return json
+
+    def json_replica(self,time,site="T2_US_MIT"):
+
+        (config,version,parent_dataset) = self.name.split('/')
+
+        print " Injecting into: %s"%(site)
+
+        # fundamental json with blocks and files to be added
+        json = { 'datasetreplica':
+                     [ { 'site': site,
+                         'growing': True,
+                         'group': 'analysis',
+                         'dataset': "%s"%(self.name),
+                         'blockreplicas': [ ]
+                         } ]
+                 }
+
+        # add the block components to the dataset and the datasetreplica
+        for block_name in self.blocks:
+            jb_replica = { 'last_update': time,
+                           'group': 'analysis',
+                           'block': block_name }
+
+            # append the piece to the json
+            json['datasetreplica'][0]['blockreplicas'].append(jb_replica)
+
+        return json
+
+class Block:
+    "Minimal block description."
+    def __init__(self,name):
+        self.name = name
+        self.sizes = {}
+
+    def add_file(self,name,size):
+        self.sizes[name] = size
+
+    def show(self):
+        print " ## Block: %s"%(self.name)
+        for file_name in self.sizes:
+            print " %s -- %d"%(file_name,self.sizes[file_name])
+
+    def json(self,site="T2_US_MIT"):
+        json = []
+        for file_name in self.sizes:
+            json.append({'name': file_name,'size': self.sizes[file_name],'site': site})
+
+        return json
+
+#===================================================================================================
+#  H E L P E R S
+#===================================================================================================
+def getCache(file_sizes,file_blocks):
+    sizes = {}
+    # extract the unique file name
+    try:
+        with open(file_sizes,"r") as fH:
+            data = fH.read()
+        for line in data.split("\n"):
+            f = line.split(" ")
+            if len(f) > 1:
+                size = int(f[0].split(':')[1])
+                name = f[1]
+                sizes[name] = size
+    except:
+        print " WARNING - cache file (%s) not available."%(fileName)
+
+    blocks = {}
+    # extract the unique file name
+    try:
+        with open(file_blocks,"r") as fH:
+            data = fH.read()
+        for line in data.split("\n"):
+            f = line.split(" ")
+            if len(f) > 1:
+                block = f[0]
+                name = f[1]
+                blocks[name] = block
+    except:
+        print " WARNING - cache file (%s) not available."%(fileName)
+    
+    return (sizes,blocks)
+
+def getFiles(fileName):
+    files = []
+    # extract the unique file name
+    try:
+        with open(fileName,"r") as fH:
+            data = fH.read()
+        for line in data.split("\n"):
+            f = line.split(" ")
+            if len(f) > 1:
+                cmd = f[0]
+                name = f[1]
+                files.append(name)
+    except:
+        print " WARNING - file list (%s) not available."%(fileName)
+
+    return files
+
+def getDatasets(files,sizes,blocks):
+    datasets = Datasets()
+    for file_name in files:
+        dataset_name = getDatasetName(file_name)
+        dataset = datasets.add_dataset(dataset_name)
+        # get block and size
+        block_name = blocks["/".join(file_name.split("/")[7:])]
+        file_size = sizes[file_name]
+        dataset.add_block_file(block_name,file_name.replace("/cms/store","/store"),file_size)
+        
+    return datasets
+
+def getDatasetName(fileName):
+    # extract the unique dataset name
+    return "/".join(fileName.split('/')[-4:-1])
+
+#===================================================================================================
+#  M A I N
+#===================================================================================================
+# make sure command line is complete
+if len(sys.argv) < 2:
+    print " ERROR -- " + usage
+    sys.exit(1)
+input = sys.argv[1]
+site = "T2_US_MIT"
+if len(sys.argv) > 2:
+    site = sys.argv[2]
+
+print " Input: %s  Site: %s"%(input,site)
+
+# read cache
+(sizes,blocks) = getCache(".sizes",".blocks")
+print " Cache contains: %d sizes and %d blocks."%(len(sizes),len(blocks))
+
+# read file list
+files = getFiles(input)
+datasets = getDatasets(files,sizes,blocks)
+time = int(time.time())
+
+for dataset_name in datasets.datasets:
+    dataset = datasets.datasets[dataset_name]
+    #print " ---- "
+    #dataset.show()
+
+    print " INFO - injecting: %s"%(dataset.name)
+
+    print dynamo_inject.inject(DYNAMO_HOST,CERT,CERT,json.dumps(dataset.json(time,site)))
+    print dataset.json(time,site)
+
+    #print dynamo_inject.inject(DYNAMO_HOST,CERT,CERT,json.dumps(dataset.json_replica(time,site)))
+    #print dataset.json_replica(time,site)
+
+    sys.exit(0)
