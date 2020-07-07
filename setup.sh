@@ -29,6 +29,7 @@ export KRAKEN_CATALOG_INPUT=/home/cmsprod/catalog/t2mit
 export KRAKEN_CATALOG_OUTPUT=/home/cmsprod/catalog/t2mit
 export KRAKEN_TMP_PREFIX='tmp_0_'
 export KRAKEN_CONDOR_REQ=""             # overwrite only to fix the requirement (not recommended)
+export KRAKEN_ERROR_DB=$KRAKEN_BASE/config/heldErrors.db
 
 export PATH=${PATH}:${KRAKEN_BASE}/bin
 export PYTHONPATH=${PYTHONPATH}:${KRAKEN_BASE}/python

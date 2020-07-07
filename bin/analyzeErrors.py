@@ -89,7 +89,7 @@ def findHeldJobStubs(config,version,dataset,debug=0):
 def readPatterns(debug=0):
     # read the patterns to search for in error and output files
 
-    with open("/home/cmsprod/Tools/Kraken/config/heldErrors.db","r") as f:
+    with open(os.getenv('KRAKEN_ERROR_DB'),"r") as f:
         input = f.read()
         data = eval(input)
     
@@ -101,6 +101,18 @@ def readPatterns(debug=0):
     ePs = data['errPatterns']
 
     return (oPs, ePs)
+
+def isValidStub(stub):
+
+    if stub == '':
+        return False
+
+    if not os.path.exists(stub+'.out') or  not os.path.exists(stub+'.err'):
+        print ' Output/Error file not available: ' + stub
+        return False
+
+    return True
+
 
 #---------------------------------------------------------------------------------------------------
 #                                         M A I N
@@ -141,7 +153,7 @@ for opt, arg in opts:
     if opt == "--dataset":
         dataset = arg
     if opt == "--debug":
-        debug = arg
+        debug = int(arg)
     if opt == "--interactive":
         interactive = True
 
@@ -173,23 +185,25 @@ stubs = findHeldJobStubs(config,version,dataset,debug)
 # loop through the job stubs
 for stub in stubs:
 
-    if stub == '':
+    if not isValidStub(stub):
         continue
 
     se  = 'undefined'
     siteName = 'undefined'
-
-    if not os.path.exists(stub+'.out') or  not os.path.exists(stub+'.err'):
-        print ' Output/Error file not available: ' + stub
-        continue
+    hostName = 'undefined'
 
     if debug > 1:
         print " Open: %s"%(stub+'.out')
+
+    # first analyze the output
     with open(stub+'.out',"r") as f:
         for line in f:
             for tag,value in outPatterns.iteritems():
                 if value in line:
                     outCounts[tag] += 1
+                    if tag == 'node':
+                        if line.startswith(value):
+                            hostName = line[:-1].split("=")[1]
                     if tag == 'glideinSe':
                         se = line.replace('\n','')                       
                     if tag == 'glidein':
@@ -208,6 +222,10 @@ for stub in stubs:
                     errTag = tag
                     errCounts[tag] += 1
                     #errValues[tag] += line
+                    if debug>0:
+                        print " ERR(%s) on %s in stub %s"%(errTag,hostName,stub)
+                    if debug>1:
+                        print " ERR %s"%(line[:-1])
 
     if siteName in nErrsSites:
         pass
@@ -255,17 +273,19 @@ if sys.stdin.isatty() and interactive:
 else:
     sys.exit(0)
 
-# go through the error files
+# go through the output and error files
 for stub in stubs:
 
     if stub == '':
         continue
+
     if not os.path.exists(stub+'.out') or  not os.path.exists(stub+'.err'):
         print ' Output/Error file not available: ' + stub
         continue
 
     if debug > 1:
         print " Open: %s"%(stub+'.err')
+
     with open(stub+'.err',"r") as f:
         for line in f:
             print line[:-1]
