@@ -1,0 +1,14 @@
+[Unit]
+Description=Cleanup - uses production database to cleanup all production requests.
+After=syslog.target
+
+[Service]
+ExecStart=/usr/local/Kraken/agents/cleanupd
+PIDFile=/var/run/cleanupd.pid
+Type=simple
+RemainAfterExit=no
+User=cmsprod
+Group=zh
+
+[Install]
+WantedBy=multi-user.target

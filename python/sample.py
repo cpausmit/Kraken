@@ -43,7 +43,8 @@ class Sample:
         self.noCatalogJobs = {}
         self.completedJobs = {}
         self.missingJobs = {}
-
+        self.nFailedJobs = {}
+        
         # fill contents
         self.loadAllLfns(self.makeLfnFile())
         self.loadAllJobs(self.makeJobFile())
@@ -355,6 +356,16 @@ class Sample:
         else:
             # add this job to the mix
             self.completedJobs[file] = self.allJobs[file]
+
+        return
+
+    #-----------------------------------------------------------------------------------------------
+    # create the list with the number of failures of the given job
+    #-----------------------------------------------------------------------------------------------
+    def addNFailedJob(self,file,n):
+
+        # add the number of failures of each failed job
+        self.nFailedJobs["%s.root"%file] = n
 
         return
 

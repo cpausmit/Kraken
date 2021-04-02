@@ -1,0 +1,14 @@
+[Unit]
+Description=Catalog - will catalog the files that have arrived but have not yet been checked.
+After=syslog.target
+
+[Service]
+ExecStart=/usr/local/Kraken/agents/catalogd
+PIDFile=/var/run/catalogd.pid
+Type=simple
+RemainAfterExit=no
+User=cmsprod
+Group=zh
+
+[Install]
+WantedBy=multi-user.target

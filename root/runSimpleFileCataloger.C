@@ -11,14 +11,49 @@ void catalogFile(const char *dir, const char *file);
 void reset();
 
 //--------------------------------------------------------------------------------------------------
-void runSimpleFileCataloger(const char *dir  = "/mnt/hadoop/cms/store/user/paus/filefi/044/GJets_DR-0p4_HT-200To400_TuneCUETP8M1_13TeV-madgraphMLM-pythia8+RunIISpring16DR80-PUSpring16_80X_mcRun2_asymptotic_2016_v3-v1+AODSIM/crab_0_160517-163911",
-			    const char *file = "22E85412-3F12-E611-8BFA-008CFAF0682E_tmp.root")
+void runSimpleFileCataloger(const char *dir  = "/mnt/hadoop/cms/store/user/bmaier/suep/2018/SUEP_mMed-750_mDark-2_temp-2_13TeV_darkPhoHadDecay-pythia8_TuneCP5/MINIAODSIM",
+			    const char *file = "")
 {
   // -----------------------------------------------------------------------------------------------
-  // This script runs a full cataloging action on the given directory
+  // This script runs a full cataloging action on the given directory/file combination
   // -----------------------------------------------------------------------------------------------
-  reset();
-  catalogFile(dir,file);
+
+  if (strcmp(file,"") == 0) {
+    string s;
+    ifstream infile;
+    cout << " Open file" << endl;
+    infile.open("tmp_list.txt");
+    while (! infile.eof()) {
+      getline(infile,s);
+      if (s.length() == 0)
+	continue;
+
+      cout << "String found: " << s << endl;
+
+      // find the filename only
+      string tmp = s;
+      //string d = "/mnt/hadoop";
+      string d = "";
+      string delimiter = "/";
+      size_t pos = 0;
+      size_t lpos = 0;
+      string token;
+      while ((pos = tmp.find(delimiter)) != std::string::npos) {
+	if (pos != 0)
+	  d += delimiter + tmp.substr(0, pos);
+	tmp.erase(0,pos+delimiter.length());
+      }
+      cout << "  Dir: " << d << endl;
+      cout << " File: " << tmp << endl;
+      catalogFile(d.data(),tmp.data());
+    }
+    infile.close();
+    reset();
+  }
+  else {
+    reset();
+    catalogFile(dir,file);
+  }
   return;
 }
 
@@ -26,7 +61,10 @@ void runSimpleFileCataloger(const char *dir  = "/mnt/hadoop/cms/store/user/paus/
 void catalogFile(const char *dir, const char *file)
 {
   TString fileName = TString(dir) + slash +  + TString(file);
-  if      (fileName.Index("/mnt/hadoop/cms/store") != -1) {
+  //if      (fileName.Index("SUEP") != -1) {
+  //  printf("Leave name unchanged: %s\n",fileName.Data());
+  //}
+  if (fileName.Index("/mnt/hadoop/cms/store") != -1) {
     fileName.Remove(0,15);
     fileName = hadoopDoor + fileName;
   }

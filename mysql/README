@@ -1,0 +1,15 @@
+## Making sure we got our user properly defined!
+
+DROP USER 'ssluser'@'t3serv019.mit.edu';
+CREATE USER 'ssluser'@'t3serv019.mit.edu' IDENTIFIED BY '<password>'
+GRANT SELECT, INSERT, UPDATE, DELETE ON Bambu.* TO 'ssluser'@'t3serv019.mit.edu' \
+       identified BY PASSWORD '<hex-password>'
+GRANT SELECT, INSERT, UPDATE, DELETE ON Fibs.* TO 'ssluser'@'t3serv019.mit.edu' \
+       identified BY PASSWORD '<hex-password>'
+
+DROP USER 'ssluser'@'t3%.mit.edu';
+CREATE USER 'ssluser'@'t3%.mit.edu' IDENTIFIED BY '<password>'
+GRANT SELECT, INSERT, UPDATE, DELETE ON Fibs.* TO 'ssluser'@'t3%.mit.edu' \
+       identified BY PASSWORD '<hex-password>'
+GRANT SELECT, INSERT, UPDATE, DELETE ON Fibs.* TO 'ssluser'@'t3%.mit.edu' \
+       identified BY PASSWORD '<hex-password>'

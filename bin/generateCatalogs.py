@@ -4,6 +4,7 @@ import MySQLdb
 import fileIds
 
 DEBUG = int(os.environ.get('T2TOOLS_DEBUG',0))
+#DEBUG = 2
 
 DATA = os.environ.get('KRAKEN_SE_BASE','/cms/store/user/paus')
 CATALOG = os.environ.get('KRAKEN_CATALOG_OUTPUT','/home/cmsprod/catalog/t2mit')
@@ -51,10 +52,9 @@ def getFiles(book,dataset):
 
     # found the request Id
     catalogedIds = fileIds.fileIds()
-    for row in results:
+    for i,row in enumerate(results):
         fileId = row[0]
         nEvents = int(row[1])
-
         catalogedId = fileIds.fileId(fileId,nEvents)
         catalogedIds.addFileId(catalogedId)
 
@@ -67,10 +67,10 @@ def writeRawFile(rawFile,book,dataset):
 
     try:
         if DEBUG>0:
-            print ' Open Raw'
+            print(' Open Raw')
         with open(rawFile,'w') as fHandle:
             if DEBUG>0:
-                print ' Get files'
+                print(' Get files')
             catalogedIds = getFiles(book,dataset)
     
             for id in sorted(catalogedIds.getIds()):

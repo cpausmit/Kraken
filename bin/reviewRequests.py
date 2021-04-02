@@ -152,7 +152,7 @@ def setupScheduler(local,nJobsMax):
 
     scheduler = None
     if local:
-        scheduler = Scheduler('t3serv015.mit.edu',os.getenv('USER','paus'),nJobsMax)
+        scheduler = Scheduler('t3home000.mit.edu',os.getenv('USER','cmsprod'),'',nJobsMax)
     else:
         scheduler = Scheduler('submit.mit.edu',
                               os.getenv('KRAKEN_REMOTE_USER','paus'),
@@ -303,6 +303,8 @@ for opt, arg in opts:
         cleanup = True
     if opt == "--submit":
         submit = True
+    if opt == "--local":
+        local = True
     if opt == "--useExistingLfns":
         useExistingLfns = True
     if opt == "--useExistingJobs":

@@ -205,10 +205,10 @@ def removeFiles(fileList,process,setup,tier,datasetId,requestId,config,version):
         except:
             print " Error (%s): unable to delete data."%(sql)
 
-        # delete meta data from Dynamo
-        cmd = 'dynamo-delete-one-file %s'%(fullFile)
-        print ' logs: %s'%(cmd)
-        os.system(cmd)
+        ## delete meta data from Dynamo
+        #cmd = 'dynamo-delete-one-file %s'%(fullFile)
+        #print ' logs: %s'%(cmd)
+        #os.system(cmd)
 
 
 def removeDataset(process,setup,tier,datasetId,requestId,config,version):
@@ -247,10 +247,10 @@ def removeDataset(process,setup,tier,datasetId,requestId,config,version):
     print ' logs: %s'%(cmd)
     os.system(cmd)
 
-    # delete meta data from Dynamo
-    cmd = 'dynamo-delete-dataset %s/%s/%s'%(config,version,dataset)
-    print ' logs: %s'%(cmd)
-    os.system(cmd)
+    ## delete meta data from Dynamo
+    #cmd = 'dynamo-delete-dataset %s/%s/%s'%(config,version,dataset)
+    #print ' logs: %s'%(cmd)
+    #os.system(cmd)
 
 def testLocalSetup(dataset,config,version,dbs,py,delete,debug=0):
     # test all relevant components and exit is something is off

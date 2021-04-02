@@ -38,10 +38,12 @@ class Task:
         self.osVersion = self.findOsVersion()
         self.nJobs = 0
         self.submitCmd = 'submit_' +  self.tag + '.cmd'
-        self.logs = self.scheduler.base + '/cms/logs/' + self.request.config + '/' \
-            + self.request.version + '/' + self.sample.dataset
-        self.outputData = self.scheduler.base + '/cms/data/' + self.request.config + '/' \
-            + self.request.version + '/' + self.sample.dataset
+        self.logs = "%s/cms/logs/%s/%s/%s"%(self.scheduler.base, \
+                                            self.request.config,self.request.version, \
+                                            self.sample.dataset)
+        self.outputData = "%s/cms/data/%s/%s/%s"%(self.scheduler.base, \
+                                            self.request.config,self.request.version, \
+                                            self.sample.dataset)
         self.tarBall = self.logs + '/kraken_' + self.cmsswVersion + '.tgz'
         self.executable = self.logs + '/' + os.getenv('KRAKEN_SCRIPT')
         self.lfnFile = self.logs + '/' + self.sample.dataset + '.lfns'
@@ -254,23 +256,31 @@ class Task:
         reqFile = os.getenv('KRAKEN_BASE') + '/condor/req-%s.sub '%(self.osVersion)
         if (os.getenv('KRAKEN_CONDOR_REQ') != ""):
             reqFile = '%s/condor/%s'%(os.getenv('KRAKEN_BASE'),os.getenv('KRAKEN_CONDOR_REQ'))
+            print(" Hardwired condor requirements: %s"%(reqFile))
 
         # start with the base submit script
-        cmd = 'cat %s %s/condor/base.sub > %s; cat %s'%\
-            (reqFile,os.getenv('KRAKEN_BASE'),self.submitCmd,self.submitCmd)
+        cmd = 'cat %s %s/condor/base.sub > %s'%(reqFile,os.getenv('KRAKEN_BASE'),self.submitCmd)
         os.system(cmd)
 
         # attach the additional processing lines defining the specifc JOB productions
         with open(self.submitCmd,'a') as fileH:
-            fileH.write("Environment = \"HOSTNAME=" + os.getenv('HOSTNAME') + \
-                            "; KRAKEN_EXE=" + os.getenv('KRAKEN_EXE') + "\"" + '\n')
+            #fileH.write("Environment = \"HOSTNAME=" + os.getenv('HOSTNAME') + \
+            #                "; KRAKEN_EXE=" + os.getenv('KRAKEN_EXE') + "\"" + '\n')
+            # hardwired the hostname NOT GOOD NEEDS FIX
+            fileH.write("Environment = \"HOSTNAME=t3serv019.mit.edu; KRAKEN_EXE=" + os.getenv('KRAKEN_EXE') + "\"" + '\n')
             fileH.write("Initialdir = " + self.outputData + '\n')
             fileH.write("Executable = " + self.executable + '\n')
             fileH.write("Log = " + self.logs + '/' + self.sample.dataset + '.log' + '\n')
             fileH.write("transfer_input_files = " + self.tarBall + ',' + self.lfnFile + '\n')
 
             for file,job in self.sample.missingJobs.iteritems():
-                print ' Adding : %s %s'%(file,job)
+                n = 0
+                if file in self.sample.nFailedJobs:
+                    n = self.sample.nFailedJobs[file]
+                    if n > 2:
+                        print ' %s --> n_failed: %d  skip processing'%(file,n)
+                        continue
+                print ' Adding(nF:%d): %s %s'%(n,file,job)
                 self.nJobs += 1
                 self.addJob(fileH,file,job)
 

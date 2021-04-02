@@ -22,27 +22,46 @@ function install {
   chown ${KRAKEN_USER}:${KRAKEN_GROUP} -R $KRAKEN_AGENTS_LOG
 
   # stop potentially existing server process
-  if [ -e "/etc/init.d/${daemon}" ]
+  echo " - stop running daemon"
+  if   [ -e "/etc/init.d/${daemon}" ]
   then
-    echo " - stop running daemon"
-    /etc/init.d/${daemon} status
+    #/etc/init.d/${daemon} status
     /etc/init.d/${daemon} stop
+  elif [ -e "/usr/lib/systemd/system/${daemon}.service" ]
+  then
+    #service ${daemon} status
+    service ${daemon} stop
   fi
   
   # copy daemon
   echo " - install daemon as system daemon"
-  cp $KRAKEN_AGENTS_BASE/sysv/${daemon} /etc/init.d/
+  if [ "0" == "1" ]
+  then
+    cp $KRAKEN_AGENTS_BASE/sysv/${daemon} /etc/init.d/
+  else
+    cp $KRAKEN_AGENTS_BASE/systemd/${daemon} /usr/lib/systemd/system/${daemon}.service
+    systemctl daemon-reload
+  fi
   
   # start new server
   echo " - check and start daemon"
-  /etc/init.d/${daemon} status
-  /etc/init.d/${daemon} start
-  sleep 2
-  /etc/init.d/${daemon} status
+  if [ "0" == "1" ]
+  then
+    #/etc/init.d/${daemon} status
+    /etc/init.d/${daemon} start
+    sleep 2
+    /etc/init.d/${daemon} status
+  else
+    #service ${daemon} status
+    service ${daemon} start
+    sleep 2
+    service ${daemon} status
+  fi
   
   # start on boot
   echo " - auto restart daemon on boot"
-  chkconfig --level 345 ${daemon} on
+  systemctl enable ${daemon}
+  #chkconfig --level 345 ${daemon} on
 }
 
 #---------------------------------------------------------------------------------------------------

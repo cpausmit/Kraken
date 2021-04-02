@@ -1,5 +1,5 @@
 #---------------------------------------------------------------------------------------------------
-# Python Module File to describe task
+# Python Module File to describe the scheduler
 #
 # Author: C.Paus                                                                      (Jun 16, 2016)
 #---------------------------------------------------------------------------------------------------
@@ -97,7 +97,7 @@ class Scheduler:
         for line in os.popen(cmd).readlines():  # run command
             line = line[:-1]
             home = line
-
+        #print("HOME: %s"%home)
         return home
 
     #-----------------------------------------------------------------------------------------------
@@ -173,6 +173,8 @@ class Scheduler:
         self.nMyTotalMax = nMyTotalMax
         self.nTotalMax = nTotalMax
 
+
+        #print(" BASE: <%s>"%base)
         if base == '':
             self.base = self.findHome(host,user)
         else:

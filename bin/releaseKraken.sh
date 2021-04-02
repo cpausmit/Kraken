@@ -32,6 +32,9 @@ function customise {
   elif [ "$version" == "506" ]
   then
     echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu"
+  elif [ "$version" == "A00" ]
+  then
+    echo "PhysicsTools/SUEPNano/nano_suep_cff.SUEPNano_customize"
   else
     echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeV0ForMuonFake"
   fi
@@ -76,6 +79,9 @@ function era {
   then
     echo Run2_2017,run2_nanoAOD_94XMiniAODv2
   elif [ "`echo $dataset | grep +RunIIAutumn18`" != "" ]
+  then
+    echo Run2_2018,run2_nanoAOD_102Xv1
+  elif [ "`echo $dataset | grep SUEP`" != "" ]
   then
     echo Run2_2018,run2_nanoAOD_102Xv1
   else
@@ -124,6 +130,9 @@ function conditions {
   elif [ "`echo $dataset | grep +RunIIAutumn18`" != "" ]
   then
     echo 102X_upgrade2018_realistic_v20
+  elif [ "`echo $dataset | grep SUEP`" != "" ]
+  then
+    echo 102X_upgrade2018_realistic_v20
   else
     echo UNKNOWN
   fi
@@ -152,6 +161,22 @@ function configureSite {
   #
   # -- ATTENTION -- CMSSW has to be setup before calling configure site
   #
+
+  # get the certificates
+  echo "---- Setup certificates ----"
+  #CERTS_DIR="/etc/grid-security/certificates"
+  CERTS_DIR="/cvmfs/cms.cern.ch/grid/etc/grid-security/certificates"
+  if ! [ -d "$CERTS_DIR" ] 
+  then
+    CERTS_DIR="/cvmfs/oasis.opensciencegrid.org/osg-software/osg-wn-client/3.2/current/el6-x86_64/etc/grid-security/certificates"
+    echo "Using OSG location at: $CERTS_DIR"
+  else
+    echo "Using CMS certificates: $CERTS_DIR"
+  fi
+  export X509_CERT_DIR=$CERTS_DIR
+  export X509_USER_PROXY=`echo $BASEDIR/x509up_*`
+  env | grep X509
+
   link="/cvmfs/cms.cern.ch/SITECONF/local"
   if ! [ -e "$link" ]                          # recover other setups
   then
@@ -195,18 +220,6 @@ function configureSite {
   cd -
   # make sure this is the config to be used
   export CMS_PATH=`pwd`
-
-  # get the certificates
-  echo "---- Setup certificates ----"
-  CERTS_DIR="/etc/grid-security/certificates"
-  if ! [ -d "$CERTS_DIR" ] 
-  then
-    CERTS_DIR="/cvmfs/oasis.opensciencegrid.org/osg-software/osg-wn-client/3.2/current/el6-x86_64/etc/grid-security/certificates"
-    echo "Using OSG location at: $CERTS_DIR"
-    export X509_CERT_DIR=$CERTS_DIR
-  else
-    echo "Using local certificates: $CERTS_DIR"
-  fi
 }
 
 function downloadFiles {
@@ -224,15 +237,18 @@ function downloadFiles {
 
   # grep the input files belonging to this job
   echo " INPUTS:  grep $gpack $BASEDIR/$task.lfns | cut -d' ' -f2"
-  if   [ ${#gpack} == "4" ]
-  then
-    inputLfns=`grep ^$gpack $BASEDIR/$task.lfns | cut -d' ' -f2`
-  elif [ ${#gpack} == "36" ]
+  if [ ${#gpack} == "36" ]
   then
     inputLfns=`grep $gpack $BASEDIR/$task.lfns | cut -d' ' -f2`
+  elif [ ${#gpack} == "4" ]
+  then
+    inputLfns=`grep ^$gpack $BASEDIR/$task.lfns | cut -d' ' -f2`
   else
-    echo ' ERROR -- unexpected GPACK: $gpack'
-    exit 253
+    inputLfns=`grep $gpack.root $BASEDIR/$task.lfns | cut -d' ' -f2`
+  #else
+  #  echo " ERROR -- unexpected GPACK: $gpack"
+  #  echo " END -- "`date +%s`
+  #  exit 253
   fi
   echo " Input LFNs: $inputLfns"
   echo " "
@@ -250,10 +266,12 @@ function downloadFiles {
     if ! [ -e "./$fileId.root" ]
     then
       echo " EXIT(255) -- download failed."
+      echo " END -- "`date +%s`
       exit 255
     fi
 
     # add this file to the input list
+    echo " GPACK #gpack: ${#gpack} "
     if   [ ${#gpack} == "4" ]
     then
       echo "$fileId.root" >> ./inputFiles
@@ -275,6 +293,11 @@ function downloadFile {
   # read command line parameters
   gpack="$1"
   lfn="$2"
+
+  if [ -e "$lfn" ]; then
+    echo " File exists locally: $lfn"
+    ln -s $lfn
+  fi
 
   serverList="cms-xrd-global.cern.ch cmsxrootd.fnal.gov xrootd.unl.edu"
   if [ "`echo $lfn | grep store/user/paus`" != "" ]
@@ -299,7 +322,7 @@ function downloadFile {
   
       if [ "$rc" != "0" ]
       then
-        echo " ERROR -- Copy command failed -- RC: $rc at "`date`
+        echo " ERROR -- Copy command failed (potential leftovers deleted) -- RC: $rc at "`date`
         rm -f ./$gpack.root
       fi
   
@@ -349,10 +372,10 @@ function initialState {
   echo ""
   echo " HOME:" ~/
   echo " "
+  cat /proc/cpuinfo | grep -i flags | sort -u
   env | sort -u
   ls -lhrta
   showDiskSpace
-  haveCvmfs
 }
 
 function haveCvmfs {
@@ -361,10 +384,23 @@ function haveCvmfs {
   echo ""
   echo " Checking CVMFS "
   echo " ============== "
-  if [ -f "/cvmfs/cms.cern.ch/cmsset_default.sh" ]
+  source /cvmfs/cms.cern.ch/cmsset_default.sh
+  if [ ".$?" == ".0" ]
   then
     echo " -> cvmfs found: /cvmfs/cms.cern.ch/cmsset_default.sh"
-    source /cvmfs/cms.cern.ch/cmsset_default.sh
+  else
+    echo " ERROR : cvmfs not found: ls -lhrt /"
+    ls -lhrt /
+    ls -lhrt /cvmfs
+    df /cvmfs
+    echo ""
+    echo " CVMFS ads - job"
+    grep -i cvmfs $PWD/.job.ad
+    echo ""
+    echo " CVMFS ads - machine"
+    grep -i cvmfs $PWD/.machine.ad
+    echo ""
+    return 252
   fi
 }
 
@@ -392,6 +428,7 @@ function setupCmssw {
   then
     cd ..
     tar fzx $BASEDIR/kraken_$THIS_CMSSW_VERSION.tgz
+    rm      $BASEDIR/kraken_$THIS_CMSSW_VERSION.tgz  # cleanup is good
   fi
 
   if [ -d "$WORKDIR/CMSSW_$THIS_CMSSW_VERSION/src/Bmm5" ]
@@ -440,6 +477,9 @@ function testBatch {
 #----------------------------------------------------------------------------------------------------
 #  M A I N   S T A R T S   H E R E
 #----------------------------------------------------------------------------------------------------
+echo " START -- "`date +%s`
+echo ""
+echo " Executing: $0 $* "
 echo ""
 echo " ============================================================================ "
 echo " Job ads in $PWD/.job.ad"
@@ -454,6 +494,23 @@ echo ""
 echo " ============================================================================ "
 echo " Which singularity?"
 which singularity
+
+# do we need to move the base directory? [ EAPS ]
+TEST_BASEDIR="/tmp"
+if [ -d "$TEST_BASEDIR" ]
+then
+  DATE=`date +%y%m%d-%H%M%S`
+  # change landing spot
+  mkdir -p $TEST_BASEDIR/${DATE}_${SLURM_NODELIST}_${SLURM_JOB_NAME}
+  cp -r  * $TEST_BASEDIR/${DATE}_${SLURM_NODELIST}_${SLURM_JOB_NAME}
+  cd $TEST_BASEDIR/${DATE}_${SLURM_NODELIST}_${SLURM_JOB_NAME}
+  # show new landing spot
+  echo " -- Changed basedir --"
+  pwd
+  echo " -- Our stuff --"
+  ls -lhrt
+  echo " Back to the normal routine now..."
+fi
 
 # make sure we are locked and loaded
 export BASEDIR=`pwd`
@@ -481,6 +538,7 @@ test=`ls kraken_*tgz 2> /dev/null`
 if [ "$test" == "" ]
 then
   echo ' ERROR - Kraken tar ball is missing. No point to continue.'
+  echo " END -- "`date +%s`
   exit 1
 fi
 
@@ -500,6 +558,16 @@ initialState $*
 ####################################################################################################
 # initialize KRAKEN
 ####################################################################################################
+
+# do we have cvmfs
+haveCvmfs
+if [ "$?" != "0" ]
+then
+  echo " ERROR -- crucial CVMFS is not available"
+  echo "          EXIT(252) now."
+  echo " END -- "`date +%s`
+  exit 252
+fi
 
 # setting up the software
 setupCmssw $cmsswVersion
@@ -583,6 +651,7 @@ then
   echo " ---- SUPER QUICK TEST ----"
   echo " ---- SUPER QUICK TEST ----" > kraken_000.root
 else
+  env; env;
   echo " Exe: \
   $EXE ${PY}.py inputFiles="`cat ./inputFiles | tr "\n" "," | sed 's/,$//'`" outputFile=kraken_000.root" 
   $EXE ${PY}.py inputFiles=`cat ./inputFiles | tr "\n" "," | sed 's/,$//'` outputFile=kraken_000.root
@@ -596,6 +665,7 @@ then
   echo " ERROR -- Return code is not zero: $rc"
   echo "          EXIT, no file copies!!"
   echo ""
+  echo " END -- "`date +%s`
   exit $rc
 fi
 
@@ -609,6 +679,7 @@ if ! [ -e "${GPACK}_tmp.root" ]
 then
   echo " ERROR -- kraken production failed. No output file: ${GPACK}_tmp.root"
   echo "          EXIT(254) now because there is no KRAKEN file."
+  echo " END -- "`date +%s`
   exit 254
 fi
 
@@ -700,4 +771,5 @@ pwd
 ls -lhrt
 echo " ---- D O N E ----"
 
+echo " END -- "`date +%s`
 exit 0

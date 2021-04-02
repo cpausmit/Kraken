@@ -164,27 +164,6 @@ def makeDatabaseEntry(requestId,fileName,nEvents,size):
         else:
             print " WARNING -- entry was already in table." 
 
-def inject(data):
-
-    jsondata = json.dumps(data)
-    session = requests.Session()
-    headers = {'Accept': 'application/json', 'Content-Type': 'application/json'}
-    requests.packages.urllib3.disable_warnings()
-
-    while True:
-        response = session.request(
-            method = 'POST', url = 'https://%s/data/inventory/inject' % DYNAMO_HOST,
-            data = jsondata, headers = headers, verify = False,
-            timeout = 600, cert = (CERT, CERT))
-
-        if response.status_code == 200:
-            return json.loads(response.text)
-        elif response.status_code == 503:
-            print 'Server is unavailable:', response.text
-            time.sleep(2)
-            continue
-        else:
-            raise RuntimeError(response.text)
 
 #===================================================================================================
 #  M A I N
@@ -238,8 +217,8 @@ if nEvents == nEventsLfn and nEvents>0:
     
     # add a new catalog entry
     makeDatabaseEntry(requestId,fileName,nEvents,size)
-    # add the file to dynamo
-    os.system("dynamo-inject-one-file %s"%(finalFile))
+    ## add the file to dynamo
+    #os.system("dynamo-inject-one-file %s"%(finalFile))
 
 else:
     print ' ERROR: event counts disagree or not positive (LFN %d,File %d). EXIT!'%\

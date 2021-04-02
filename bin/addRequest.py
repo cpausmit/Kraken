@@ -138,6 +138,10 @@ f = dataset.split('/')
 process = f[1]
 setup   = f[2]
 tier    = f[3]
+if process == "mc":
+    process = f[2]
+    setup   = f[3]
+    tier    = f[4]
 
 # First get the dataset id
 sql = "select DatasetId from Datasets where " \

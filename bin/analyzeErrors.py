@@ -15,6 +15,14 @@
 #==================================================================================================
 import os,sys,subprocess,getopt
 
+def getValue(line):
+    value = line.replace('\n','')
+    value = (value.split("="))[1]
+    value = value.replace('"','')
+    value = value.strip()
+    return value
+    
+
 def addSite(siteTag,nErrsSites):
     # add a new site to the mix
 
@@ -62,12 +70,13 @@ def printErrorAtSite(nErrsSitesTypes):
 
     return
 
-def findHeldJobStubs(config,version,dataset,debug=0):
+def findAllJobStubs(config,version,dataset,pattern,debug=0):
     # find all job file stubs (without .err/.out extensions) to analyze
-
     
     cmd = "ls " + os.getenv('KRAKEN_AGENTS_WWW') + "/reviewd/%s/%s/%s/*.err" \
         %(config,version,dataset)
+    if pattern != '':
+        cmd = cmd + ' | grep %s'%(pattern)
     if debug > 0:
         print " CMD: " + cmd
     
@@ -82,7 +91,7 @@ def findHeldJobStubs(config,version,dataset,debug=0):
     
     out = out.replace('.err','')
     stubs = (out[:-1]).split("\n")                 # make sure to ignore the last '\n'
-    print ' Number of failed jobs found: %d'%(len(stubs))
+    print ' Number of all jobs found: %d'%(len(stubs))
 
     return stubs
 
@@ -123,8 +132,8 @@ if not os.getenv('KRAKEN_AGENTS_WWW'):
 
 # Define the valid options which can be specified and check out the command line
 usage = "\n analyzeErrors.py --config=<cfg>  --version=<vrs>  --dataset=<dset>"\
-    + "  [ --debug=<int> [ --interactive ] ]\n"
-valid = ['config=','version=','dataset=','debug=','interactive','help']
+    + "  [ --debug=<int> [ --interactive [ --pattern='' ] ] ]\n"
+valid = ['config=','version=','dataset=','pattern=','debug=','interactive','help']
 try:
     opts, args = getopt.getopt(sys.argv[1:], "", valid)
 except getopt.GetoptError, ex:
@@ -140,6 +149,7 @@ interactive = False
 config = 'pandaf'
 version = '001'
 dataset = ''
+pattern=''
 
 # Read new values from the command line
 for opt, arg in opts:
@@ -152,6 +162,8 @@ for opt, arg in opts:
         version = arg
     if opt == "--dataset":
         dataset = arg
+    if opt == "--pattern":
+        pattern = arg
     if opt == "--debug":
         debug = int(arg)
     if opt == "--interactive":
@@ -180,7 +192,7 @@ for tag,value in errPatterns.iteritems():
 nErrsSitesTypes = {}
 
 # get the job file stubs to analyze
-stubs = findHeldJobStubs(config,version,dataset,debug)
+stubs = findAllJobStubs(config,version,dataset,pattern,debug)
 
 # loop through the job stubs
 for stub in stubs:
@@ -188,7 +200,7 @@ for stub in stubs:
     if not isValidStub(stub):
         continue
 
-    se  = 'undefined'
+    se = 'undefined'
     siteName = 'undefined'
     hostName = 'undefined'
 
@@ -203,12 +215,11 @@ for stub in stubs:
                     outCounts[tag] += 1
                     if tag == 'node':
                         if line.startswith(value):
-                            hostName = line[:-1].split("=")[1]
+                            hostName = getValue(line)
                     if tag == 'glideinSe':
-                        se = line.replace('\n','')                       
+                        se = getValue(line)
                     if tag == 'glidein':
-                        siteName = line.replace('\n','')
-                        siteName = (siteName.split("="))[1]
+                        siteName = getValue(line)
  
     errTag = 'ud'
     lError = False
@@ -256,7 +267,8 @@ print '  site tag                  count '
 print ' ================================='
 nTotal = 0
 for tag in sorted(nErrsSites):
-    print '  %-25s: %4d'%(tag,nErrsSites[tag])
+    if nErrsSites[tag]>0:
+        print '  %-25s: %4d'%(tag,nErrsSites[tag])
     nTotal += nErrsSites[tag]
 print ' ---------------------------------'
 print '  %-25s: %4d'%('TOTAL',nTotal)

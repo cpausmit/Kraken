@@ -1,6 +1,7 @@
 # basic general
-Request_Memory          = 1.2 GB
+Request_Memory          = 2.0 GB
 Request_Disk            = 3 GB
+#Request_Cpus            = 8
 Notification            = Error
 Rank                    = Mips
 GetEnv                  = False
@@ -11,7 +12,7 @@ when_to_transfer_output = ON_EXIT
 on_exit_hold            = (ExitBySignal == True) || (ExitCode != 0)
 
 # make sure we get a reasonable slot
-## +RequestMemory = 3000
++RequestMemory = 2000
 ## +MaxWallTimeMins = 480
 
 # CMS requirements

@@ -59,6 +59,11 @@ echo " - $KRAKEN_AGENTS_LOG --> $KRAKEN_AGENTS_WWW/../"
 mkdir -p    $KRAKEN_AGENTS_WWW 
 rsync -Cavz $KRAKEN_AGENTS_LOG $KRAKEN_AGENTS_WWW/../
 
-chown ${KRAKEN_USER}:${KRAKEN_GROUP} -R $KRAKEN_AGENTS_LOG $KRAKEN_AGENTS_WWW
-
+if [ "`whoami`" != "${KRAKEN_USER}" ]
+then
+  whoami
+  echo " chown ${KRAKEN_USER}:${KRAKEN_GROUP} -R $KRAKEN_AGENTS_LOG $KRAKEN_AGENTS_WWW"
+  echo " --- wait this might take a while"
+  chown ${KRAKEN_USER}:${KRAKEN_GROUP} -R $KRAKEN_AGENTS_LOG $KRAKEN_AGENTS_WWW
+fi
 exit 0

@@ -1,0 +1,14 @@
+[Unit]
+Description=Review - uses production database and reviews requests and submits missing.
+After=syslog.target
+
+[Service]
+ExecStart=/usr/local/Kraken/agents/reviewd
+PIDFile=/var/run/reviewd.pid
+Type=simple
+RemainAfterExit=no
+User=cmsprod
+Group=zh
+
+[Install]
+WantedBy=multi-user.target

@@ -35,6 +35,7 @@ class Request:
         self.loadQueuedJobs()
         self.loadHeldJobs()
         self.loadCompletedJobs()
+        self.loadNFailedJobs()
         self.sample.createMissingJobs()
 
     #-----------------------------------------------------------------------------------------------
@@ -79,6 +80,7 @@ class Request:
         if not self.scheduler.isLocal():
             cmd = 'ssh -x ' + self.scheduler.user + '@' + self.scheduler.host \
                 + ' \"' + cmd + '\"'
+            ##print(" CMD: %s"%(cmd))
         for line in os.popen(cmd).readlines():  # run command
             f    = line.split(' ')
             file = f[5] + '.root'
@@ -110,3 +112,25 @@ class Request:
 
         if DEBUG > 0:
             print ' HELD    - Jobs: %6d'%(len(self.sample.heldJobs))
+
+    #-----------------------------------------------------------------------------------------------
+    # load the number of failures each job had so far
+    #-----------------------------------------------------------------------------------------------
+    def loadNFailedJobs(self):
+
+        trunc = "%s/reviewd"%(os.getenv('KRAKEN_AGENTS_WWW'))
+        file_name = "%s/%s/%s/%s/ncounts.err"%(trunc,self.config,self.version,self.sample.dataset)
+
+        # read all data
+        data = ''
+        if os.path.exists(file_name):
+            with open(file_name,"r") as file:
+                data = file.read()
+
+        # make a list from the data
+        for row in data.split("\n"):
+            if len(row) < 2:
+                continue
+            file = row.split(' ')[0]
+            n = int(row.split(' ')[1])
+            self.sample.addNFailedJob(file,n)
