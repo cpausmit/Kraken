@@ -13,7 +13,7 @@ DEBUG = 0
 """
 Class:  Request(scheduler=None,sample=None,config='filefi',version='046',py='data')
 A request will have to specify the configuration, version and python configuration file to be
-applied to the also given a scheduler and a sample.
+applied to the also given scheduler and sample.
 """
 #---------------------------------------------------------------------------------------------------
 class Request:
@@ -38,6 +38,13 @@ class Request:
         self.loadNFailedJobs()
         self.sample.createMissingJobs()
 
+    #-----------------------------------------------------------------------------------------------
+    # load all jobs so far completed relevant to this task
+    #-----------------------------------------------------------------------------------------------
+    def show(self):
+        print(" Missing or failed jobs ")
+        self.sample
+        
     #-----------------------------------------------------------------------------------------------
     # load all jobs so far completed relevant to this task
     #-----------------------------------------------------------------------------------------------

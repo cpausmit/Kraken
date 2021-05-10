@@ -52,14 +52,14 @@ def addLfn(datasetId,blockId,fileName,pathName,nEvents):
 
     sql = "insert into Lfns(DatasetId,BlockId,FileName,PathName,NEvents) " \
         +  " values(%d,%d,'%s','%s',%d)"%(datasetId,blockId,fileName,pathName,nEvents)
-    #print "Adding lfn: " + sql
+    #print("Adding lfn: " + sql)
     try:
         # Execute the SQL command
         cursor.execute(sql)
-        #print " success."
+        #print(" success.")
     except:
-        #print ' ERROR (%s) - could not insert new file.'%(sql)
-        #print " Unexpected error:", sys.exc_info()[0]
+        #print(' ERROR (%s) - could not insert new file.'%(sql))
+        #print(" Unexpected error:", sys.exc_info()[0])
         pass
 
     return
@@ -67,7 +67,7 @@ def addLfn(datasetId,blockId,fileName,pathName,nEvents):
 def clearLocalCache(datasetId):
 
     cmd = 'rm -f %s/????/%s.????'%(WORK_DIR,datasetId)
-    print ' Clearing cache: %s'%(cmd)
+    print(' Clearing cache: %s'%(cmd))
 
     myRex = rex.Rex()
     (rc,out,err) = myRex.executeLocalAction(cmd)
@@ -78,7 +78,7 @@ def convertSizeToGb(sizeTxt):
 
     # first make sure string has proper basic format
     if len(sizeTxt) < 3:
-        print ' ERROR - string for sample size (%s) not compliant. EXIT.'%(sizeTxt)
+        print(' ERROR - string for sample size (%s) not compliant. EXIT.'%(sizeTxt))
         sys.exit(1)
 
     if sizeTxt.isdigit(): # DAS decides to give back size in bytes
@@ -95,7 +95,7 @@ def convertSizeToGb(sizeTxt):
         elif units == 'TB':
             sizeGb = sizeGb*1000.
         else:
-            print ' ERROR - Could not identify size. EXIT!'
+            print(' ERROR - Could not identify size. EXIT!')
             sys.exit(0)
 
     # return the size in GB as a float
@@ -132,7 +132,7 @@ def findDatasetProperties(dataset,dbsInst,debug=0):
                 lfn = fileIds.lfn(fId,id,path)
                 lfns[fId.getName()] = lfn
                 if debug>-1:
-                    print " Adding: %s, %s, %s"%(id,lfn.fId.getName())
+                    print(" Adding: %s, %s, %s"%(id,lfn.fId.getName()))
 
         return (sizeGb,nFiles,lfns)
 
@@ -585,25 +585,25 @@ if debug>0:
 (sizeGb, nFiles, lfns) = findDatasetProperties(dataset,dbsInst,debug)
 
 if sizeGb < 0:
-    print ' Dataset does not exist or is invalid (%s).'%dataset
+    print(' Dataset does not exist or is invalid (%s).'%dataset)
     if len(results) > 0:
-        print ' Dataset was found in Bambu database. (nResults=%d)'%(len(results))
+        print(' Dataset was found in Bambu database. (nResults=%d)'%(len(results)))
         rc = 0
         for row in results:
             datasetId = int(row[0])
             if exe:
                 rc = removeDataset(db,datasetId,debug)
             else:
-                print ' not removing dataset: use --exec option'
+                print(' not removing dataset: use --exec option')
         if rc == 0:
-            print ' Invalid dataset successfully removed from Bambu database (%s).'%(dataset)
+            print(' Invalid dataset successfully removed from Bambu database (%s).'%(dataset))
         else:
-            print ' Error removing invalid dataset from Bambu database (%s).'%(dataset)
+            print(' Error removing invalid dataset from Bambu database (%s).'%(dataset))
     sys.exit(0)
 
 # Dataset is valid now see what remains to be done
 if len(results) == 1:
-    print ' Dataset exists in database. Will try to update properties.\n'
+    print(' Dataset exists in database. Will try to update properties.\n')
     for row in results:
         process = row[1]
         setup = row[2]
@@ -614,36 +614,36 @@ if len(results) == 1:
     # check whether information correct and adjust if needed
     changed = ((dbSizeGb-sizeGb)>0.0001 or dbNFiles != nFiles)
     if changed:
-        print " Update!  Size: %.3f -> %.3f  nFiles: %d -> %d"%(dbSizeGb,sizeGb,dbNFiles,nFiles)
-        print " Update!  Size: %f -> %f  nFiles: %d -> %d"%(dbSizeGb,sizeGb,dbNFiles,nFiles)
+        print(" Update!  Size: %.3f -> %.3f  nFiles: %d -> %d"%(dbSizeGb,sizeGb,dbNFiles,nFiles))
+        print(" Update!  Size: %f -> %f  nFiles: %d -> %d"%(dbSizeGb,sizeGb,dbNFiles,nFiles))
         rc = 0
         if exe:
             rc = updateDataset(db,process,setup,tier,sizeGb,nFiles,lfns,changed,debug)
         else:
-            print ' not updating dataset: use --exec option'
+            print(' not updating dataset: use --exec option')
 
         if rc == 0:
-            print ' Updated dataset successfully in Bambu database (%s).'%(dataset)
+            print(' Updated dataset successfully in Bambu database (%s).'%(dataset))
         else:
-            print ' Error updating dataset in Bambu database (%s).'%(dataset)
+            print(' Error updating dataset in Bambu database (%s).'%(dataset))
     else:
-        print " Database is up to date.\n"
+        print(" Database is up to date.\n")
     sys.exit(0)
 
 elif len(results) > 1:
-    print ' Dataset exists already multiple times in database. ERROR please fix.'
+    print(' Dataset exists already multiple times in database. ERROR please fix.')
     sys.exit(0)
 
 rc = 0 
 if exe:
     rc = insertDataset(db,process,setup,tier,dbsInst,sizeGb,nFiles,lfns,debug)
 else:
-    print ' not inserting dataset: use --exec option'
+    print(' not inserting dataset: use --exec option')
 
 if rc == 0:
-    print ' New dataset successfully inserted into the database (%s).'%(dataset)
+    print(' New dataset successfully inserted into the database (%s).'%(dataset))
 else:
-    print ' Error inserting dataset (%s).'%(dataset)
+    print(' Error inserting dataset (%s).'%(dataset))
 
 # disconnect from server
 db.close()

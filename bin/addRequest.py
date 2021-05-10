@@ -12,20 +12,20 @@ def testLocalSetup(dataset,config,version,dbs,py,delete,debug=0):
 
     # check the input parameters
     if dataset == '':
-        print ' Error - no dataset specified. EXIT!\n'
-        print usage
+        print(' Error - no dataset specified. EXIT!\n')
+        print(usage)
         sys.exit(1)
     if config == '':
-        print ' Error - no config specified. EXIT!\n'
-        print usage
+        print(' Error - no config specified. EXIT!\n')
+        print (usage)
         sys.exit(1)
     if version == '':
-        print ' Error - no version specified. EXIT!\n'
-        print usage
+        print(' Error - no version specified. EXIT!\n')
+        print(usage)
         sys.exit(1)
     if py == '':
-        print ' Error - no py specified. EXIT!\n'
-        print usage
+        print(' Error - no py specified. EXIT!\n')
+        print(usage)
         sys.exit(1)
 
     # check that the dataset exists in bambu database
@@ -33,13 +33,13 @@ def testLocalSetup(dataset,config,version,dbs,py,delete,debug=0):
         #pass
         cmd = 'addDataset.py --exec --dataset=' + dataset + ' --dbs=' + dbs
         if debug>0:
-            print ' CMD: ' + cmd
+            print(' CMD: ' + cmd)
         rc = os.system(cmd)
         if rc != 0:
-            print ' Error - dataset seems not to be valid. EXIT!\n'
+            print(' Error - dataset seems not to be valid. EXIT!\n')
             sys.exit(1)
     else:
-        print ' Info - this is a deletion, so we do not add the sample to the database.'
+        print(' Info - this is a deletion, so we do not add the sample to the database.')
 
 def removeRequest(cursor,id,config,version,py):
     sql  = "delete from Requests where "
@@ -47,23 +47,23 @@ def removeRequest(cursor,id,config,version,py):
         %(id,config,version,py)
     
     if debug>0:
-        print ' delete: ' + sql
+        print(' delete: ' + sql)
     try:
         # Execute the SQL command
         cursor.execute(sql)
     except:
-        print " Error (%s): unable to delete data."%(sql)
+        print(" Error (%s): unable to delete data."%(sql))
 
 def removeDataset(cursor,id):
     sql  = "delete from Datasets where DatasetId=%d;"%(id)
     
     if debug>0:
-        print ' delete: ' + sql
+        print(' delete: ' + sql)
     try:
         # Execute the SQL command
         cursor.execute(sql)
     except:
-        print " Error (%s): unable to delete data."%(sql)
+        print(" Error (%s): unable to delete data."%(sql))
 
 #===================================================================================================
 # Main starts here
@@ -83,8 +83,8 @@ valid = ['dataset=','config=','version=',"dbs=",'py=','delete=','debug=','help']
 try:
     opts, args = getopt.getopt(sys.argv[1:], "", valid)
 except getopt.GetoptError, ex:
-    print usage
-    print str(ex)
+    print(usage)
+    print(str(ex))
     sys.exit(1)
 
 # --------------------------------------------------------------------------------------------------
@@ -104,7 +104,7 @@ isPanda = False
 # Read new values from the command line
 for opt, arg in opts:
     if opt == "--help":
-        print usage
+        print(usage)
         sys.exit(0)
     if opt == "--dataset":
         dataset = arg
@@ -147,25 +147,25 @@ if process == "mc":
 sql = "select DatasetId from Datasets where " \
     + "DatasetProcess='%s' and DatasetSetup='%s' and DatasetTier='%s';"%(process,setup,tier)
 if debug>0:
-    print ' select: ' + sql
+    print(' select: ' + sql)
 try:
     # Execute the SQL command
     cursor.execute(sql)
     results = cursor.fetchall()
 except:
-    print " Error (%s): unable to fetch data."%(sql)
+    print(" Error (%s): unable to fetch data."%(sql))
     sys.exit(0)
 
 if len(results) != 1:
     if delete<1:
-        print ' Requested dataset not well defined, check database (nEntries=%d).'%(len(results))
+        print(' Requested dataset not well defined, check database (nEntries=%d).'%(len(results)))
     else:
-        print ' Dataset not in database, deletion not needed.'
+        print(' Dataset not in database, deletion not needed.')
     sys.exit(0)
 else:
     id = int(results[0][0])
     if debug>0:
-        print ' DatasetId=%d.'%(id)
+        print(' DatasetId=%d.'%(id))
 
 # Check whether this processing request already exists in the database
 
@@ -173,17 +173,17 @@ sql  = "select * from Requests where "
 sql += "DatasetId=%d and RequestConfig='%s' and RequestVersion='%s' and RequestPy='%s' ;"\
        %(id,config,version,py)
 if debug>0:
-    print ' select: ' + sql
+    print(' select: ' + sql)
 try:
     # Execute the SQL command
     cursor.execute(sql)
     results = cursor.fetchall()
 except:
-    print " Error (%s): unable to fetch data."%(sql)
+    print(" Error (%s): unable to fetch data."%(sql))
     sys.exit(0)
 
 if len(results) > 0:
-    print ' Request exists already in database. Do not insert again (nEntries=%d).'%(len(results))
+    print(' Request exists already in database. Do not insert again (nEntries=%d).'%(len(results)))
     if delete>0:
         removeRequest(cursor,id,config,version,py)
     if delete==1:
@@ -205,20 +205,20 @@ if delete<1:
           " values(%d,'%s','%s','%s');"%(id,config,version,py)
     
     if debug>0:
-        print ' insert: ' + sql
+        print(' insert: ' + sql)
     try:
         # Execute the SQL command
         cursor.execute(sql)
     except:
-        print ' ERROR -- insert failed, rolling back.'
+        print(' ERROR -- insert failed, rolling back.')
         # disconnect from server
         db.close()
-        print ' Request was NOT inserted into the database (%s,%s,%s,%s).'\
-            %(dataset,config,version,py)
+        print(' Request was NOT inserted into the database (%s,%s,%s,%s).'\
+            %(dataset,config,version,py))
         sys.exit(1)
         
-    print ' Request successfully inserted into the database (%s,%s,%s,%s).'\
-        %(dataset,config,version,py)
+    print(' Request successfully inserted into the database (%s,%s,%s,%s).'\
+        %(dataset,config,version,py))
 
 # disconnect from server
 db.close()

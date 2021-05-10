@@ -115,6 +115,7 @@ do
       pys=`echo $reqset | cut -d: -f3`
 
       generateCatalogs.py $cfg/$vrs ''                                              >> $logFile
+      failedFile.py --book $cfg/$vers --pattern ''                                  >> $logFile
 
       for py in `echo $pys | tr ',' ' '`
       do

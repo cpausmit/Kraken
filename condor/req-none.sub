@@ -1,0 +1,2 @@
+#Requirements = ()
++SingularityImage = "/cvmfs/singularity.opensciencegrid.org/opensciencegrid/osgvo-el7:latest"

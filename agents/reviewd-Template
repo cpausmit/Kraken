@@ -84,6 +84,10 @@ do
       cfg=`echo $reqset | cut -d: -f1`
       vrs=`echo $reqset | cut -d: -f2`
       pys=`echo $reqset | cut -d: -f3`
+      
+      #echo ""                                                                     >> $logFile
+      #echo " ==== Review failed files at start: $cfg/$vrs"                        >> $logFile
+      #failedFiles.py --book=$cfg/$vrs --pattern=''                                >> $logFile
 
       for py in `echo $pys | tr ',' ' '`
       do

@@ -7,21 +7,21 @@ import os,sys,re,string,socket
 import rex
 from task import Task
 
-DEBUG = 0
+DEBUG = 1
 
 #---------------------------------------------------------------------------------------------------
-"""
-Class:  Cleaner(condorTask)
+"""Class:  Cleaner(condorTask)
 
 A given condor task can be cleaned with this tool.
 
 Method to remove all log files of successfully completed jobs and analysis of all failed jobs and
 remove the remaining condor queue entires of the held jobs.
 
-We are assuming that any failed job is converted into a held job. We collect all held jobs from the
-condor queue and safe those log files into our web repository for browsing. Only the last copy of
-the failed job is kept as repeated failure overwrites the old failed job's log files. The held job
-entries in the condor queue are removed on the failed job is resubmitted.
+We are assuming that most failed jobs are converted into a held jobs but also consider jobs that are
+not otherwise completed to be 'failed' jobs. We collect all failed jobs and safe those log files
+into our web repository for browsing. Only the last copy of the failed job is kept as repeated
+failure overwrites the old failed job's log files. The held job entries in the condor queue are
+removed and all failed job are resubmitted.
 
 It should be noted that if a job succeeds all log files including the ones from earlier failures
 will be removed.
@@ -51,12 +51,12 @@ class Cleaner:
     #-----------------------------------------------------------------------------------------------
     def logCleanup(self):
 
-        print '\n ====  C l e a n e r  ===='
+        print('\n ====  C l e a n e r  ====')
 
         # A - take all completed jobs and remove all related logs
         self.removeCompletedLogs()
 
-        # B - find all logs from the held jobs, save them and generate failure summary
+        # B - find all logs from the held and quietly failed jobs, save and generate summary
         self.saveFailedLogs()
         self.analyzeLogs()
 
@@ -82,14 +82,25 @@ class Cleaner:
 
         local = os.getenv('KRAKEN_AGENTS_LOG') + '/reviewd/%s/%s/%s/README'%(cfg,vers,dset)
 
-        print ' - analyze failed logs'
+        print(' - analyze failed logs')
+        cmd = "failedFiles.py --book=%s/%s --pattern=%s"%(cfg,vers,dset)
+        if DEBUG > 0:
+            print("   CMD: %s"%(cmd))
+        (rc,out,err) = self.rex.executeLocalAction(cmd)
+        #print(out)
+
+        # make sure to reload this
+        self.task.request.loadNFailedJobs()
+
         cmd = "analyzeErrors.py --config=%s --version=%s --dataset=%s >& %s"%(cfg,vers,dset,local)
+        if DEBUG > 0:
+            print("   CMD: %s"%(cmd))
         (rc,out,err) = self.rex.executeLocalAction(cmd)
         
         return
 
     #-----------------------------------------------------------------------------------------------
-    # remove all log files of completed jobs
+    # remove all log files of completed jobs or queued
     #-----------------------------------------------------------------------------------------------
     def removeCompletedLogs(self):
 
@@ -99,7 +110,7 @@ class Cleaner:
 
         local = os.getenv('KRAKEN_AGENTS_LOG') + '/reviewd'
 
-        print ' - remove completed logs'
+        print(' - remove completed logs')
 
         for file,job in self.task.sample.completedJobs.iteritems():
             # we will make a lot of reference to the ID
@@ -115,15 +126,25 @@ class Cleaner:
             # we will make a lot of reference to the ID
             id = file.replace('.root','')
 
-            cmd = 'rm cms/*/%s/%s/%s/*%s* 2> /dev/null\n'%(cfg,vers,dset,id)
+            cmd = 'rm -f cms/*/%s/%s/%s/*%s*\n'%(cfg,vers,dset,id)
             self.logRemoveScript += cmd
 
             cmd = 'rm -f %s/%s/%s/%s/*%s*\n'%(local,cfg,vers,dset,id)
             self.webRemoveScript += cmd
 
-        print ' -- LogRemoval'
+        for file,job in self.task.sample.queuedJobs.iteritems():
+            # we will make a lot of reference to the ID
+            id = file.replace('.root','')
+
+            cmd = 'rm -f cms/*/%s/%s/%s/*%s*\n'%(cfg,vers,dset,id)
+            self.logRemoveScript += cmd
+
+            cmd = 'rm -f %s/%s/%s/%s/*%s*\n'%(local,cfg,vers,dset,id)
+            self.webRemoveScript += cmd
+
+        print(' -- LogRemoval')
         (irc,rc,out,err) = self.rex.executeLongAction(self.logRemoveScript)
-        print ' -- WebRemoval'
+        print(' -- WebRemoval')
         (rc,out,err) = self.rex.executeLocalLongAction(self.webRemoveScript)
 
         return
@@ -133,28 +154,28 @@ class Cleaner:
     #-----------------------------------------------------------------------------------------------
     def removeCache(self):
 
-        print ' - trying to remove task cache'
+        print(' - trying to remove task cache')
 
         if len(self.task.sample.completedJobs) == len(self.task.sample.allJobs):
-            print '   job is complete, remove the potentially remaining cache.'
+            print('   job is complete, remove the potentially remaining cache.')
         else:
             return
 
         cmd = "rm -rf " + self.task.logs
         if DEBUG > 0:
-            print "   CMD: " + cmd
+            print("   CMD: %s"%(cmd))
         
         if self.task.scheduler.isLocal():
             (rc,out,err) = self.rex.executeLocalAction(cmd)
         else:
             (irc,rc,out,err) = self.rex.executeAction(cmd)
             if DEBUG > 0 and (irc != 0 or rc != 0):
-                print ' IRC: %d'%(irc) 
+                print(' IRC: %d'%(irc))
             
         if DEBUG > 0 and (irc != 0 or rc != 0):
-            print ' RC: %d'%(rc) 
-            print ' ERR:\n%s'%(err) 
-            print ' OUT:\n%s'%(out) 
+            print(' RC: %d'%(rc))
+            print(' ERR:\n%s'%(err))
+            print(' OUT:\n%s'%(out))
 
         return
 
@@ -163,10 +184,10 @@ class Cleaner:
     #-----------------------------------------------------------------------------------------------
     def removeDirectoryStubs(self):
 
-        print ' - trying to remove remaining directory stubs in storage'
+        print(' - trying to remove remaining directory stubs in storage')
 
         if len(self.task.sample.completedJobs) == len(self.task.sample.allJobs):
-            print '   job is complete, remove the potentially remaining cache.'
+            print('   job is complete, remove the potentially remaining cache.')
         else:
             return
 
@@ -181,14 +202,14 @@ class Cleaner:
 
         cmd = " removedir " + directory
         if DEBUG > 0:
-            print "   CMD: " + cmd
+            print("   CMD: %s"%(cmd))
 
         (rc,out,err) = self.rex.executeLocalAction(cmd)
 
         if DEBUG > 0 and rc != 0:
-            print ' RC: %d'%(rc) 
-            print ' ERR:\n%s'%(err) 
-            print ' OUT:\n%s'%(out) 
+            print(' RC: %d'%(rc))
+            print(' ERR:\n%s'%(err))
+            print(' OUT:\n%s'%(out))
 
         return
 
@@ -205,20 +226,20 @@ class Cleaner:
         rc = 0
 
         if len(self.task.request.sample.heldJobs) > 0:
-            print ' - remove held jobs (n=%d): %s'%(len(self.task.request.sample.heldJobs),cmd)
+            print(' - remove held jobs (n=%d): %s'%(len(self.task.request.sample.heldJobs),cmd))
             if not self.task.scheduler.isLocal():
                 (irc,rc,out,err) = self.rex.executeAction(cmd)
                 if DEBUG > 0 and (irc != 0 or rc != 0):
-                    print ' IRC: %d'%(irc) 
+                    print(' IRC: %d'%(irc))
             else:
                 (rc,out,err) = self.rex.executeLocalAction(cmd)
                 
             if DEBUG > 0 and (irc != 0 or rc != 0):
-                print ' RC: %d'%(rc) 
-                print ' ERR:\n%s'%(err) 
-                print ' OUT:\n%s'%(out)
+                print(' RC: %d'%(rc))
+                print(' ERR:\n%s'%(err))
+                print(' OUT:\n%s'%(out))
         else:
-            print ' - no held jobs to remove'
+            print(' - no held jobs to remove')
 
         return
 
@@ -227,34 +248,40 @@ class Cleaner:
     #-----------------------------------------------------------------------------------------------
     def saveFailedLogs(self):
 
+        print(' - find failed logs')
+
+        # make sure this is not a new workflow
+        if (self.task.request.sample.isNew):
+            print(" - savedFailedLogs: new workflow needs no logs saving.")
+            return
+
+        # shortcuts to relevant configuration
         cfg = self.task.request.config
         vers = self.task.request.version
         dset = self.task.request.sample.dataset
-
         local = os.getenv('KRAKEN_AGENTS_LOG') + '/reviewd'
-
-        print ' - find failed logs'
 
         # make the directory in any case
         cmd = 'mkdir -p %s/%s/%s/%s/;'%(local,cfg,vers,dset)
         if DEBUG>0:
-            print ' Mkdir: ' + cmd
+            print(' Mkdir: %s'%(cmd))
         (rc,out,err) = self.rex.executeLocalAction(cmd)
 
         # copy the indexer to make it pretty
         cmd = 'cp ' + os.getenv('KRAKEN_AGENTS_BASE') + '/html/index-sample.php ' \
             + '%s/%s/%s/%s/index.php'%(local,cfg,vers,dset)
         if DEBUG>0:
-            print ' index: ' + cmd
+            print(' Index: %s'%(cmd))
         (rc,out,err) = self.rex.executeLocalAction(cmd)
 
         # construct the script to make the tar ball
-        self.logSaveScript += 'cd cms/logs/%s/%s/%s\ntar fzc %s-%s-%s.tgz'\
+        self.logSaveScript += 'cd cms/logs/%s/%s/%s\ntar --ignore-failed-read --create --gzip --file %s-%s-%s.tgz'\
             %(cfg,vers,dset,cfg,vers,dset)
 
         # find out whether we have held jobs == failures
         haveFailures = False
-        for file,job in self.task.sample.heldJobs.iteritems():
+        # OLD -- for file,job in self.task.sample.heldJobs.iteritems():
+        for file,job in self.task.sample.missingJobs.iteritems():
             id = file.replace('.root','')
             cmd = '  \\\n  %s.{out,err}'%(id)
             self.logSaveScript += cmd
@@ -263,36 +290,37 @@ class Cleaner:
         # no need to continue if there are no failures
         if not haveFailures:
             if DEBUG>0:
-                print ' INFO - no failed jobs found.'
+                print(' INFO - no failed jobs found.')
             return
 
         # log saver script
-        print self.logSaveScript
+        #print(self.logSaveScript)
         (irc,rc,out,err) = self.rex.executeLongAction(self.logSaveScript)
+        print(" CMD:%s\n IRC: %s RC: %s\n OUT: \n%s\n ERR: \n%s"%(self.logSaveScript,irc,rc,out,err))
 
         # pull the tar ball over
         cmd = 'scp ' + self.task.scheduler.user + '@' + self.task.scheduler.host \
             + ':cms/logs/%s/%s/%s/%s-%s-%s.tgz'%(cfg,vers,dset,cfg,vers,dset) \
             + ' %s/%s/%s/%s/'%(local,cfg,vers,dset)
         if DEBUG>0:
-            print ' Get tar: ' + cmd
+            print(' Get tar: %s'%(cmd))
         (rc,out,err) = self.rex.executeLocalAction(cmd)
 
         cmd = 'cd %s/%s/%s/%s/\n'%(local,cfg,vers,dset) \
-            + 'tar fzx %s-%s-%s.tgz\n'%(cfg,vers,dset) \
+            + 'tar fvzx %s-%s-%s.tgz\n'%(cfg,vers,dset) \
             + 'chmod a+r *'
         if DEBUG>0:
-            print ' Untar: ' + cmd
+            print(' Untar: %s'%(cmd))
         (rc,out,err) = self.rex.executeLocalAction(cmd)
 
         cmd = 'rm -f %s/%s/%s/%s/%s-%s-%s.tgz'%(local,cfg,vers,dset,cfg,vers,dset) 
         if DEBUG>0:
-            print ' Remove local tar: ' + cmd
+            print(' Remove local tar: %s'%(cmd))
         (rc,out,err) = self.rex.executeLocalAction(cmd)
-
+        
         cmd = 'rm -f cms/logs/%s/%s/%s/%s-%s-%s.tgz'%(cfg,vers,dset,cfg,vers,dset)
         if DEBUG>0:
-            print ' Remove remote tar: ' + cmd
+            print(' Remove remote tar: %s'%(cmd))
         (irc,rc,out,err) = self.rex.executeAction(cmd)
 
         return

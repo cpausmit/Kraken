@@ -13,7 +13,7 @@ DEBUG = 0
 #---------------------------------------------------------------------------------------------------
 """
 Class:  Task(tag,config,version,cmssw,dataset,dbs,jobFile,siteFile)
-Each task in condor can be described through this class
+Each task in condor is described in this class
 """
 #---------------------------------------------------------------------------------------------------
 class Task:
@@ -29,7 +29,7 @@ class Task:
         self.tag = tag
         self.request = request
 
-        # create some shortcuts
+        # create some useful shortcuts
         self.scheduler = self.request.scheduler
         self.sample = self.request.sample
 
@@ -171,8 +171,6 @@ class Task:
         cmsswBase = "%s/%s/CMSSW_%s"%\
             (os.getenv('KRAKEN_CMSSW'),self.request.version,self.cmsswVersion)
 
-        #osVersion = ""
-
         # check if the tar ball exists locally
         if os.path.exists(cmsswBase + "/kraken_" + self.cmsswVersion + ".tgz"):
             print " INFO - tar ball exists: " \
@@ -267,7 +265,7 @@ class Task:
             #fileH.write("Environment = \"HOSTNAME=" + os.getenv('HOSTNAME') + \
             #                "; KRAKEN_EXE=" + os.getenv('KRAKEN_EXE') + "\"" + '\n')
             # hardwired the hostname NOT GOOD NEEDS FIX
-            fileH.write("Environment = \"HOSTNAME=t3serv019.mit.edu; KRAKEN_EXE=" + os.getenv('KRAKEN_EXE') + "\"" + '\n')
+            fileH.write("Environment = \"HOSTNAME=t3serv019.mit.edu; KRAKEN_EXE=%s\"\n"%os.getenv('KRAKEN_EXE'))
             fileH.write("Initialdir = " + self.outputData + '\n')
             fileH.write("Executable = " + self.executable + '\n')
             fileH.write("Log = " + self.logs + '/' + self.sample.dataset + '.log' + '\n')

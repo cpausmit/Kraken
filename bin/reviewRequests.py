@@ -174,6 +174,11 @@ def submitTask(task):
         if not task.createDirectories():
             return
 
+        ## TMP - show us what we know about this task
+        #task.show()
+        #print(" !! EXIT -- TEMPORARY !! ")
+        #sys.exit(0)
+
         # Prepare the tar ball if needed
         task.makeTarBall()
     
@@ -442,8 +447,9 @@ else:
 #==================
 
 # Make sure we have a valid ticket, because now we will need it
-cmd = "voms-proxy-init --valid 168:00 -voms cms | grep 'Your proxy'"
+cmd = "voms-proxy-init --valid 168:00 -voms cms >& /dev/null"
 os.system(cmd)
+os.system("voms-proxy-info -timeleft| awk '{print \" certificate valid for \" $1/3600 \" hrs\"}'")
 
 # Get our scheduler ready to use
 scheduler = setupScheduler(local,nJobsMax)

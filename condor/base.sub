@@ -1,6 +1,7 @@
 # basic general
 Request_Memory          = 2.0 GB
 Request_Disk            = 3 GB
+Request_Cpus            = 2
 #Request_Cpus            = 8
 Notification            = Error
 Rank                    = Mips
@@ -18,7 +19,6 @@ on_exit_hold            = (ExitBySignal == True) || (ExitCode != 0)
 # CMS requirements
 +AcctGroup              = "analysis"
 +AccountingGroup        = "analysis.paus"
-##+REQUIRED_OS            = "rhel6"
 
 # OSG registered project name
 +ProjectName            = "CpDarkMatterSimulation"

@@ -32,11 +32,23 @@ function customise {
   elif [ "$version" == "506" ]
   then
     echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu"
+  elif [ "$version" == "507" ]
+  then
+    echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeV0ForMuonFake"
+  elif [ "$version" == "508" ]
+  then
+    echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeV0ForMuonFake"
+  elif [ "$version" == "509" ]
+  then
+    echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeV0ForMuonFake"
+  elif [ "$version" == "510" ]
+  then
+    echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeV0ForMuonFake"
   elif [ "$version" == "A00" ]
   then
     echo "PhysicsTools/SUEPNano/nano_suep_cff.SUEPNano_customize"
   else
-    echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeV0ForMuonFake"
+    echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeV0ForMuonFake --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBmmMuonId"
   fi
 }
 
@@ -299,7 +311,10 @@ function downloadFile {
     ln -s $lfn
   fi
 
-  serverList="cms-xrd-global.cern.ch cmsxrootd.fnal.gov xrootd.unl.edu"
+  #serverList="cms-xrd-global.cern.ch cmsxrootd.fnal.gov xrootd.unl.edu"
+  serverList="cms-xrd-global.cern.ch"
+
+  # in case this is private MIT Tier-2 data
   if [ "`echo $lfn | grep store/user/paus`" != "" ]
   then
     serverList="xrootd.cmsaf.mit.edu xrootd1.cmsaf.mit.edu xrootd10.cmsaf.mit.edu "
@@ -495,22 +510,22 @@ echo " =========================================================================
 echo " Which singularity?"
 which singularity
 
-# do we need to move the base directory? [ EAPS ]
-TEST_BASEDIR="/tmp"
-if [ -d "$TEST_BASEDIR" ]
-then
-  DATE=`date +%y%m%d-%H%M%S`
-  # change landing spot
-  mkdir -p $TEST_BASEDIR/${DATE}_${SLURM_NODELIST}_${SLURM_JOB_NAME}
-  cp -r  * $TEST_BASEDIR/${DATE}_${SLURM_NODELIST}_${SLURM_JOB_NAME}
-  cd $TEST_BASEDIR/${DATE}_${SLURM_NODELIST}_${SLURM_JOB_NAME}
-  # show new landing spot
-  echo " -- Changed basedir --"
-  pwd
-  echo " -- Our stuff --"
-  ls -lhrt
-  echo " Back to the normal routine now..."
-fi
+## do we need to move the base directory? [ EAPS ]
+#TEST_BASEDIR="/tmp"
+#if [ -d "$TEST_BASEDIR" ]
+#then
+#  DATE=`date +%y%m%d-%H%M%S`
+#  # change landing spot
+#  mkdir -p $TEST_BASEDIR/${DATE}_${SLURM_NODELIST}_${SLURM_JOB_NAME}
+#  cp -r  * $TEST_BASEDIR/${DATE}_${SLURM_NODELIST}_${SLURM_JOB_NAME}
+#  cd $TEST_BASEDIR/${DATE}_${SLURM_NODELIST}_${SLURM_JOB_NAME}
+#  # show new landing spot
+#  echo " -- Changed basedir --"
+#  pwd
+#  echo " -- Our stuff --"
+#  ls -lhrt
+#  echo " Back to the normal routine now..."
+#fi
 
 # make sure we are locked and loaded
 export BASEDIR=`pwd`
@@ -585,14 +600,14 @@ then
   then
 
     echo "\
-    cmsDriver.py step1 --step NANO --nThreads 1 --number=-1 --no_exec --python_filename $WORKDIR/nano.py \
+    cmsDriver.py step1 --step NANO --nThreads 2 --number=-1 --no_exec --python_filename $WORKDIR/nano.py \
       --filein file:${GPACK}.root \
       --fileout file:kraken_000.root \
       --mc --eventcontent NANOAODSIM --datatier NANOAODSIM \
       --era $era --conditions $conditions --customise=$customise \
       --customise_commands=\"process.add_(cms.Service('InitRootHandlers', EnableIMT = cms.untracked.bool(False)))\"
          "
-    cmsDriver.py step1 --step NANO --nThreads 1 --number=-1 --no_exec --python_filename $WORKDIR/nano.py \
+    cmsDriver.py step1 --step NANO --nThreads 2 --number=-1 --no_exec --python_filename $WORKDIR/nano.py \
       --filein file:${GPACK}.root \
       --fileout file:kraken_000.root \
       --mc --eventcontent NANOAODSIM --datatier NANOAODSIM \
@@ -600,14 +615,14 @@ then
       --customise_commands="process.add_(cms.Service('InitRootHandlers', EnableIMT = cms.untracked.bool(False)))"
   else
     echo "\
-    cmsDriver.py step1 --step NANO --nThreads 1 --number=-1 --no_exec --python_filename $WORKDIR/nano.py \
+    cmsDriver.py step1 --step NANO --nThreads 2 --number=-1 --no_exec --python_filename $WORKDIR/nano.py \
       --filein file:${GPACK}.root \
       --fileout file:kraken_000.root \
       --data --eventcontent NANOAOD --datatier NANOAOD \
       --era $era --conditions $conditions --customise=$customise \
       --customise_commands=\"process.add_(cms.Service('InitRootHandlers', EnableIMT = cms.untracked.bool(False)))\" \
          "
-    cmsDriver.py step1 --step NANO --nThreads 1 --number=-1 --no_exec --python_filename $WORKDIR/nano.py \
+    cmsDriver.py step1 --step NANO --nThreads 2 --number=-1 --no_exec --python_filename $WORKDIR/nano.py \
       --filein file:${GPACK}.root \
       --fileout file:kraken_000.root \
       --data --eventcontent NANOAOD --datatier NANOAOD \
@@ -764,7 +779,7 @@ then
   executeCmd rm -rf $WORKDIR *.root
 fi
 
-# create the pickup output file for condor
+# create the pickup output file for condor (this is needed to make sure failing jobs go to hold in condor)
 echo " ---- D O N E ----" > $BASEDIR/${GPACK}.empty
 
 pwd

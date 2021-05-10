@@ -33,6 +33,7 @@ class Sample:
         self.useExistingSites = useExistingSites
 
         # define the other contents
+        self.isNew = True
         self.nEvents = 0
         self.nEvtTotal = 0
         self.nMissingJobs = 0
@@ -386,6 +387,10 @@ class Sample:
                file not in self.queuedJobs.keys():
                 # adding this one to the missing ones
                 self.missingJobs[file] = job
+
+        # is this a brand new request (important for recording failed jobs)?
+        if len(self.completedJobs) != 0 or len(self.noCatalogJobs) != 0 or len(self.queuedJobs) != 0:
+            self.isNew = False
 
         if DEBUG > 0:
             print ' MISSING - Jobs: %6d'%(len(self.missingJobs))

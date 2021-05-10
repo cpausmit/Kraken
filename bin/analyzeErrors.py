@@ -115,9 +115,11 @@ def isValidStub(stub):
 
     if stub == '':
         return False
+    if stub[-7:] == 'ncounts':
+        return False
 
-    if not os.path.exists(stub+'.out') or  not os.path.exists(stub+'.err'):
-        print ' Output/Error file not available: ' + stub
+    if not os.path.exists(stub+'.out') or not os.path.exists(stub+'.err'):
+        print ' Output/Error file not available: ' + stub + ' ' + stub[-7:]
         return False
 
     return True
@@ -279,11 +281,19 @@ print ' Err Matrix'
 printErrorAtSite(nErrsSitesTypes)
 print ''
 
+ncountFile = "%s/reviewd/%s/%s/%s/ncounts.err"%(os.getenv('KRAKEN_AGENTS_WWW'),config,version,dataset)
+cmd = "cat %s"%(ncountFile)
+print("\n ERROR COUNTS PER FILE \n")
+if os.path.exists(ncountFile):
+    os.system(cmd)
+
 if sys.stdin.isatty() and interactive:
     # running interactively
     answer = raw_input('Wanna watch error files? [N/y] ')
 else:
     sys.exit(0)
+
+# ONLY FOR INTERACTIVE RUNNING
 
 # go through the output and error files
 for stub in stubs:
@@ -337,3 +347,4 @@ for line in lines:
     cmd = ' rm ' + stub + ".*; condor_rm " + clusterId + "." + procId
     print cmd
     os.system(cmd)
+    
