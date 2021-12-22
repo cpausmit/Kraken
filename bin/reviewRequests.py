@@ -152,11 +152,11 @@ def setupScheduler(local,nJobsMax):
 
     scheduler = None
     if local:
-        scheduler = Scheduler('t3home000.mit.edu',os.getenv('USER','cmsprod'),'',nJobsMax)
+        scheduler = Scheduler('t3serv019.mit.edu',os.getenv('USER','cmsprod'),'',nJobsMax)
     else:
-        scheduler = Scheduler('submit.mit.edu',
+        scheduler = Scheduler('submit04.mit.edu',
                               os.getenv('KRAKEN_REMOTE_USER','paus'),
-                              '/work/%s'%(os.getenv('KRAKEN_REMOTE_USER','paus')),
+                              '/home/submit/%s'%(os.getenv('KRAKEN_REMOTE_USER','paus')),
                               nJobsMax)
     return scheduler
 
@@ -174,12 +174,7 @@ def submitTask(task):
         if not task.createDirectories():
             return
 
-        ## TMP - show us what we know about this task
-        #task.show()
-        #print(" !! EXIT -- TEMPORARY !! ")
-        #sys.exit(0)
-
-        # Prepare the tar ball if needed
+        # Prepare the tar ball
         task.makeTarBall()
     
         # Make the submit file

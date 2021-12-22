@@ -7,7 +7,7 @@ import os,sys,re,string,socket
 import rex
 from task import Task
 
-DEBUG = 1
+DEBUG = 0
 
 #---------------------------------------------------------------------------------------------------
 """Class:  Cleaner(condorTask)
@@ -275,7 +275,7 @@ class Cleaner:
         (rc,out,err) = self.rex.executeLocalAction(cmd)
 
         # construct the script to make the tar ball
-        self.logSaveScript += 'cd cms/logs/%s/%s/%s\ntar --ignore-failed-read --create --gzip --file %s-%s-%s.tgz'\
+        self.logSaveScript += 'cd cms/logs/%s/%s/%s;\n tar --ignore-failed-read --create --gzip --file %s-%s-%s.tgz'\
             %(cfg,vers,dset,cfg,vers,dset)
 
         # find out whether we have held jobs == failures
@@ -294,9 +294,9 @@ class Cleaner:
             return
 
         # log saver script
-        #print(self.logSaveScript)
         (irc,rc,out,err) = self.rex.executeLongAction(self.logSaveScript)
-        print(" CMD:%s\n IRC: %s RC: %s\n OUT: \n%s\n ERR: \n%s"%(self.logSaveScript,irc,rc,out,err))
+        if DEBUG > 0:
+            print(" CMD:%s\n IRC: %s RC: %s\n OUT: \n%s\n ERR: \n%s"%(self.logSaveScript,irc,rc,out,err))
 
         # pull the tar ball over
         cmd = 'scp ' + self.task.scheduler.user + '@' + self.task.scheduler.host \
@@ -318,7 +318,7 @@ class Cleaner:
             print(' Remove local tar: %s'%(cmd))
         (rc,out,err) = self.rex.executeLocalAction(cmd)
         
-        cmd = 'rm -f cms/logs/%s/%s/%s/%s-%s-%s.tgz'%(cfg,vers,dset,cfg,vers,dset)
+        cmd = 'rm -f %s-%s-%s.tgz'%(cfg,vers,dset)
         if DEBUG>0:
             print(' Remove remote tar: %s'%(cmd))
         (irc,rc,out,err) = self.rex.executeAction(cmd)

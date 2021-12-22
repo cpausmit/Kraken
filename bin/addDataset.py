@@ -20,7 +20,7 @@ def addBlock(datasetId,blockName):
     # add a new block of a given datasetId to the database
 
     sql  = "insert into Blocks(DatasetId,BlockName) values(%d,'%s')"%(datasetId,blockName)
-    print(' ADDING--BLOCK--TO--DB. %s'%(sql))
+    #print(' ADDING--BLOCK--TO--DB. %s'%(sql))
     try:
         # Execute the SQL command
         cursor.execute(sql)
@@ -32,7 +32,7 @@ def addBlock(datasetId,blockName):
         pass
 
     bId = getBlockId(datasetId,blockName)
-    print(" New BlockId: %d"%(bId))
+    #print(" New BlockId: %d"%(bId))
 
     return bId
 
@@ -67,7 +67,7 @@ def addLfn(datasetId,blockId,fileName,pathName,nEvents):
 def clearLocalCache(datasetId):
 
     cmd = 'rm -f %s/????/%s.????'%(WORK_DIR,datasetId)
-    print(' Clearing cache: %s'%(cmd))
+    #print(' Clearing cache: %s'%(cmd))
 
     myRex = rex.Rex()
     (rc,out,err) = myRex.executeLocalAction(cmd)
@@ -183,13 +183,13 @@ def findDatasetProperties(dataset,dbsInst,debug=0):
 
     # dealing with a standard dataset first test
     if not isDatasetValid(dataset,dbsInst,debug):
-        print ' WARNING - dataset was not found to be valid.'
-        print '         - continue and see whether it is in production.'
-        print '         - to get all data this call has to be repeated'
-        print '         - once the dataset is completed.'
+        print(' WARNING - dataset was not found to be valid.')
+        print('         - continue and see whether it is in production.')
+        print('         - to get all data this call has to be repeated')
+        print('         - once the dataset is completed.')
         #return (-1,-1,-1)
     else:
-        print ' INFO - dataset is valid.'
+        print(' INFO - dataset is valid.')
 
     proxy = getProxy()
     url = 'curl -s --cert %s -k -H "Accept: application/json"'%proxy \
@@ -197,13 +197,13 @@ def findDatasetProperties(dataset,dbsInst,debug=0):
         + 'files?dataset=%s&detail=true"'%(dataset)
 
     if debug>1:
-        print ' CURL: ' + url
+        print(' CURL: ' + url)
 
     myRex = rex.Rex()
     (rc,out,err) = myRex.executeLocalAction(url)
 
     if rc != 0:
-        print ' ERROR ocurred in %s'%(url)
+        print(' ERROR ocurred in %s'%(url))
         sys.exit(1)
 
     data = json.loads(out)
@@ -222,7 +222,7 @@ def findDatasetProperties(dataset,dbsInst,debug=0):
         if valid == 1:
             nFiles += 1
             totalSize += size
-            #print '%s: %d %d %f'%(fileName,nFiles,nEvents,totalSize/1000./1000./1000.)
+            #print('%s: %d %d %f'%(fileName,nFiles,nEvents,totalSize/1000./1000./1000.))
             fId = fileIds.fileId(fileName,nEvents)
             lfn = fileIds.lfn(fId,block,path)
             lfns[fId.getName()] = lfn
@@ -230,8 +230,8 @@ def findDatasetProperties(dataset,dbsInst,debug=0):
     try:
         sizeGb = convertSizeToGb(str(totalSize))
     except:
-        print '\n Error - could not convert size and number of files (%s %s / %s).'\
-            %(totalSize,units,nFiles)
+        print('\n Error - could not convert size and number of files (%s %s / %s).'\
+            %(totalSize,units,nFiles))
         sys.exit(1)
 
     if debug>1:
@@ -239,7 +239,7 @@ def findDatasetProperties(dataset,dbsInst,debug=0):
             lfns[lfn].show()
 
 
-    print '\n DBS - %s --> %.1f %s (nFiles: %d)\n'%(dataset,sizeGb,units,nFiles)
+    print('\n DBS - %s --> %.1f %s (nFiles: %d)\n'%(dataset,sizeGb,units,nFiles))
 
     return (sizeGb, nFiles,lfns)
 
@@ -254,7 +254,7 @@ def getBlockIds(datasetId):
         cursor.execute(sql)
         results = cursor.fetchall()
     except:
-        print " ERROR (%s): unable to fetch data."%(sql)
+        print(" ERROR (%s): unable to fetch data."%(sql))
         sys.exit(0)
 
     #print(" BlockId result")
@@ -279,9 +279,9 @@ def getBlockId(datasetId,blockName):
         return blockId
     except:
         pass
-        print " ERROR (%s): blockName is not known."%(blockName)
-        print " -----  ?because an entire new block was added and script does not allow it?"
-        print " -----  number of blockIds: %d"%(len(blockIds))
+        print(" ERROR (%s): blockName is not known."%(blockName))
+        print(" -----  ?because an entire new block was added and script does not allow it?")
+        print(" -----  number of blockIds: %d"%(len(blockIds)))
         sys.exit(0)
 
 
@@ -303,17 +303,17 @@ def getDatasetId(dataset):
         cursor.execute(sql)
         results = cursor.fetchall()
     except:
-        print " Error (%s): unable to fetch data."%(sql)
+        print(" Error (%s): unable to fetch data."%(sql))
         sys.exit(1)
     
     if len(results) != 1:
-        print ' Dataset not in database. EXIT'
+        print(' Dataset not in database. EXIT')
         sys.exit(1)
     else:
         datasetId = int(results[0][0])
  
     if datasetId<=0:
-        print ' ERROR -- invalid dataset id: %d'%(datasetId)
+        print(' ERROR -- invalid dataset id: %d'%(datasetId))
         sys.exit(1)
             
     return datasetId
@@ -333,7 +333,7 @@ def insertDataset(db,process,setup,tier,dbsInst,sizeGb,nFiles,lfns,debug=0):
         + ") values('%s','%s','%s','%s',%f,%d)"%(process,setup,tier,dbsInst,sizeGb,nFiles)
     
     if debug>-1:
-        print ' insert: ' + sql
+        print(' insert: ' + sql)
 
     try:
         # Execute the SQL command
@@ -341,7 +341,7 @@ def insertDataset(db,process,setup,tier,dbsInst,sizeGb,nFiles,lfns,debug=0):
         # Commit your changes in the database
         db.commit()
     except:
-        print ' ERROR -- insert failed, rolling back.'
+        print(' ERROR -- insert failed, rolling back.')
         # Rollback in case there is any error
         db.rollback()
         sys.exit(1)
@@ -419,7 +419,7 @@ def removeDataset(db,datasetId,debug=0):
         # Execute the SQL command
         cursor.execute(sql)
     except:
-        print ' ERROR -- delete in Datasets table failed.'
+        print(' ERROR -- delete in Datasets table failed.')
         sys.exit(1)
 
     return 0

@@ -10,6 +10,7 @@ Requirements = (isUndefined(IS_GLIDEIN) || \
                (isUndefined(GLIDEIN_Site) || !stringListMember(GLIDEIN_Site,"HOSTED_BOSCO_CE",","))
 
 +SingularityImage = "/cvmfs/singularity.opensciencegrid.org/opensciencegrid/osgvo-el7:latest"
+#+SkipAllChecks = True
 
 
 # Has_CVMFS_cms_cern_ch == true && \

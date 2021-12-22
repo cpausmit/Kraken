@@ -14,39 +14,24 @@ function customise {
   # read command line parameters
   version="$1"
 
-  if [ "$version" == "501" ]
+  if   [ "$version" == "501" ]
   then
     echo "PhysicsTools/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu"
-  elif [ "$version" == "502" ]
+  elif [ "$version" == "502" ] || [ "$version" == "503" ] || [ "$version" == "504" ] || [ "$version" == "505" ] || [ "$version" == "506" ] 
   then
     echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu"
-  elif [ "$version" == "503" ]
-  then
-    echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu"
-  elif [ "$version" == "504" ]
-  then
-    echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu"
-  elif [ "$version" == "505" ]
-  then
-    echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu"
-  elif [ "$version" == "506" ]
-  then
-    echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu"
-  elif [ "$version" == "507" ]
+  elif [ "$version" == "507" ] || [ "$version" == "508" ] || [ "$version" == "509" ] || [ "$version" == "510" ]
   then
     echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeV0ForMuonFake"
-  elif [ "$version" == "508" ]
+  elif [ "$version" == "511" ] || [ "$version" == "512" ] || [ "$version" == "513" ] || [ "$version" == "514" ] || [ "$version" == "515" ] || [ "$version" == "516" ] || [ "$version" == "517" ] || [ "$version" == "518" ]
   then
-    echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeV0ForMuonFake"
-  elif [ "$version" == "509" ]
-  then
-    echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeV0ForMuonFake"
-  elif [ "$version" == "510" ]
-  then
-    echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeV0ForMuonFake"
-  elif [ "$version" == "A00" ]
+    echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeV0ForMuonFake --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBmmMuonId"
+  elif [ "$version" == "A00" ] || [ "$version" == "A01" ]
   then
     echo "PhysicsTools/SUEPNano/nano_suep_cff.SUEPNano_customize"
+  elif [ "$version" == "D00" ] || [ "$version" == "D01" ]
+  then
+    echo "Hrare/NanoAOD/nano_cff.nanoAOD_customizeMesons"
   else
     echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeV0ForMuonFake --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBmmMuonId"
   fi
@@ -62,15 +47,25 @@ function era {
   ## +RunIISpring16
   ## +RunIISummer17
   
-  if   [ "`echo $dataset | grep +RunIISummer19UL17`" != "" ]
+  # read command line parameters
+  dataset=`echo $1 |sed -e 's#^/##' -e 's#/#+#'`
+  
+  #echo ERA : $dataset
+  ## +RunIISpring16
+  ## +RunIISummer17
+    
+  ## -DATA- STARTS HERE
+  if   [ "`echo $dataset | grep +Run2016`" != "" ]
   then
-    echo Run2_2017,run2_nanoAOD_106Xv1
-  elif [ "`echo $dataset | grep +Run2016`" != "" ]
-  then
-    echo Run2_2016,run2_nanoAOD_94X2016
+    if [ "`echo $dataset | grep _UL2016`" != "" ]
+    then
+      echo Run2_2016,run2_nanoAOD_106Xv1
+    else
+      echo Run2_2016,run2_nanoAOD_94X2016
+    fi
   elif [ "`echo $dataset | grep +Run2017`" != "" ]
   then
-    if [ "`echo $dataset | grep 09Aug2019_UL2017`" != "" ]
+    if [ "`echo $dataset | grep _UL2017`" != "" ]
     then
       echo Run2_2017,run2_nanoAOD_106Xv1
     else
@@ -78,7 +73,34 @@ function era {
     fi
   elif [ "`echo $dataset | grep +Run2018`" != "" ]
   then
-    echo Run2_2018,run2_nanoAOD_102Xv1
+    if   [ "`echo $dataset | grep UL2017`" != "" ]
+    then
+      echo Run2_2018,run2_nanoAOD_106Xv1
+    elif [ "`echo $dataset | grep UL2018`" != "" ]
+    then
+      echo Run2_2018,run2_nanoAOD_106Xv1
+    fi
+  
+  ## --MC-- STARTS HERE
+  elif [ "`echo $dataset | grep +RunIISummer..UL16MiniAODv2`" != "" ]
+  then
+    echo Run2_2016,run2_nanoAOD_106Xv2
+  elif [ "`echo $dataset | grep +RunIISummer..UL16MiniAOD`" != "" ]
+  then
+    echo Run2_2016,run2_nanoAOD_106Xv1
+  elif [ "`echo $dataset | grep +RunIISummer..UL17MiniAODv2`" != "" ]
+  then
+    echo Run2_2017,run2_nanoAOD_106Xv2
+  elif [ "`echo $dataset | grep +RunIISummer..UL17MiniAOD`" != "" ]
+  then
+    echo Run2_2017,run2_nanoAOD_106Xv1
+  elif [ "`echo $dataset | grep +RunIISummer..UL18MiniAODv2`" != "" ]
+  then
+    echo Run2_2018,run2_nanoAOD_106Xv2
+  elif [ "`echo $dataset | grep +RunIISummer..UL18MiniAOD`" != "" ]
+  then
+    echo Run2_2018,run2_nanoAOD_106Xv1
+  
   elif [ "`echo $dataset | grep +RunIISummer16`" != "" ]
   then
     if [ "`echo $dataset | grep MiniAODv2`" != "" ]
@@ -102,32 +124,56 @@ function era {
 }
 
 function conditions {
-  # provide string for the conditions
-
   # read command line parameters
-  dataset="$1"
+  dataset=`echo $1 |sed -e 's#^/##' -e 's#/#+#'`
+    
   #echo CONDITIONS : $dataset
-
-  if   [ "`echo $dataset | grep +RunIISummer19UL17`" != "" ]
-  then
-    echo 106X_dataRun2_v20
-  elif [ "`echo $dataset | grep +Run2016`" != "" ]
+  
+  ## -DATA- STARTS HERE
+  if   [ "`echo $dataset | grep +Run2016`" != "" ]
   then
     echo 102X_dataRun2_v12
   elif [ "`echo $dataset | grep +Run2017`" != "" ]
   then
-    if [ "`echo $dataset | grep 09Aug2019_UL2017`" != "" ]
+    if   [ "`echo $dataset | grep 09Aug2019_UL2017`" != "" ]
     then
       echo 106X_dataRun2_v20
+    elif [ "`echo $dataset | grep UL2017`" != "" ]
+    then
+      echo 106X_dataRun2_v35
     else
       echo 102X_dataRun2_v12
     fi
   elif [ "`echo $dataset | grep +Run2018[A-C]`" != "" ]
   then
-    echo 102X_dataRun2_v12
+    if [ "`echo $dataset | grep UL2018`" != "" ]
+    then
+      echo 106X_dataRun2_v35
+    else
+      echo 102X_dataRun2_v12
+    fi
   elif [ "`echo $dataset | grep +Run2018D`" != "" ]
   then
-    echo 102X_dataRun2_Prompt_v15
+    if [ "`echo $dataset | grep UL2018`" != "" ]
+    then
+      echo 106X_dataRun2_v35
+    else
+      echo 102X_dataRun2_Prompt_v15
+    fi
+  
+  # --MC-- STARTS HERE
+  elif [ "`echo $dataset | grep +RunIISummer..UL16MiniAODAPV`" != "" ]
+  then
+    echo 106X_mcRun2_asymptotic_preVFP_v11
+  elif [ "`echo $dataset | grep +RunIISummer..UL16MiniAOD`" != "" ]
+  then
+    echo 106X_mcRun2_asymptotic_v17
+  elif [ "`echo $dataset | grep +RunIISummer..UL17MiniAOD`" != "" ]
+  then
+    echo 106X_mc2017_realistic_v9
+  elif [ "`echo $dataset | grep +RunIISummer..UL18MiniAOD`" != "" ]
+  then
+    echo 106X_upgrade2018_realistic_v16_L1v1
   elif [ "`echo $dataset | grep +RunIISummer16`" != "" ]
   then
     if [ "`echo $dataset | grep MiniAODv2`" != "" ]
@@ -376,7 +422,7 @@ function iniState {
   echo " running on    : "`hostname`
   echo " uname -a      : "`uname -a`
   echo " executing in  : "`pwd`
-  echo " submitted from: $HOSTNAME"
+  echo " submitted from: $SUBMIT_HOSTNAME"
   echo ""
 }  
 
@@ -489,6 +535,12 @@ function testBatch {
   return $batch
 }
 
+if [ "." == ".$*" ]
+then
+  echo " No work to do. EXIT"
+  return
+fi
+
 #----------------------------------------------------------------------------------------------------
 #  M A I N   S T A R T S   H E R E
 #----------------------------------------------------------------------------------------------------
@@ -547,6 +599,24 @@ host=`hostname`
 book=$CONFIG/$VERSION
 args_hash=`echo $LFN | md5sum |cut -d' ' -f1`
 
+# define base output location
+REMOTE_SERVER="se01.cmsaf.mit.edu"
+REMOTE_BASE="/cms/store"
+REMOTE_USER_DIR="/user/paus/$CONFIG/$VERSION"
+
+# get the tar ball from central location if it is not there
+test=`ls kraken_*tgz 2> /dev/null`
+if [ "$test" == "" ]
+then
+  cmsswVersion=`gfal-ls gsiftp://$REMOTE_SERVER:2811/${REMOTE_BASE}${REMOTE_USER_DIR} | grep kraken_ | sed -e 's@kraken_@@' -e 's@.tgz@@'`
+  echo "\
+  gfal-copy gsiftp://$REMOTE_SERVER:2811/${REMOTE_BASE}${REMOTE_USER_DIR}/kraken_$cmsswVersion.tgz \
+            file:///$BASEDIR/kraken_$cmsswVersion.tgz"
+  gfal-copy gsiftp://$REMOTE_SERVER:2811/${REMOTE_BASE}${REMOTE_USER_DIR}/kraken_$cmsswVersion.tgz \
+            file:///$BASEDIR/kraken_$cmsswVersion.tgz
+  echo " Return code: $?"
+fi
+
 # load all parameters relevant to this task
 echo " Initialize package"
 test=`ls kraken_*tgz 2> /dev/null`
@@ -590,8 +660,16 @@ setupCmssw $cmsswVersion
 # download all input files to have them local
 downloadFiles $TASK $GPACK $LFN
 
+if [ "`echo $TASK | grep AODSIM`" != "" ]
+then
+  isMC="isMC=1"
+else
+  isMC="isMC=0"
+fi
+
 if [ ${PY} == "nano" ]
 then
+  isMC=""
   era=`era $TASK`
   conditions=`conditions $TASK`
   customise=`customise $VERSION`
@@ -629,11 +707,27 @@ then
       --era $era --conditions $conditions --customise=$customise \
       --customise_commands="process.add_(cms.Service('InitRootHandlers', EnableIMT = cms.untracked.bool(False)))"
   fi
+elif [ ${PY} == "nanomw" ]
+then
+  echo " MW production"
+  cat $CMSSW_BASE/$CONFIG/$VERSION/${PY}.py \
+      | sed -e "s@XX-LFN-XX@$LFN@g" -e "s@XX-GPACK-XX@$GPACK@g" \
+      > $WORKDIR/${PY}.py
 else
+  isMC=""
   # prepare the python config from the given templates
   cat $CMSSW_BASE/$CONFIG/$VERSION/${PY}.py \
       | sed -e "s@XX-LFN-XX@$LFN@g" -e "s@XX-GPACK-XX@$GPACK@g" \
       > $WORKDIR/${PY}.py
+fi
+
+# see whether the last process---making the .py file---was succesful
+rc="$?"
+if [ ".$rc" == ".0" ]
+then
+  echo " INFO - last call worked: (rc=$rc)"
+else
+  echo " INFO - last call failed: (rc=$rc)"
 fi
 
 # create the local links
@@ -655,6 +749,7 @@ fi
 
 # run KRAKEN making
 cd $WORKDIR
+
 pwd
 ls -lhrt
 
@@ -666,13 +761,15 @@ then
   echo " ---- SUPER QUICK TEST ----"
   echo " ---- SUPER QUICK TEST ----" > kraken_000.root
 else
-  env; env;
   echo " Exe: \
-  $EXE ${PY}.py inputFiles="`cat ./inputFiles | tr "\n" "," | sed 's/,$//'`" outputFile=kraken_000.root" 
-  $EXE ${PY}.py inputFiles=`cat ./inputFiles | tr "\n" "," | sed 's/,$//'` outputFile=kraken_000.root
+  $EXE ${PY}.py $isMC inputFiles="`cat ./inputFiles | tr "\n" "," | sed 's/,$//'`" outputFile=kraken_000.root" 
+  $EXE ${PY}.py $isMC inputFiles=`cat ./inputFiles | tr "\n" "," | sed 's/,$//'` outputFile=kraken_000.root
 fi
 
 rc=$?
+
+pwd
+ls -lhrt
 
 if [ "$rc" != "0" ] 
 then
@@ -708,28 +805,16 @@ cd $WORKDIR
 pwd
 ls -lhrt
 
-# define base output location
-REMOTE_SERVER="se01.cmsaf.mit.edu"
-REMOTE_BASE="/cms/store"
-REMOTE_USER_DIR="/user/paus/$CONFIG/$VERSION"
-
 sample=`echo $GPACK | sed 's/\(.*\)_nev.*/\1/'`
 
 # unset CMS environment
 eval `scram unsetenv -sh`
 
 # setup gfal tools
+echo " setting up gfal-copy"
+source /cvmfs/grid.cern.ch/centos7-ui-test/etc/profile.d/setup-c7-ui-example.sh
+ls -lhrt /cvmfs/grid.cern.ch/centos7-ui-test/etc/profile.d
 which gfal-copy
-if [ "$?" != "0" ]
-then
-  echo " setting up gfal-copy"
-  source /cvmfs/grid.cern.ch/centos7-ui-test/etc/profile.d/setup-c7-ui-example.sh
-  ls -lhrt /cvmfs/grid.cern.ch/centos7-ui-test/etc/profile.d
-  which gfal-copy
-  #ln -s /cvmfs/singularity.opensciencegrid.org/opensciencegrid/osgvo-el7\:latest/usr/bin $WORKDIR/bin
-  #export PATH="$PATH:$WORKDIR/bin"
-  #echo " env | grep PATH"
-fi
 
 # this is somewhat overkill but works very reliably, I suppose
 pwd=`pwd`
@@ -781,6 +866,13 @@ fi
 
 # create the pickup output file for condor (this is needed to make sure failing jobs go to hold in condor)
 echo " ---- D O N E ----" > $BASEDIR/${GPACK}.empty
+
+pwd
+ls -lhrt
+
+echo " ---- Cleaning up log file ----"
+cat _condor_stderr | grep -v Begin > tmp
+mv tmp _condor_stderr
 
 pwd
 ls -lhrt

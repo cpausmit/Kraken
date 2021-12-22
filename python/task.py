@@ -24,7 +24,6 @@ class Task:
     #-----------------------------------------------------------------------------------------------
     def __init__(self,tag,request):
 
-
         # from the call
         self.tag = tag
         self.request = request
@@ -45,8 +44,11 @@ class Task:
                                             self.request.config,self.request.version, \
                                             self.sample.dataset)
         self.tarBall = self.logs + '/kraken_' + self.cmsswVersion + '.tgz'
+        #self.tarBall = "http://t3serv001.mit.edu/~cmsprod/Kraken/agents/reviewd/%s/%s/kraken_%s.tgz"\
+        #               %(self.request.config,self.request.version,self.cmsswVersion)
         self.executable = self.logs + '/' + os.getenv('KRAKEN_SCRIPT')
         self.lfnFile = self.logs + '/' + self.sample.dataset + '.lfns'
+        self.x509Proxy = self.findX509Proxy()
 
         # show what we got
         print ''
@@ -164,6 +166,19 @@ class Task:
         return osVersion
 
     #-----------------------------------------------------------------------------------------------
+    # find the present x509 proxy
+    #-----------------------------------------------------------------------------------------------
+    def findX509Proxy(self):
+        cmd = "voms-proxy-info -path"
+        #print " CMD: " + cmd
+        myRex = rex.Rex()
+        (rc,out,err) = myRex.executeLocalAction(cmd)
+        x509Proxy = out[:-1]
+        print " X509Proxy: " + x509Proxy
+    
+        return x509Proxy.split("/")[-1]
+
+    #-----------------------------------------------------------------------------------------------
     # generate actual tarball, or leave as is if already up to date
     #-----------------------------------------------------------------------------------------------
     def makeTarBall(self):
@@ -210,6 +225,9 @@ class Task:
             cmd = "cp " + os.getenv('KRAKEN_WORK') + '/lfns/' + self.sample.dataset + '.lfns' \
                 + " " + self.logs
             os.system(cmd)
+            ## also copy the proxy file
+            #cmd = "cp -q /tmp/%s %s/"%(self.x509Proxy,self.logs)
+            #os.system(cmd)
         else:
             cmd = "scp -q " + cmsswBase + "/kraken_" + self.cmsswVersion + ".tgz " \
                 + self.scheduler.user + '@' +  self.scheduler.host + ':' + self.logs
@@ -220,6 +238,9 @@ class Task:
             cmd = "scp -q " + os.getenv('KRAKEN_WORK') + '/lfns/' + self.sample.dataset + '.lfns' \
                 + " " + self.scheduler.user + '@' +  self.scheduler.host + ':' + self.logs
             os.system(cmd)
+            #cmd = "scp -q /tmp/%s %s@%s:%s/"\
+            #      %(self.x509Proxy,self.scheduler.user,self.scheduler.host,self.logs)
+            #os.system(cmd)
 
         return
 
@@ -265,11 +286,12 @@ class Task:
             #fileH.write("Environment = \"HOSTNAME=" + os.getenv('HOSTNAME') + \
             #                "; KRAKEN_EXE=" + os.getenv('KRAKEN_EXE') + "\"" + '\n')
             # hardwired the hostname NOT GOOD NEEDS FIX
-            fileH.write("Environment = \"HOSTNAME=t3serv019.mit.edu; KRAKEN_EXE=%s\"\n"%os.getenv('KRAKEN_EXE'))
+            fileH.write("Environment = \"SUBMIT_HOSTNAME=t3serv019.mit.edu; KRAKEN_EXE=%s\"\n"%os.getenv('KRAKEN_EXE'))
             fileH.write("Initialdir = " + self.outputData + '\n')
             fileH.write("Executable = " + self.executable + '\n')
-            fileH.write("Log = " + self.logs + '/' + self.sample.dataset + '.log' + '\n')
-            fileH.write("transfer_input_files = " + self.tarBall + ',' + self.lfnFile + '\n')
+            fileH.write("Log = %s/%s.log\n"%(self.logs,self.sample.dataset))
+            fileH.write("transfer_input_files = %s,%s\n"%(self.tarBall,self.lfnFile))
+            #fileH.write("transfer_input_files = %s,%s,%s/%s\n"%(self.tarBall,self.lfnFile,self.logs,self.x509Proxy))
 
             for file,job in self.sample.missingJobs.iteritems():
                 n = 0

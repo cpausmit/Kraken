@@ -8,8 +8,6 @@ Kraken is a processing tool that allows the user to run on either official CMS d
 
 A convenient location could be the Tier-2 it could also be the Tier-3 but Tier-2 is prefered.
 
-
-
 ## Installation
 
 * clone git://github.com/cpausmit/Kraken
@@ -17,8 +15,6 @@ A convenient location could be the Tier-2 it could also be the Tier-3 but Tier-2
 * source ./Kraken/setup.sh
 
 ## Running independent test job interactively
-
-
 
 
 ## Typical use for Panda file production

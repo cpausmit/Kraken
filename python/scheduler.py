@@ -3,7 +3,7 @@
 #
 # Author: C.Paus                                                                      (Jun 16, 2016)
 #---------------------------------------------------------------------------------------------------
-import os,socket
+import sys,os,socket
 import rex
 
 DEBUG = 0
@@ -22,9 +22,20 @@ class Scheduler:
     #-----------------------------------------------------------------------------------------------
     def __init__(self,
                  host='submit.mit.edu',user='paus',base='',
-                 nMyTotalMax=20000,nTotalMax=100000):
+                 nMyTotalMax=35000,nTotalMax=100000):
 
         self.here = socket.gethostname()
+        self.host = host
+        self.user = user
+        self.ruid = 0
+        self.base = base
+
+        self.nMyTotalMax = nMyTotalMax
+        self.nTotalMax = nTotalMax
+        self.nTotal = 0
+        self.nMyTotal = 0
+
+        self.findCondorVersion()
         self.update(host,user,base,nMyTotalMax,nTotalMax)
 
 
@@ -60,12 +71,29 @@ class Scheduler:
     #-----------------------------------------------------------------------------------------------
     # find number of all jobs on this scheduler
     #-----------------------------------------------------------------------------------------------
-    def findNumberOfTotalJobs(self):
-
-        cmd = 'condor_q -all|grep running|cut -d\' \' -f13|tail -1  2> /dev/null'
+    def findCondorVersion(self):
+        cmd = 'condor_q -v|grep CondorVersion:|cut -d \' \' -f2|cut -d \'.\' -f1'
         if not self.isLocal():
             cmd = 'ssh -x ' + self.user + '@' + self.host + ' \"' + cmd + '\"'
-            #print "findNumberOfTotalJobs: %s"%(cmd)
+
+        for line in os.popen(cmd).readlines():  # run command
+            self.condorVersion = int(line[:-1])
+
+        if DEBUG > 0:
+            print(" Condor version: %d"%(self.condorVersion))
+
+    #-----------------------------------------------------------------------------------------------
+    # find number of all jobs on this scheduler
+    #-----------------------------------------------------------------------------------------------
+    def findNumberOfTotalJobs(self):
+
+        if self.condorVersion == 9:
+            cmd = 'condor_q -all|grep running|cut -d\' \' -f13|tail -1  2> /dev/null'
+        else:
+            cmd = 'condor_q |grep running|cut -d\' \' -f13|tail -1  2> /dev/null'
+
+        if not self.isLocal():
+            cmd = 'ssh -x ' + self.user + '@' + self.host + ' \"' + cmd + '\"'
 
         nJobs = 1000000
         if DEBUG > 0:
@@ -73,10 +101,13 @@ class Scheduler:
         for line in os.popen(cmd).readlines():  # run command
             nJobs = int(line[:-1])
 
-        cmd = 'condor_q ' + self.user + '|grep running|grep query|cut -d\' \' -f12 2> /dev/null'
+        if self.condorVersion == 9:
+            cmd = 'condor_q ' + self.user + '|grep running|grep query|cut -d\' \' -f12 2> /dev/null'
+        else:
+            cmd = 'condor_q ' + self.user + '|grep running|cut -d\' \' -f11 2> /dev/null'
+
         if not self.isLocal():
             cmd = 'ssh -x ' + self.user + '@' + self.host + ' \"' + cmd + '\"'
-            #print "findNumberOfTotalJobs: %s"%(cmd)
 
         nMyJobs = 1000000
         if DEBUG > 0:
@@ -159,6 +190,7 @@ class Scheduler:
         print ' Host: ' + self.host
         print ' User: ' + self.user
         print ' Base: ' + self.base
+        print ' HTCo: ' + str(self.condorVersion)
         print ' ===== '
         print ' My  : %6d  (MMax: %d)'%(self.nMyTotal,self.nMyTotalMax)
         print ' Tot : %6d  (TMax: %d)'%(self.nTotal,self.nTotalMax)
@@ -172,17 +204,13 @@ class Scheduler:
         self.user = user
         self.nMyTotalMax = nMyTotalMax
         self.nTotalMax = nTotalMax
-
-
-        #print(" BASE: <%s>"%base)
         if base == '':
             self.base = self.findHome(host,user)
         else:
             self.base = base
         self.ruid = self.findRemoteUid(host,user)
-        (self.nTotal,self.nMyTotal) = self.findNumberOfTotalJobs()
-        
 
+        self.updateNJobs()
         self.pushProxyToScheduler()
 
         return

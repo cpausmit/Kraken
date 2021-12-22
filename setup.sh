@@ -19,6 +19,7 @@ export KRAKEN_GROUP=zh
 
 export KRAKEN_BASE=$pkgRoot/Kraken
 export KRAKEN_WORK=$myRoot/cms/jobs
+export KRAKEN_INIT=/cvmfs/cms.cern.ch/cmsset_default.sh
 export KRAKEN_SCRIPT=releaseKraken.sh
 export KRAKEN_EXE=cmsRun
 export KRAKEN_CMSSW=$myRoot/cms/cmssw

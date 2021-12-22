@@ -389,8 +389,11 @@ class Sample:
                 self.missingJobs[file] = job
 
         # is this a brand new request (important for recording failed jobs)?
-        if len(self.completedJobs) != 0 or len(self.noCatalogJobs) != 0 or len(self.queuedJobs) != 0:
-            self.isNew = False
+        # -- this is not working when all jobs failed, we have no record then but it is also true for
+        # -- all jobs failing... disable this feature
+        #if len(self.completedJobs) != 0 or len(self.noCatalogJobs) != 0 or len(self.queuedJobs) != 0:
+        #    self.isNew = False
+        self.isNew = False
 
         if DEBUG > 0:
             print ' MISSING - Jobs: %6d'%(len(self.missingJobs))
