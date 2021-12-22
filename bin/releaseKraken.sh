@@ -784,6 +784,13 @@ echo " ---- D O N E ----" > $BASEDIR/${GPACK}.empty
 
 pwd
 ls -lhrt
+
+echo " ---- Cleaning up log file ----"
+cat _condor_stderr | grep -v Begin > tmp
+mv tmp _condor_stderr
+
+pwd
+ls -lhrt
 echo " ---- D O N E ----"
 
 echo " END -- "`date +%s`

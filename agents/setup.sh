@@ -9,10 +9,8 @@
 # general agents info
 
 export KRAKEN_AGENTS_BASE=/usr/local/Kraken/agents
-
-export KRAKEN_AGENTS_LOG="/local/$KRAKEN_USER/Kraken/agents"
-
-export KRAKEN_AGENTS_WORK="/home/$KRAKEN_USER/cms/jobs"
+export KRAKEN_AGENTS_LOG="/work/$KRAKEN_USER/Kraken/agents"
+export KRAKEN_AGENTS_WORK="/home/$KRAKEN_USER/$KRAKEN_ACTIVITY/jobs"
 export KRAKEN_AGENTS_WWW="/home/$KRAKEN_USER/public_html/Kraken/agents"
 
 # catalog/review agent parameters

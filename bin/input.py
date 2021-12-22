@@ -25,7 +25,7 @@ usage += "                [ --help ]\n"
 ##    cmd = 'cat ' + db
 ##
 ##    if debug:
-##        print " CMD: " + cmd
+##        print(" CMD: " + cmd)
 ##
 ##    content = []
 ##    for line in os.popen(cmd).readlines():
@@ -64,14 +64,14 @@ def generateContent(dataset,option,debug):
         %(process,setup,tier)
 
     if debug:
-        print " SQL: " + sql
+        print(" SQL: " + sql)
 
     try:
         # Execute the SQL command
         cursor.execute(sql)
         results = cursor.fetchall()
     except:
-        print " ERROR (%s): unable to fetch data."%(sql)
+        print(" ERROR (%s): unable to fetch data."%(sql))
         sys.exit(0)
 
     content = []
@@ -104,7 +104,7 @@ def generateContentFromPanda(dataset,dbs,option,debug):
         pName = inputFsets.split(" ")[1]
         pName = re.sub(r'root://.*/(/store/.*)',r'\1',pName)
     else:
-        print ' ERROR -- no filesets found.'
+        print(' ERROR -- no filesets found.')
         sys.exit(1)
 
     with open("%s/%s/%s/Files"%(dbs,book,dataset),"r") as f:
@@ -156,9 +156,9 @@ def generateContentFromPanda(dataset,dbs,option,debug):
 valid = ['db=','dbs=','dataset=','option=','debug','help']
 try:
     opts, args = getopt.getopt(sys.argv[1:], "", valid)
-except getopt.GetoptError, ex: 
-    print usage
-    print str(ex)
+except getopt.GetoptError as ex: 
+    print(usage)
+    print(str(ex))
     sys.exit(1)
 
 # --------------------------------------------------------------------------------------------------
@@ -175,7 +175,7 @@ debug = False
 # Read new values from the command line
 for opt, arg in opts:
     if opt == "--help":
-        print usage
+        print(usage)
         sys.exit(0)
     if opt == "--dbs":
         dbs = arg
@@ -191,7 +191,8 @@ for opt, arg in opts:
 # Deal with obvious problems
 if dataset == None:
     cmd = "--dataset=  required parameter not provided."
-    raise RuntimeError, cmd
+    print(" Runtime error: %s"%cmd)
+    sys.exit(1)
 
 # initialize the content of the file
 content = []
@@ -204,4 +205,4 @@ else:
 # here is where we print
 for line in content:
     if line != '':
-        print line
+        print(line)

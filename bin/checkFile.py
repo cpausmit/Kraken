@@ -11,15 +11,11 @@
 # The script relies on the catalogFile.sh script to be in its path. This script is responsible to
 # perfrom the various tests on the file.
 #===================================================================================================
-import os,sys,subprocess,time,json,requests
+import os,sys,subprocess
 import MySQLdb
 import rex
 
 Prefix = os.getenv('KRAKEN_TMP_PREFIX')
-Db = MySQLdb.connect(read_default_file="/etc/my.cnf",read_default_group="mysql",db="Bambu")
-Cursor = Db.cursor()
-
-DYNAMO_HOST = 't3serv009.mit.edu'
 CERT = '/tmp/x509up_u%d' % os.getuid()
 
 usage = "\n   usage:  checkFile.py  <file> \n"
@@ -42,7 +38,7 @@ def catalogFile(file):
         if 'XX-CATALOG-XX 0000' in line:
             entry = line.replace('XX-CATALOG-XX 0000 ','')
 
-    print '\n o-o-o OUT o-o-o \n%s\n\n o-o-o ERR (%d) o-o-o \n%s'%(out,rc,err)
+    print('\n o-o-o OUT o-o-o \n%s\n\n o-o-o ERR (%d) o-o-o \n%s'%(out,rc,err))
 
     return (out,err,entry)
 
@@ -50,10 +46,10 @@ def findFileSize(file):
 
     size = 0
     cmd = "t2tools.py --action ls --source " +  file
-    print ' LIST: ' + cmd
+    print(' LIST: ' + cmd)
     (rc,out,err) = remoteX.executeLocalAction(cmd)
     size = long((out.split(" ")[0]).split(":")[1])
-    print ' SIZE: %ld'%size 
+    print(' SIZE: %ld'%size)
 
     return size
 
@@ -106,7 +102,7 @@ def getFileInfo(file):
     # decode the dataset
     f = dataset.split('+')
     if len(f) < 3:
-        print " ERROR - dataset name not correctly formed: " + dataset
+        print(" ERROR - dataset name not correctly formed: " + dataset)
         sys.exit(0)
     process = f[0]
     setup = f[1]
@@ -121,14 +117,14 @@ def getFileInfo(file):
         + " and RequestConfig = '%s' and RequestVersion = '%s'"%(mitcfg,version) \
         + " and Lfns.FileName = '%s' "%(getName(file))
 
-    print ' SQL - ' + sql
+    print(' SQL - ' + sql)
 
     try:
         # Execute the SQL command
         Cursor.execute(sql)
         results = Cursor.fetchall()
     except:
-        print 'ERROR(%s) - could not find request id.'%(sql)
+        print('ERROR(%s) - could not find request id.'%(sql))
 
     # found the request Id
     for row in results:
@@ -153,16 +149,16 @@ def makeDatabaseEntry(requestId,fileName,nEvents,size):
 
     sql = "insert into Files(RequestId,FileName,NEvents,SizeBytes) " \
         + " values(%d,'%s',%d,%ld)"%(requestId,fileName,nEvents,size)
-    print ' SQL: ' + sql
+    print(' SQL: ' + sql)
     try:
         # Execute the SQL command
         Cursor.execute(sql)
     except MySQLdb.IntegrityError as e:
         if not e[0] == 1062:
-            print 'ERROR(%s) - could not insert new file.'%(sql)
+            print('ERROR(%s) - could not insert new file.'%(sql))
             raise
         else:
-            print " WARNING -- entry was already in table." 
+            print(" WARNING -- entry was already in table.")
 
 
 #===================================================================================================
@@ -170,12 +166,12 @@ def makeDatabaseEntry(requestId,fileName,nEvents,size):
 #===================================================================================================
 # make sure command line is complete
 if len(sys.argv) < 1:
-    print " ERROR -- " + usage
+    print(" ERROR -- " + usage)
     sys.exit(1)
 
 # command line variables
 file = sys.argv[1]
-print " INFO - checkFile.py %s"%(file)     
+print(" INFO - checkFile.py %s"%(file))
             
 # doing the cataloging here: result is the number of events found in the file
 (out,err,entry) = catalogFile(file)
@@ -185,15 +181,19 @@ nEvents = numberOfEventsInEntry(entry)
 delete = os.environ.get('DELETE',False)
 if "Object is in 'zombie' state" in out:
     delete = True
-    print '\n o=o=o=o File corrupt, schedule deletion. o=o=o=o \n'
+    print('\n o=o=o=o File corrupt, schedule deletion. o=o=o=o \n')
 
-print ' CATALOG: %d -- %s'%(nEvents,file)
+print(' CATALOG: %d -- %s'%(nEvents,file))
+
+# Make sure database is there
+Db = MySQLdb.connect(read_default_file="/home/paus/.my.cnf",read_default_group="mysql",db="Bambu")
+Cursor = Db.cursor()
 
 # find all relevant infromation about the file
 fileName = getName(file)
 (requestId,datasetId,blockName,nEventsLfn,config,version,dataset) = getFileInfo(file)
 
-print ' Compare: %d [lfn] and %d [output]'%(nEventsLfn,nEvents)
+print(' Compare: %d [lfn] and %d [output]'%(nEventsLfn,nEvents))
 
 # make sure we can work remotely
 remoteX = rex.Rex('none','none')
@@ -204,27 +204,25 @@ if nEvents == nEventsLfn and nEvents>0:
     size = findFileSize(file)
     if Prefix in file:
         cmd = "t2tools.py --action mv --source " +  file + " --target " + finalFile
-        print ' MOVE: ' + cmd
+        print(' MOVE: ' + cmd)
         (rc,out,err) = remoteX.executeLocalAction(cmd)
         if rc != 0:
-            print ' ERROR -- move failed: %d\n  - out:\n %s\n  - err:\n %s'%(rc,out,err)
+            print(' ERROR -- move failed: %d\n  - out:\n %s\n  - err:\n %s'%(rc,out,err))
             if ': File exists' in out:
-                print ' REASON -- file exists: %s'%(finalFile)
+                print(' REASON -- file exists: %s'%(finalFile))
                 cmd = "t2tools.py --action rm --source " +  file
-                print ' REMOVE: ' + cmd
+                print(' REMOVE: ' + cmd)
                 (rc,out,err) = remoteX.executeLocalAction(cmd)
                 
     
     # add a new catalog entry
     makeDatabaseEntry(requestId,fileName,nEvents,size)
-    ## add the file to dynamo
-    #os.system("dynamo-inject-one-file %s"%(finalFile))
 
 else:
-    print ' ERROR: event counts disagree or not positive (LFN %d,File %d). EXIT!'%\
-        (nEventsLfn,nEvents)
+    print(' ERROR: event counts disagree or not positive (LFN %d,File %d). EXIT!'%\
+        (nEventsLfn,nEvents))
 
     if delete:
         cmd = "t2tools.py --action rm --source " +  file
-        print ' REMOVE: ' + cmd
-        (rc,out,err) = remoteX.executeLocalAction(cmd)
+        print(' REMOVE: DISABLED ' + cmd)
+        ###(rc,out,err) = remoteX.executeLocalAction(cmd)

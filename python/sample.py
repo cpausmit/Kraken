@@ -62,7 +62,7 @@ class Sample:
     
         # give notice that file already exists
         if os.path.exists(lfnFile):
-            print " INFO -- Lfn file found: %s. Someone already worked on this dataset." % lfnFile
+            print(" INFO -- Lfn file found: %s. Someone already worked on this dataset." % lfnFile)
     
         # remove what we need to to start clean
         cmd = 'rm -f ' +  lfnFile + '-TMP'
@@ -72,13 +72,13 @@ class Sample:
         if not self.useExistingLfns or not os.path.exists(lfnFile) or os.stat(lfnFile).st_size == 0:
             cmd = 'input.py --dbs=' + self.dbs + ' --option=lfn --dataset=' + self.dataset \
                   + ' | sort -u > ' + lfnFile + '-TMP'
-            print ' Input: ' + cmd
+            print(' Input: ' + cmd)
             os.system(cmd)
     
         # move the new file into the proper location
         if os.path.exists(lfnFile + '-TMP'):
             cmd = 'mv ' + lfnFile + '-TMP ' + lfnFile
-            print ' Move: ' + cmd
+            print(' Move: ' + cmd)
             os.system(cmd)
     
         return lfnFile
@@ -92,7 +92,7 @@ class Sample:
     
         # give notice that file already exists
         if os.path.exists(jobFile):
-            print " INFO -- Job file found: %s. Someone already worked on this dataset." % jobFile
+            print(" INFO -- Job file found: %s. Someone already worked on this dataset." % jobFile)
     
         # remove what we need to to start clean
         cmd = 'rm -f ' +  jobFile + '-TMP'
@@ -102,13 +102,13 @@ class Sample:
         if not self.useExistingJobs or not os.path.exists(jobFile) or os.stat(jobFile).st_size == 0:
             cmd = 'input.py --dbs=' + self.dbs + ' --option=job --dataset=' + self.dataset \
                   + ' | sort -u > ' + jobFile + '-TMP'
-            print ' Input: ' + cmd
+            print(' Input: ' + cmd)
             os.system(cmd)
     
         # move the new file into the proper location
         if os.path.exists(jobFile + '-TMP'):
             cmd = 'mv ' + jobFile + '-TMP ' + jobFile
-            print ' Move: ' + cmd
+            print(' Move: ' + cmd)
             os.system(cmd)
     
         return jobFile
@@ -122,7 +122,7 @@ class Sample:
 
         # check whether file exists already
         if os.path.exists(siteFile):
-            print " INFO -- Site file found: %s. Someone already worked on this dataset." % siteFile
+            print(" INFO -- Site file found: %s. Someone already worked on this dataset." % siteFile)
 
         # remove what we need to to start clean
         cmd = 'rm -f ' +  siteFile + '-TMP'
@@ -133,13 +133,13 @@ class Sample:
                 or os.stat(siteFile).st_size == 0:
             cmd = 'sites.py --dbs=' + self.dbs + ' --dataset=' + self.dataset + ' > ' \
                 + siteFile + '-TMP'
-            print ' Sites: ' + cmd
+            print(' Sites: ' + cmd)
             os.system(cmd)
 
         # move the new file into the proper location
         if os.path.exists(siteFile + '-TMP'):
             cmd = 'mv ' + siteFile + '-TMP ' + siteFile
-            print ' Move: ' + cmd
+            print(' Move: ' + cmd)
             os.system(cmd)
     
         return siteFile
@@ -148,17 +148,17 @@ class Sample:
     # present the current samples
     #-----------------------------------------------------------------------------------------------
     def show(self):
-        print ' ====  S a m p l e  ===='
-        print ' Dataset       : ' + self.dataset
-        print ' Dbs           : ' + self.dbs
-        print ' NEvtTotal     : ' + str(self.nEvtTotal)
-        print ' All Lfns      : ' + str(len(self.allLfns))
-        print ' All Jobs      : ' + str(len(self.allJobs))
-        print ' Queued Jobs   : ' + str(len(self.queuedJobs))
-        print ' Held Jobs     : ' + str(len(self.heldJobs))
-        print ' NoCatalog Jobs: ' + str(len(self.noCatalogJobs))
-        print ' Completed Jobs: ' + str(len(self.completedJobs))
-        print ' Missing Jobs  : ' + str(len(self.missingJobs))
+        print(' ====  S a m p l e  ====')
+        print(' Dataset       : ' + self.dataset)
+        print(' Dbs           : ' + self.dbs)
+        print(' NEvtTotal     : ' + str(self.nEvtTotal))
+        print(' All Lfns      : ' + str(len(self.allLfns)))
+        print(' All Jobs      : ' + str(len(self.allJobs)))
+        print(' Queued Jobs   : ' + str(len(self.queuedJobs)))
+        print(' Held Jobs     : ' + str(len(self.heldJobs)))
+        print(' NoCatalog Jobs: ' + str(len(self.noCatalogJobs)))
+        print(' Completed Jobs: ' + str(len(self.completedJobs)))
+        print(' Missing Jobs  : ' + str(len(self.missingJobs)))
 
     #-----------------------------------------------------------------------------------------------
     # return a string for all valid sites
@@ -178,7 +178,7 @@ class Sample:
     #-----------------------------------------------------------------------------------------------
     def loadAllLfns(self, lfnFile):
         
-        print ' LFN file: %s\n'%(lfnFile)
+        print(' LFN file: %s\n'%(lfnFile))
 
         # initialize from scratch
         self.allLfns = {}
@@ -199,23 +199,22 @@ class Sample:
             self.nEvents = int(f[2])
             self.nEvtTotal += self.nEvents
             if file in self.allLfns.keys():
-                print " ERROR -- lfn appeared twice! This should never happen. IGNORE. (%s)"%file
-                #print " ERROR -- lfn appeared twice! This should never happen. EXIT."
+                print(" ERROR -- lfn appeared twice! This should never happen. IGNORE. (%s)"%file)
+                #print(" ERROR -- lfn appeared twice! This should never happen. EXIT.")
                 #sys.exit(1)
             # add this lfn to the mix
             self.allLfns[file] = lfn
 
         if DEBUG > 0:
-            print ''
-            print ' TOTAL   - Lfns: %6d  [ Events: %9d ]'\
-                %(len(self.allLfns),self.nEvtTotal)
+            print('')
+            print(' TOTAL   - Lfns: %6d  [ Events: %9d ]'%(len(self.allLfns),self.nEvtTotal))
 
     #-----------------------------------------------------------------------------------------------
     # load all jobs relevant to this task
     #-----------------------------------------------------------------------------------------------
     def loadAllJobs(self, jobFile):
         
-        print ' JOB file: %s\n'%(jobFile)
+        print(' JOB file: %s\n'%(jobFile))
 
         # initialize from scratch
         self.allJobs = {}
@@ -229,6 +228,7 @@ class Sample:
                 continue
 
             # decoding the input line
+
             f       = line.split() # splitting every blank
             job     = f[1]
             file    = (f[1].split("/")).pop()
@@ -236,23 +236,22 @@ class Sample:
             self.nEvents = int(f[2])
             self.nEvtTotal += self.nEvents
             if file in self.allJobs.keys():
-                print " ERROR -- job appeared twice! This should never happen. IGNORE. (%s)"%file
-                #print " ERROR -- job appeared twice! This should never happen. EXIT."
+                print(" ERROR -- job appeared twice! This should never happen. IGNORE. (%s)"%file)
+                #print(" ERROR -- job appeared twice! This should never happen. EXIT.")
                 #sys.exit(1)
             # add this job to the mix
             self.allJobs[file] = job
 
         if DEBUG > 0:
-            print ''
-            print ' TOTAL   - Jobs: %6d  [ Events: %9d ]'\
-                %(len(self.allJobs),self.nEvtTotal)
+            print('')
+            print(' TOTAL   - Jobs: %6d  [ Events: %9d ]'%(len(self.allJobs),self.nEvtTotal))
 
     #-----------------------------------------------------------------------------------------------
     # load sites for this sample/task
     #-----------------------------------------------------------------------------------------------
     def loadSites(self, siteFile):
 
-        print ' SITES file: %s\n'%(siteFile)
+        print(' SITES file: %s\n'%(siteFile))
 
         # initialize from scratch
         self.Sites = []
@@ -277,7 +276,7 @@ class Sample:
                 siteString = self.Sites[0]
                 for site in self.Sites[1:]:
                     siteString += "," + site
-            print ' Sites: %2d: %s'%(len(self.Sites),siteString)
+            print(' Sites: %2d: %s'%(len(self.Sites),siteString))
 
     #-----------------------------------------------------------------------------------------------
     # add one queued job to the list
@@ -285,10 +284,10 @@ class Sample:
     def addQueuedJob(self,file):
 
         if file not in self.allJobs.keys():
-            print ' ERROR -- found queued job not in list of all jobs?! ->' + file + '<-'
-            #print ' DEBUG - length: %d'%(len(self.allJobs))
+            print(' ERROR -- found queued job not in list of all jobs?! ->' + file + '<-')
+            #print(' DEBUG - length: %d'%(len(self.allJobs)))
         if file in self.queuedJobs.keys():
-            print " ERROR -- queued job appeared twice! Should not happen but no danger. (%s)"%file
+            print(" ERROR -- queued job appeared twice! Should not happen but no danger. (%s)"%file)
             #sys.exit(1)
         # add this job to the mix
         self.queuedJobs[file] = self.allJobs[file]
@@ -301,9 +300,9 @@ class Sample:
     def addHeldJob(self,file):
 
         if file not in self.allJobs.keys():
-            print ' ERROR -- found queued job not in list of all jobs?! ->' + file + '<-'
+            print(' ERROR -- found queued job not in list of all jobs?! ->' + file + '<-')
         if file in self.heldJobs.keys():
-            print " ERROR -- held job appeared twice! Should not happen but no danger. (%s)"%file
+            print(" ERROR -- held job appeared twice! Should not happen but no danger. (%s)"%file)
             #sys.exit(1)
         # add this job to the mix
         self.heldJobs[file] = self.allJobs[file]
@@ -335,9 +334,9 @@ class Sample:
     def addNoCatalogJob(self,file):
 
         if file not in self.allJobs.keys():
-            print ' ERROR -- found queued job not in list of all jobs?! ->' + file + '<-'
+            print(' ERROR -- found queued job not in list of all jobs?! ->' + file + '<-')
         if file in self.noCatalogJobs.keys():
-            print " ERROR -- noCatalog job appeared twice! Should not happen. EXIT (%s)"%file
+            print(" ERROR -- noCatalog job appeared twice! Should not happen. EXIT (%s)"%file)
             sys.exit(1)
         # add this job to the mix
         self.noCatalogJobs[file] = self.allJobs[file]
@@ -350,9 +349,9 @@ class Sample:
     def addCompletedJob(self,file):
 
         if   file not in self.allJobs.keys():
-            print ' ERROR -- found completed job not in list of all jobs?! ->' + file + '<-'
+            print(' ERROR -- found completed job not in list of all jobs?! ->' + file + '<-')
         elif file in self.completedJobs.keys():
-            print " ERROR -- completed job appeared twice! Should not happen. EXIT (%s)"%file
+            print(" ERROR -- completed job appeared twice! Should not happen. EXIT (%s)"%file)
             sys.exit(1)
         else:
             # add this job to the mix
@@ -377,9 +376,9 @@ class Sample:
 
         # fill the remaining jobs from complete database
         self.missingJobs = {}
-        for file,job in self.allJobs.iteritems():
+        for file,job in self.allJobs.items():
             if file in self.missingJobs.keys():
-                print " ERROR -- missing job appeared twice! Should never happen. EXIT. (%s)"%file
+                print(" ERROR -- missing job appeared twice! Should never happen. EXIT. (%s)"%file)
                 sys.exit(1)
             # is it already completed?
             if file not in self.completedJobs.keys() and \
@@ -393,4 +392,4 @@ class Sample:
             self.isNew = False
 
         if DEBUG > 0:
-            print ' MISSING - Jobs: %6d'%(len(self.missingJobs))
+            print(' MISSING - Jobs: %6d'%(len(self.missingJobs)))

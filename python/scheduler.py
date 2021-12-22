@@ -34,7 +34,7 @@ class Scheduler:
     def executeCondorCmd(self,cmd='condor_q',output=False):
 
         if output:
-            print ' execute condor command: %s'%(cmd)
+            print(' execute condor command: %s'%(cmd))
 
         myRx = rex.Rex(self.host,self.user);
         irc = 0
@@ -42,18 +42,18 @@ class Scheduler:
         if not self.isLocal():
             (irc,rc,out,err) = myRx.executeAction(cmd)
             if (irc != 0 or rc != 0):
-                print ' ERROR -- IRC: %d'%(irc) 
+                print(' ERROR -- IRC: %d'%(irc))
         else:
             (rc,out,err) = myRx.executeLocalAction(cmd)
             
         if (irc != 0 or rc != 0):
-            print ' ERROR -- RC: %d'%(rc) 
-            print ' ERROR -- ERR:\n%s'%(err) 
+            print(' ERROR -- RC: %d'%(rc))
+            print(' ERROR -- ERR:\n%s'%(err))
 
         if output:
-            print ' OUT:\n%s'%(out) 
+            print(' OUT:\n%s'%(out))
             if err!='':
-                print '\n ERR:\n%s'%(err) 
+                print('\n ERR:\n%s'%(err))
 
         return (rc,out,err)
 
@@ -62,25 +62,26 @@ class Scheduler:
     #-----------------------------------------------------------------------------------------------
     def findNumberOfTotalJobs(self):
 
-        cmd = 'condor_q -all|grep running|cut -d\' \' -f13|tail -1  2> /dev/null'
+        #cmd = 'condor_q -all|grep running|cut -d\' \' -f13|tail -1  2> /dev/null'
+        cmd = 'condor_q|grep running|cut -d\' \' -f13|tail -1  2> /dev/null'
         if not self.isLocal():
             cmd = 'ssh -x ' + self.user + '@' + self.host + ' \"' + cmd + '\"'
-            #print "findNumberOfTotalJobs: %s"%(cmd)
+            #print("findNumberOfTotalJobs: %s"%(cmd))
 
         nJobs = 1000000
         if DEBUG > 0:
-            print " CMD " + cmd
+            print(" CMD " + cmd)
         for line in os.popen(cmd).readlines():  # run command
             nJobs = int(line[:-1])
 
         cmd = 'condor_q ' + self.user + '|grep running|grep query|cut -d\' \' -f12 2> /dev/null'
         if not self.isLocal():
             cmd = 'ssh -x ' + self.user + '@' + self.host + ' \"' + cmd + '\"'
-            #print "findNumberOfTotalJobs: %s"%(cmd)
+            #print("findNumberOfTotalJobs: %s"%(cmd))
 
         nMyJobs = 1000000
         if DEBUG > 0:
-            print " CMD " + cmd
+            print(" CMD " + cmd)
         for line in os.popen(cmd).readlines():  # run command
             nMyJobs = int(line[:-1])
 
@@ -92,7 +93,7 @@ class Scheduler:
     def findHome(self,host,user):
 
         cmd = 'ssh -x ' + user + '@' + host + ' pwd'
-        #print "findHome: %s"%(cmd)
+        #print("findHome: %s"%(cmd))
         home = ''
         for line in os.popen(cmd).readlines():  # run command
             line = line[:-1]
@@ -106,7 +107,7 @@ class Scheduler:
     def findRemoteUid(self,host,user):
 
         cmd = 'ssh -x ' + user + '@' + host + ' id -u'
-        #print "findRemoteUid: %s"%(cmd)
+        #print("findRemoteUid: %s"%(cmd))
         ruid = ''
         for line in os.popen(cmd).readlines():  # run command
             line = line[:-1]
@@ -154,14 +155,14 @@ class Scheduler:
     #-----------------------------------------------------------------------------------------------
     def show(self):
 
-        print ' ====  S c h e d u l e r  ===='
-        print ' Here: ' + self.here
-        print ' Host: ' + self.host
-        print ' User: ' + self.user
-        print ' Base: ' + self.base
-        print ' ===== '
-        print ' My  : %6d  (MMax: %d)'%(self.nMyTotal,self.nMyTotalMax)
-        print ' Tot : %6d  (TMax: %d)'%(self.nTotal,self.nTotalMax)
+        print(' ====  S c h e d u l e r  ====')
+        print(' Here: %s'%self.here)
+        print(' Host: %s'%self.host)
+        print(' User: %s'%self.user)
+        print(' Base: %s'%self.base)
+        print(' ===== ')
+        print(' My  : %6d  (MMax: %d)'%(self.nMyTotal,self.nMyTotalMax))
+        print(' Tot : %6d  (TMax: %d)'%(self.nTotal,self.nTotalMax))
 
     #-----------------------------------------------------------------------------------------------
     # update on the fly
@@ -202,7 +203,7 @@ class Scheduler:
         self.updateNJobs()
         # check whether my or total jobs are within limits
         if self.nMyTotal > self.nMyTotalMax or self.nTotal > self.nTotalMax:
-            print ' NO CAPACITY: %d (nMyTotal)  %d (nTotal)\n'%(self.nMyTotal,self.nTotal)
+            print(' NO CAPACITY: %d (nMyTotal)  %d (nTotal)\n'%(self.nMyTotal,self.nTotal))
             return False
         
         return True

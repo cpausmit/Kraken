@@ -68,8 +68,8 @@ class Request:
             file = file.replace('_tmp','')
             self.sample.addNoCatalogJob(file)
         if DEBUG > 0:
-            print ' NOCATAL - Jobs: %6d'%(len(self.sample.noCatalogJobs))
-            print ' DONE    - Jobs: %6d'%(len(self.sample.completedJobs))
+            print(' NOCATAL - Jobs: %6d'%(len(self.sample.noCatalogJobs)))
+            print(' DONE    - Jobs: %6d'%(len(self.sample.completedJobs)))
 
     #-----------------------------------------------------------------------------------------------
     # load all jobs that are presently queued
@@ -93,7 +93,7 @@ class Request:
             file = f[5] + '.root'
             self.sample.addQueuedJob(file)
         if DEBUG > 0:
-            print ' QUEUED  - Jobs: %6d'%(len(self.sample.queuedJobs))
+            print(' QUEUED  - Jobs: %6d'%(len(self.sample.queuedJobs)))
 
     #-----------------------------------------------------------------------------------------------
     # load all jobs that are presently queued but in held state
@@ -118,7 +118,7 @@ class Request:
             self.sample.addHeldJob(file)
 
         if DEBUG > 0:
-            print ' HELD    - Jobs: %6d'%(len(self.sample.heldJobs))
+            print(' HELD    - Jobs: %6d'%(len(self.sample.heldJobs)))
 
     #-----------------------------------------------------------------------------------------------
     # load the number of failures each job had so far

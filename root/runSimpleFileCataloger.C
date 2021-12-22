@@ -11,8 +11,8 @@ void catalogFile(const char *dir, const char *file);
 void reset();
 
 //--------------------------------------------------------------------------------------------------
-void runSimpleFileCataloger(const char *dir  = "/mnt/hadoop/cms/store/user/bmaier/suep/2018/SUEP_mMed-750_mDark-2_temp-2_13TeV_darkPhoHadDecay-pythia8_TuneCP5/MINIAODSIM",
-			    const char *file = "")
+void runSimpleFileCataloger(const char *dir  = "/tmp",
+			    const char *file = "SIDIS+pythia6+ep_18x100+run001+1900000_10000_tmp.root")
 {
   // -----------------------------------------------------------------------------------------------
   // This script runs a full cataloging action on the given directory/file combination
@@ -110,6 +110,7 @@ void catalogFile(const char *dir, const char *file)
       nAll = tree->GetEntries();
     printf("XX-CATALOG-XX 0000 %s %lld %lld %d %d %d %d\n",
 	   fileName.Data(),tree->GetEntries(),nAll,1,1,1,1);
+    return;
   }
 
   allTree = (TTree*) f->FindObjectAny("AllEvents");
@@ -118,6 +119,16 @@ void catalogFile(const char *dir, const char *file)
       nAll = allTree->GetEntries();
     printf("XX-CATALOG-XX 0000 %s %lld %lld %d %d %d %d\n",
 	   fileName.Data(),tree->GetEntries(),nAll,1,1,1,1);
+    return;
+  }
+
+  allTree = (TTree*) f->FindObjectAny("T");
+  if (allTree) {
+    if (nAll < 0)
+      nAll = allTree->GetEntries();
+    printf("XX-CATALOG-XX 0000 %s %lld %lld %d %d %d %d\n",
+	   fileName.Data(),nAll,nAll,1,1,1,1);
+    return;
   }
 }
 
