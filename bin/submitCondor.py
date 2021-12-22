@@ -15,9 +15,7 @@ from sample import Sample
 from scheduler import Scheduler
 from task import Task
 
-t2user = os.environ['T2TOOLS_USER']
 PREFIX = os.getenv('KRAKEN_TMP_PREFIX')
-SRMSRC='/usr/bin'
  
 #===================================================================================================
 # M A I N
@@ -31,37 +29,39 @@ usage += "                       --dbs=<name>\n"
 usage += "                       --nJobsMax=<n>\n"
 usage += "                       --local  # submitting to the local scheduler (ex. t3serv015)\n"
 usage += "                       --useExistingLfns\n"
+usage += "                       --useExistingJobs\n"
 usage += "                       --useExistingSites\n"
 usage += "                       --noCleanup\n"
 usage += "                       --help\n"
 
 # Define the valid options which can be specified and check out the command line
 valid = ['dataset=','py=','config=','version=','dbs=','nJobsMax=',
-         'local','useExistingLfns','useExistingSites','noCleanup',
+         'local','useExistingLfns','useExistingJobs','useExistingSites','noCleanup',
          'help']
 try:
     opts, args = getopt.getopt(sys.argv[1:], "", valid)
-except getopt.GetoptError, ex:
-    print usage
-    print str(ex)
+except getopt.GetoptError as ex:
+    print(usage)
+    print(str(ex))
     sys.exit(1)
 
 # Set defaults for each command line parameter/option
 dataset = None
-py = "cmssw"
-config = "pandaf"
+py = "sw-config"
+config = "eccemc"
 version = "000"
 dbs = "prod/global"
 nJobsMax = 20000
 local = False
 useExistingLfns = False
+useExistingJobs = False
 useExistingSites = False
 noCleanup = False
 
 # Read new values from the command line
 for opt, arg in opts:
     if opt == "--help":
-        print usage
+        print(usage)
         sys.exit(0)
     if opt == "--dataset":
         dataset = arg
@@ -79,6 +79,8 @@ for opt, arg in opts:
         local = True
     if opt == "--useExistingLfns":
         useExistingLfns  = True
+    if opt == "--useExistingJobs":
+        useExistingJobs  = True
     if opt == "--useExistingSites":
         useExistingSites = True
     if opt == "--noCleanup":
@@ -87,7 +89,7 @@ for opt, arg in opts:
 # Deal with obvious problems
 if dataset == None:
     cmd = "--dataset  required parameter not provided."
-    raise RuntimeError, cmd
+    raise RuntimeError(cmd)
 
 # --------------------------------------------------------------------------------------------------
 # Get all parameters for the production
@@ -97,19 +99,22 @@ cmd = "date +" + PREFIX + "%y%m%d_%H%M%S"
 for line in os.popen(cmd).readlines():  # run command
     line = line[:-1]
     condorId = line
-print ""
-print " o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o"
-print "\n This job will be CondorId: " + condorId + "\n"
-print " o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o"
-print ""
+print("")
+print(" o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o")
+print("\n This job will be CondorId: " + condorId + "\n")
+print(" o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o")
+print("")
 
 # Read all information about the sample
-sample = Sample(dataset,dbs,useExistingLfns,useExistingLfns,useExistingSites)
+sample = Sample(dataset,dbs,useExistingLfns,useExistingJobs,useExistingSites)
 
 # Setup the scheduler we are going to use
 scheduler = None
 if local:
-    scheduler = Scheduler('t3serv015.mit.edu',os.getenv('USER','paus'),nJobsMax)
+    scheduler = Scheduler('t3serv019.mit.edu',
+                          os.getenv('USER','paus'),
+                          '/home/%s'%(os.getenv('KRAKEN_REMOTE_USER','paus')),
+                          nJobsMax)
 else:
     scheduler = Scheduler('submit.mit.edu',
                           os.getenv('KRAKEN_REMOTE_USER','paus'),
@@ -121,6 +126,8 @@ request = Request(scheduler,sample,config,version,py)
 
 # Create the corresponding condor task
 task = Task(condorId,request)
+
+#sys.exit(0)
 
 # Cleaning up only when you nwant to (careful cleanup only works as agent)
 if not noCleanup:
@@ -144,6 +151,6 @@ if len(task.sample.missingJobs) > 0:
 # Make it clean
 task.cleanUp()
 
-print ''
+print('')
 
 sys.exit(0)

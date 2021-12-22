@@ -12,7 +12,7 @@ DEBUG = 0
 
 #---------------------------------------------------------------------------------------------------
 """
-Class:  Task(tag,config,version,cmssw,dataset,dbs,jobFile,siteFile)
+Class:  Task(tag,config,version,sw,dataset,dbs,jobFile,siteFile)
 Each task in condor is described in this class
 """
 #---------------------------------------------------------------------------------------------------
@@ -33,7 +33,8 @@ class Task:
         self.sample = self.request.sample
 
         # derived
-        self.cmsswVersion = self.findCmsswVersion()
+        self.activity = os.getenv('KRAKEN_ACTIVITY')
+        self.swVersion = self.findSwVersion()
         self.osVersion = self.findOsVersion()
         self.nJobs = 0
         self.submitCmd = 'submit_' +  self.tag + '.cmd'
@@ -43,17 +44,17 @@ class Task:
         self.outputData = "%s/cms/data/%s/%s/%s"%(self.scheduler.base, \
                                             self.request.config,self.request.version, \
                                             self.sample.dataset)
-        self.tarBall = self.logs + '/kraken_' + self.cmsswVersion + '.tgz'
+        self.tarBall = self.logs + '/kraken_' + self.swVersion + '.tgz'
         #self.tarBall = "http://t3serv001.mit.edu/~cmsprod/Kraken/agents/reviewd/%s/%s/kraken_%s.tgz"\
-        #               %(self.request.config,self.request.version,self.cmsswVersion)
+        #               %(self.request.config,self.request.version,self.swVersion)
         self.executable = self.logs + '/' + os.getenv('KRAKEN_SCRIPT')
         self.lfnFile = self.logs + '/' + self.sample.dataset + '.lfns'
         self.x509Proxy = self.findX509Proxy()
 
         # show what we got
-        print ''
+        print('')
         self.show()
-        print ''
+        print('')
 
     #-----------------------------------------------------------------------------------------------
     # add specification to given file for exactly one more condor queue request (one job)
@@ -76,7 +77,7 @@ class Task:
     def cleanUp(self):
 
         # log and output data dirs
-        print " INFO - removing submit script "
+        print(" INFO - removing submit script ")
         os.system("rm -rf " + self.submitCmd)
 
     #-----------------------------------------------------------------------------------------------
@@ -86,7 +87,7 @@ class Task:
 
         # make sure this condorTask has jobs to be submitted
         if self.nJobs<1:
-            print ' NO SUBMISSION: %d (nJobs)\n'%(self.nJobs)
+            print(' NO SUBMISSION: %d (nJobs)\n'%(self.nJobs))
             return
 
         # start with the base submit script
@@ -105,63 +106,54 @@ class Task:
     def createDirectories(self):
 
         # make sure to keep track of the updated number of jobs in the system
-        print " INFO - update number of jobs on scheduler"
+        print(" INFO - update number of jobs on scheduler")
         if not self.scheduler.hasFreeCapacity():
             return False
 
         # we have free capacity log and output data dirs
-        print " INFO - make local directories "
+        print(" INFO - make local directories ")
         cmd = "mkdir -p " + self.logs + " " + self.outputData
         if not self.scheduler.isLocal():
             cmd = 'ssh -x ' + self.scheduler.user + '@' + self.scheduler.host + ' ' + cmd
         os.system(cmd)
 
-        ## rglexec does not work anymore need to fix this, for now directory is created on
-        ## the fly by the gfal copy command.
-        ##
-        ## # remote directories for Kraken output (root files)
-        ## print " INFO - make remote directories "
-        ## cmd = "rglexec  hdfs dfs -mkdir -p " + self.request.base + "/" + self.request.config + '/' \
-        ##               + self.request.version + '/' + self.sample.dataset + '/' + self.tag
-        ## os.system(cmd)
-
-        ## # this is obsolete because Kraken should not own the data
-        ## cmd = "changemod --options=a+rwx " + self.request.base + "/" \
-        ##               + self.request.config + '/' + self.request.version + '/' \
-        ##               + self.sample.dataset + '/' + self.tag
-        ## #print " CHMOD: " + cmd
-        ## os.system(cmd)
+        # remember the remote data directories are created when copying started
 
         return True
 
     #-----------------------------------------------------------------------------------------------
-    # find the present CMSSW version
+    # find the present SW version
     #-----------------------------------------------------------------------------------------------
-    def findCmsswVersion(self):
-        cmd = "ls -1rt %s/%s/ |grep ^CMSSW"%(os.getenv('KRAKEN_CMSSW'),self.request.version)
-        #print " CMD: " + cmd
+    def findSwVersion(self):
+        cmd = "ls -1rt %s/%s/ |grep ^.*SW_"%(os.getenv('KRAKEN_SW'),self.request.version)
+        print(" CMD: " + cmd)
         myRex = rex.Rex()
         (rc,out,err) = myRex.executeLocalAction(cmd)
-        cmsswVersion = ""
-        for line in out.split("\n"):
-            if 'CMSSW_' in line:
-                cmsswVersion = line
-        print " CMSSW: " + cmsswVersion
-    
-        return (cmsswVersion.replace('CMSSW_',''))
+        swVersion = ""
+        for line in out.decode().split("\n"):
+            if 'SW_' in line:
+                swVersion = line
+                swVersion = re.sub(r'^.*SW_', '', swVersion)
+
+        print(" SW: " + swVersion)
+        
+        return swVersion
 
     #-----------------------------------------------------------------------------------------------
-    # find the OS version of given CMSSW release
+    # find the OS version of given SW release
     #-----------------------------------------------------------------------------------------------
     def findOsVersion(self):
-        cmd = "ls -1 %s/%s/CMSSW_%s/lib|cut -d_ -f1|tail -1"%\
-            (os.getenv('KRAKEN_CMSSW'),self.request.version,self.cmsswVersion)
-        #print " CMD: " + cmd
+        cmd = "ls -1 %s/%s/SW_%s/lib|cut -d_ -f1|tail -1"%\
+            (os.getenv('KRAKEN_SW'),self.request.version,self.swVersion)
+        #print(" CMD: " + cmd)
         myRex = rex.Rex()
         (rc,out,err) = myRex.executeLocalAction(cmd)
         osVersion = ""
-        osVersion = out[:-1]
-        print " OS: " + osVersion
+        osVersion = out.decode()[:-1]
+        if osVersion == "":
+            osVersion = 'slc7'
+        print(" OS: " + osVersion)
+
     
         return osVersion
 
@@ -183,38 +175,48 @@ class Task:
     #-----------------------------------------------------------------------------------------------
     def makeTarBall(self):
 
-        cmsswBase = "%s/%s/CMSSW_%s"%\
-            (os.getenv('KRAKEN_CMSSW'),self.request.version,self.cmsswVersion)
+        swBase = "%s/%s/%sSW_%s"%\
+            (os.getenv('KRAKEN_SW'),self.request.version,os.getenv('KRAKEN_ACTIVITY').upper(),self.swVersion)
 
         # check if the tar ball exists locally
-        if os.path.exists(cmsswBase + "/kraken_" + self.cmsswVersion + ".tgz"):
-            print " INFO - tar ball exists: " \
-                + cmsswBase + "/kraken_" + self.cmsswVersion + ".tgz"
+        if os.path.exists(swBase + "/kraken_" + self.swVersion + ".tgz"):
+            print(" INFO - tar ball exists: " \
+                + swBase + "/kraken_" + self.swVersion + ".tgz")
         else:
-            print ' Make kraken tar ball: ' \
-                + cmsswBase + "/kraken_" + self.cmsswVersion + ".tgz"
-            cmd = "cd " + cmsswBase \
-                + "; tar fch kraken_" + self.cmsswVersion + ".tar --exclude=src/.git bin/ cfipython/ lib/ src/"
-            #print ' CMD: ' + cmd
+            print(' Make kraken tar ball: ' \
+                + swBase + "/kraken_" + self.swVersion + ".tgz")
+
+            cmd = "cd " + swBase \
+                + "; tar fch kraken_" + self.swVersion + ".tar "
+            if os.path.exists("%s/src/.git"%(swBase)):
+                cmd += " --exclude=src/.git bin/ cfipython/ lib/ src/"
+            else:
+                cmd += ' --exclude=macros/.git *'
+            #print(' CMD: ' + cmd)
             os.system(cmd)
-            cmd = "cd " + cmsswBase \
-                + "; tar fr kraken_" + self.cmsswVersion + ".tar  python/"
-            #print ' CMD: ' + cmd
-            os.system(cmd)
-            cmd = "cd " + os.getenv('KRAKEN_BASE') \
-                + "; tar fr " + cmsswBase + "/kraken_" + self.cmsswVersion + ".tar tgz/ " \
-                + self.request.config + "/" + self.request.version
-            #print ' CMD: ' + cmd
-            os.system(cmd)
-            cmd = "cd " + cmsswBase \
-                + "; gzip kraken_" + self.cmsswVersion + ".tar; mv  kraken_" \
-                + self.cmsswVersion + ".tar.gz  kraken_"  + self.cmsswVersion + ".tgz"
-            #print ' CMD: ' + cmd
+
+            if os.path.exists("%s/python"%(swBase)):
+                cmd = "cd " + swBase \
+                      + "; tar fr kraken_" + self.swVersion + ".tar  python/"
+                #print(' CMD: ' + cmd)
+                os.system(cmd)
+
+            if os.path.exists("%s/%s/%s"%(os.getenv('KRAKEN_BASE'),self.request.config,self.request.version)):
+                cmd = "cd " + os.getenv('KRAKEN_BASE') \
+                      + "; tar fr " + swBase + "/kraken_" + self.swVersion + ".tar tgz/ " \
+                      + self.request.config + "/" + self.request.version
+                #print(' CMD: ' + cmd)
+                os.system(cmd)
+
+            cmd = "cd " + swBase \
+                + "; gzip kraken_" + self.swVersion + ".tar; mv  kraken_" \
+                + self.swVersion + ".tar.gz  kraken_"  + self.swVersion + ".tgz"
+            #print(' CMD: ' + cmd)
             os.system(cmd)
 
         # see whether the tar ball needs to be copied locally or to remote scheduler
         if self.scheduler.isLocal():
-            cmd = "cp " + cmsswBase+ "/kraken_" + self.cmsswVersion + ".tgz " \
+            cmd = "cp " + swBase+ "/kraken_" + self.swVersion + ".tgz " \
                 + self.logs
             os.system(cmd)
             # also copy the script over
@@ -229,7 +231,7 @@ class Task:
             #cmd = "cp -q /tmp/%s %s/"%(self.x509Proxy,self.logs)
             #os.system(cmd)
         else:
-            cmd = "scp -q " + cmsswBase + "/kraken_" + self.cmsswVersion + ".tgz " \
+            cmd = "scp -q " + swBase + "/kraken_" + self.swVersion + ".tgz " \
                 + self.scheduler.user + '@' +  self.scheduler.host + ':' + self.logs
             os.system(cmd)
             cmd = "scp -q " + os.getenv('KRAKEN_BASE') + "/bin/" + os.getenv('KRAKEN_SCRIPT') \
@@ -249,18 +251,18 @@ class Task:
     #-----------------------------------------------------------------------------------------------
     def show(self):
 
-        print ' ==== C o n d o r  T a s k  I n f o r m a t i o n  ===='
-        print ' '
-        print ' Tag          : ' + self.tag
-        print ' Base         : ' + self.request.base
-        print ' Config       : ' + self.request.config
-        print ' Version      : ' + self.request.version
-        print ' OS Version   : ' + self.osVersion
-        print ' CMSSW Version: ' + self.cmsswVersion
-        print ' CMSSW py     : ' + self.request.py
-        print ' '
+        print(' ==== C o n d o r  T a s k  I n f o r m a t i o n  ====')
+        print(' ')
+        print(' Tag          : ' + self.tag)
+        print(' Base         : ' + self.request.base)
+        print(' Config       : ' + self.request.config)
+        print(' Version      : ' + self.request.version)
+        print(' OS Version   : ' + self.osVersion)
+        print(' SW Version   : ' + self.swVersion)
+        print(' SW py        : ' + self.request.py)
+        print(' ')
         self.sample.show()
-        print ' '
+        print(' ')
         self.scheduler.show()
 
     #-----------------------------------------------------------------------------------------------
@@ -293,14 +295,14 @@ class Task:
             fileH.write("transfer_input_files = %s,%s\n"%(self.tarBall,self.lfnFile))
             #fileH.write("transfer_input_files = %s,%s,%s/%s\n"%(self.tarBall,self.lfnFile,self.logs,self.x509Proxy))
 
-            for file,job in self.sample.missingJobs.iteritems():
+            for (file,job) in self.sample.missingJobs.items():
                 n = 0
                 if file in self.sample.nFailedJobs:
                     n = self.sample.nFailedJobs[file]
                     if n > 2:
-                        print ' %s --> n_failed: %d  skip processing'%(file,n)
+                        print(' %s --> n_failed: %d  skip processing'%(file,n))
                         continue
-                print ' Adding(nF:%d): %s %s'%(n,file,job)
+                print(' Adding(nF:%d): %s %s'%(n,file,job))
                 self.nJobs += 1
                 self.addJob(fileH,file,job)
 

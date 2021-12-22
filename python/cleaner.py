@@ -40,6 +40,8 @@ class Cleaner:
         self.task = task
         self.localUser = os.getenv('USER')
 
+        self.activity = os.getenv('KRAKEN_ACTIVITY')
+
         self.logRemoveScript = ''
         self.webRemoveScript = ''
         self.logSaveScript = ''
@@ -112,31 +114,32 @@ class Cleaner:
 
         print(' - remove completed logs')
 
-        for file,job in self.task.sample.completedJobs.iteritems():
+        #for file,job in self.task.sample.completedJobs.iteritems():
+        for (file,job) in self.task.sample.completedJobs.items():
             # we will make a lot of reference to the ID
             id = file.replace('.root','')
 
-            cmd = 'rm -f cms/*/%s/%s/%s/*%s*\n'%(cfg,vers,dset,id)
+            cmd = 'rm -f %s/*/%s/%s/%s/*%s*\n'%(self.activity,cfg,vers,dset,id)
             self.logRemoveScript += cmd
 
             cmd = 'rm -f %s/%s/%s/%s/*%s*\n'%(local,cfg,vers,dset,id)
             self.webRemoveScript += cmd
 
-        for file,job in self.task.sample.noCatalogJobs.iteritems():
+        for (file,job) in self.task.sample.noCatalogJobs.items():
             # we will make a lot of reference to the ID
             id = file.replace('.root','')
 
-            cmd = 'rm -f cms/*/%s/%s/%s/*%s*\n'%(cfg,vers,dset,id)
+            cmd = 'rm -f %s/*/%s/%s/%s/*%s*\n'%(self.activity,cfg,vers,dset,id)
             self.logRemoveScript += cmd
 
             cmd = 'rm -f %s/%s/%s/%s/*%s*\n'%(local,cfg,vers,dset,id)
             self.webRemoveScript += cmd
 
-        for file,job in self.task.sample.queuedJobs.iteritems():
+        for (file,job) in self.task.sample.queuedJobs.items():
             # we will make a lot of reference to the ID
             id = file.replace('.root','')
 
-            cmd = 'rm -f cms/*/%s/%s/%s/*%s*\n'%(cfg,vers,dset,id)
+            cmd = 'rm -f %s/*/%s/%s/%s/*%s*\n'%(self.activity,cfg,vers,dset,id)
             self.logRemoveScript += cmd
 
             cmd = 'rm -f %s/%s/%s/%s/*%s*\n'%(local,cfg,vers,dset,id)
@@ -218,7 +221,7 @@ class Cleaner:
     #-----------------------------------------------------------------------------------------------
     def removeHeldJobs(self):
 
-        base = self.task.scheduler.base + "/cms/data"
+        base = self.task.scheduler.base + "/%s/data"%self.activity
         iwd = base + "/%s/%s/%s"%\
             (self.task.request.config,self.task.request.version,self.task.request.sample.dataset)
         cmd = 'condor_rm -constraint "JobStatus==5 && Iwd==\\\"%s\\\""'%(iwd)
@@ -275,13 +278,13 @@ class Cleaner:
         (rc,out,err) = self.rex.executeLocalAction(cmd)
 
         # construct the script to make the tar ball
-        self.logSaveScript += 'cd cms/logs/%s/%s/%s;\n tar --ignore-failed-read --create --gzip --file %s-%s-%s.tgz'\
-            %(cfg,vers,dset,cfg,vers,dset)
+        self.logSaveScript += 'cd %s/logs/%s/%s/%s\ntar --ignore-failed-read --create --gzip --file %s-%s-%s.tgz'\
+            %(self.activity,cfg,vers,dset,cfg,vers,dset)
 
         # find out whether we have held jobs == failures
         haveFailures = False
         # OLD -- for file,job in self.task.sample.heldJobs.iteritems():
-        for file,job in self.task.sample.missingJobs.iteritems():
+        for (file,job) in self.task.sample.missingJobs.items():
             id = file.replace('.root','')
             cmd = '  \\\n  %s.{out,err}'%(id)
             self.logSaveScript += cmd
@@ -300,7 +303,7 @@ class Cleaner:
 
         # pull the tar ball over
         cmd = 'scp ' + self.task.scheduler.user + '@' + self.task.scheduler.host \
-            + ':cms/logs/%s/%s/%s/%s-%s-%s.tgz'%(cfg,vers,dset,cfg,vers,dset) \
+            + ':%s/logs/%s/%s/%s/%s-%s-%s.tgz'%(self.activity,cfg,vers,dset,cfg,vers,dset) \
             + ' %s/%s/%s/%s/'%(local,cfg,vers,dset)
         if DEBUG>0:
             print(' Get tar: %s'%(cmd))
@@ -318,7 +321,7 @@ class Cleaner:
             print(' Remove local tar: %s'%(cmd))
         (rc,out,err) = self.rex.executeLocalAction(cmd)
         
-        cmd = 'rm -f %s-%s-%s.tgz'%(cfg,vers,dset)
+        cmd = 'rm -f %s/logs/%s/%s/%s/%s-%s-%s.tgz'%(self.activity,cfg,vers,dset,cfg,vers,dset)
         if DEBUG>0:
             print(' Remove remote tar: %s'%(cmd))
         (irc,rc,out,err) = self.rex.executeAction(cmd)
