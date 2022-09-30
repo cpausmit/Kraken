@@ -28,9 +28,9 @@ Now we need to fake the 'presumed' MINIAODSIM input files:
 	     RawFiles.00
 	     
     # this last step makes sure that the faked MINIAODSIM inputs are in the database and can be used to compare event numbers
-    addData.py --exec --dataset /mc/SUEP-m400-md2-t0.5-generic/RunIIAutumn18-private/MINIAODSIM
+    addDataset.py --exec --dataset /mc/SUEP-m125-md2-t2-generic-htcut/RunIIAutumn18-private/MINIAODSIM
     addRequest.py --config nanosu --version A01 --py nano \
-                  --dataset /mc/SUEP-m400-md2-t0.5-generic/RunIIAutumn18-private/MINIAODSIM
+                         --dataset /mc/SUEP-m125-md2-t2-generic-htcut/RunIIAutumn18-private/MINIAODSIM
 
 Now we can check the NANOAODSIM files with respect to their faked inputs. So, run checkFile.py on each file in the directory to update the database. The should also generate the catalog.
 
