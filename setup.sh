@@ -13,7 +13,7 @@ source $pkgRoot/T2Tools/setup.sh paus paus
 
 # for the agents
 export KRAKEN_USER=cmsprod
-export KRAKEN_GROUP=zh
+export KRAKEN_GROUP=submit-cms
 
 export KRAKEN_BASE=$pkgRoot/Kraken
 export KRAKEN_ACTIVITY=cms

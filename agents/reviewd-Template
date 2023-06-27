@@ -18,6 +18,7 @@ daemon=`basename $0`
 cd $KRAKEN_AGENTS_WORK
 echo ""
 echo " Work area: "`pwd`
+echo " Daemon:    $daemon"
 echo ""
 
 # infinite loop
@@ -25,7 +26,9 @@ while [ 1 ]
 do
 
   # make sure the log/web directories exists
+  echo "mkdir -p $KRAKEN_AGENTS_LOG/${daemon}"
   mkdir -p $KRAKEN_AGENTS_LOG/${daemon}
+  echo "mkdir -p $KRAKEN_AGENTS_WWW"
   mkdir -p $KRAKEN_AGENTS_WWW
 
   if [ -e "$KRAKEN_AGENTS_LOG/${daemon}" ] && [ -e "$KRAKEN_AGENTS_WWW" ]

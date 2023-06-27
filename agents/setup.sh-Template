@@ -12,8 +12,8 @@ export KRAKEN_AGENTS_BASE=XX-KRAKEN_AGENTS_BASE-XX
 
 export KRAKEN_AGENTS_LOG="/local/$KRAKEN_USER/Kraken/agents"
 
-export KRAKEN_AGENTS_WORK="/home/$KRAKEN_USER/cms/jobs"
-export KRAKEN_AGENTS_WWW="/home/$KRAKEN_USER/public_html/Kraken/agents"
+export KRAKEN_AGENTS_WORK="/home/tier3/$KRAKEN_USER/cms/jobs"
+export KRAKEN_AGENTS_WWW="/home/tier3/$KRAKEN_USER/public_html/Kraken/agents"
 
 # catalog/review agent parameters
 

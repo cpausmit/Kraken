@@ -2,7 +2,7 @@
 
 list /cms/store/user/paus/nano*/???/*/tmp_*| cut -d ' ' -f 2 > checkFile.list
 nNew=`wc -l checkFile.list`
-nGoing=`wc -l /home/cmsprod/cms/work/fibs/checkFile.list`
+nGoing=`wc -l /home/tier3/cmsprod/cms/work/fibs/checkFile.list`
 
 echo ""
 echo " -=-=-=-=- New: $nNew  Going: $nGoing -=-=-=-=-"
@@ -10,6 +10,6 @@ echo ""
 fibsLock.py --configFile checkFile --cmd \
   "cp checkFile.list ~/cms/work/fibs/checkFile.list"
 
-wc checkFile.list /home/cmsprod/cms/work/fibs/checkFile.list
+wc checkFile.list /home/tier3/cmsprod/cms/work/fibs/checkFile.list
 
 exit 0

@@ -70,7 +70,7 @@ function install {
 BASE="$1"
 if [ -z "$BASE" ]
 then
-  BASE=/home/cmsprod/Tools/Kraken
+  BASE=/home/tier3/cmsprod/Tools/Kraken
 fi
 AGENTS_BASE="$2"
 if [ -z "$AGENTS_BASE" ]
@@ -110,7 +110,7 @@ fi
 
 # load the setup and show it
 source ./setup.sh
-env|grep KRAKEN | sort -u 
+env | grep KRAKEN | sort -u 
 
 # General installation (you have to be in the directory of install script and you have to be root)
 

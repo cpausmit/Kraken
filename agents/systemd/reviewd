@@ -8,7 +8,7 @@ PIDFile=/var/run/reviewd.pid
 Type=simple
 RemainAfterExit=no
 User=cmsprod
-Group=zh
+Group=submit-cms
 
 [Install]
 WantedBy=multi-user.target
