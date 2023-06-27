@@ -52,6 +52,150 @@ class Sample:
 
         #self.loadSites(self.makeSiteFile())
         self.Sites = []
+        
+    #-----------------------------------------------------------------------------------------------
+    # add all jobs so far completed relevant to this task
+    #-----------------------------------------------------------------------------------------------
+    def addCompletedJob(self,file):
+
+        if   file not in self.allJobs.keys():
+            print(' ERROR -- found completed job not in list of all jobs?! ->' + file + '<-')
+        elif file in self.completedJobs.keys():
+            print(" ERROR -- completed job appeared twice! Should not happen. EXIT (%s)"%file)
+            sys.exit(1)
+        else:
+            # add this job to the mix
+            self.completedJobs[file] = self.allJobs[file]
+
+        return
+    
+    #-----------------------------------------------------------------------------------------------
+    # add one held job to the list
+    #-----------------------------------------------------------------------------------------------
+    def addHeldJob(self,file):
+
+        if file not in self.allJobs.keys():
+            print(' ERROR -- found queued job not in list of all jobs?! ->' + file + '<-')
+        if file in self.heldJobs.keys():
+            print(" ERROR -- held job appeared twice! Should not happen but no danger. (%s)"%file)
+            #sys.exit(1)
+        # add this job to the mix
+        self.heldJobs[file] = self.allJobs[file]
+
+        return
+
+    #-----------------------------------------------------------------------------------------------
+    # create the list with the number of failures of the given job
+    #-----------------------------------------------------------------------------------------------
+    def addNFailedJob(self,file,n):
+
+        # add the number of failures of each failed job
+        self.nFailedJobs["%s.root"%file] = n
+
+        return
+    
+    #-----------------------------------------------------------------------------------------------
+    # add all jobs so far completed but not yet cataloged relevant to this task
+    # - they might fail cataloging but we assume they worked
+    #-----------------------------------------------------------------------------------------------
+    def addNoCatalogJob(self,file):
+
+        if file not in self.allJobs.keys():
+            print(' ERROR -- found queued job not in list of all jobs?! ->' + file + '<-')
+        if file in self.noCatalogJobs.keys():
+            print(" ERROR -- noCatalog job appeared twice! Should not happen. EXIT (%s)"%file)
+            sys.exit(1)
+        # add this job to the mix
+        self.noCatalogJobs[file] = self.allJobs[file]
+
+        return
+
+    #-----------------------------------------------------------------------------------------------
+    # add one queued job to the list
+    #-----------------------------------------------------------------------------------------------
+    def addQueuedJob(self,file):
+
+        if file not in self.allJobs.keys():
+            print(' ERROR -- found queued job not in list of all jobs?! ->' + file + '<-')
+            #print(' DEBUG - length: %d'%(len(self.allJobs)))
+        if file in self.queuedJobs.keys():
+            print(" ERROR -- queued job appeared twice! Should not happen but no danger. (%s)"%file)
+            #sys.exit(1)
+        # add this job to the mix
+        self.queuedJobs[file] = self.allJobs[file]
+
+        return
+
+    #-----------------------------------------------------------------------------------------------
+    # create the list of missing Jobs extracted fromt he previously created lists
+    #-----------------------------------------------------------------------------------------------
+    def createMissingJobs(self):
+
+        # fill the remaining jobs from complete database
+        self.missingJobs = {}
+        for file,job in self.allJobs.items():
+            if file in self.missingJobs.keys():
+                print(" ERROR -- missing job appeared twice! Should never happen. EXIT. (%s)"%file)
+                sys.exit(1)
+            # is it already completed?
+            if file not in self.completedJobs.keys() and \
+               file not in self.noCatalogJobs.keys() and \
+               file not in self.queuedJobs.keys():
+                # adding this one to the missing ones
+                self.missingJobs[file] = job
+
+        # is this a brand new request (important for recording failed jobs)?
+        # -- this is not working when all jobs failed, we have no record then but it is also true for
+        # -- all jobs failing... disable this feature
+        #if len(self.completedJobs) != 0 or len(self.noCatalogJobs) != 0 or len(self.queuedJobs) != 0:
+        #    self.isNew = False
+        self.isNew = False
+
+        if DEBUG > 0:
+            print(' MISSING - Jobs: %6d'%(len(self.missingJobs)))
+
+    #-----------------------------------------------------------------------------------------------
+    # return a string for all valid sites
+    #-----------------------------------------------------------------------------------------------
+    def getSitesString(self,pattern=''):
+        siteString = ''
+        for site in self.Sites:
+            if pattern in site and not '_MSS' in site and not '_Buffer' in site:
+                if siteString == '':
+                    siteString = site
+                else:
+                    siteString += "," + site
+        return siteString
+    
+    #-----------------------------------------------------------------------------------------------
+    # generate the job file and return it's location
+    #-----------------------------------------------------------------------------------------------
+    def makeJobFile(self):
+
+        jobFile  = os.getenv('KRAKEN_WORK') + '/jobs/' + self.dataset + '.jobs'
+    
+        # give notice that file already exists
+        if os.path.exists(jobFile):
+            print(" INFO -- Job file found: %s. Someone already worked on this dataset." % jobFile)
+    
+        # remove what we need to to start clean
+        cmd = 'rm -f ' +  jobFile + '-TMP'
+        os.system(cmd)
+        
+        # recreate if requested or not existing
+        if not self.useExistingJobs or not os.path.exists(jobFile) or os.stat(jobFile).st_size == 0:
+            cmd = 'input.py --dbs=' + self.dbs + ' --option=job --dataset=' + self.dataset \
+                  + ' | sort -u > ' + jobFile + '-TMP'
+            print(' Input: ' + cmd)
+            os.system(cmd)
+    
+        # move the new file into the proper location
+        if os.path.exists(jobFile + '-TMP'):
+            cmd = 'mv ' + jobFile + '-TMP ' + jobFile
+            print(' Move: ' + cmd)
+            os.system(cmd)
+    
+        return jobFile
 
     #-----------------------------------------------------------------------------------------------
     # generate the lfn file and return it's location
@@ -82,36 +226,6 @@ class Sample:
             os.system(cmd)
     
         return lfnFile
-
-    #-----------------------------------------------------------------------------------------------
-    # generate the job file and return it's location
-    #-----------------------------------------------------------------------------------------------
-    def makeJobFile(self):
-
-        jobFile  = os.getenv('KRAKEN_WORK') + '/jobs/' + self.dataset + '.jobs'
-    
-        # give notice that file already exists
-        if os.path.exists(jobFile):
-            print(" INFO -- Job file found: %s. Someone already worked on this dataset." % jobFile)
-    
-        # remove what we need to to start clean
-        cmd = 'rm -f ' +  jobFile + '-TMP'
-        os.system(cmd)
-        
-        # recreate if requested or not existing
-        if not self.useExistingJobs or not os.path.exists(jobFile) or os.stat(jobFile).st_size == 0:
-            cmd = 'input.py --dbs=' + self.dbs + ' --option=job --dataset=' + self.dataset \
-                  + ' | sort -u > ' + jobFile + '-TMP'
-            print(' Input: ' + cmd)
-            os.system(cmd)
-    
-        # move the new file into the proper location
-        if os.path.exists(jobFile + '-TMP'):
-            cmd = 'mv ' + jobFile + '-TMP ' + jobFile
-            print(' Move: ' + cmd)
-            os.system(cmd)
-    
-        return jobFile
     
     #-----------------------------------------------------------------------------------------------
     # generate the sites file and return it's location
@@ -143,35 +257,6 @@ class Sample:
             os.system(cmd)
     
         return siteFile
-
-    #-----------------------------------------------------------------------------------------------
-    # present the current samples
-    #-----------------------------------------------------------------------------------------------
-    def show(self):
-        print(' ====  S a m p l e  ====')
-        print(' Dataset       : ' + self.dataset)
-        print(' Dbs           : ' + self.dbs)
-        print(' NEvtTotal     : ' + str(self.nEvtTotal))
-        print(' All Lfns      : ' + str(len(self.allLfns)))
-        print(' All Jobs      : ' + str(len(self.allJobs)))
-        print(' Queued Jobs   : ' + str(len(self.queuedJobs)))
-        print(' Held Jobs     : ' + str(len(self.heldJobs)))
-        print(' NoCatalog Jobs: ' + str(len(self.noCatalogJobs)))
-        print(' Completed Jobs: ' + str(len(self.completedJobs)))
-        print(' Missing Jobs  : ' + str(len(self.missingJobs)))
-
-    #-----------------------------------------------------------------------------------------------
-    # return a string for all valid sites
-    #-----------------------------------------------------------------------------------------------
-    def getSitesString(self,pattern=''):
-        siteString = ''
-        for site in self.Sites:
-            if pattern in site and not '_MSS' in site and not '_Buffer' in site:
-                if siteString == '':
-                    siteString = site
-                else:
-                    siteString += "," + site
-        return siteString
 
     #-----------------------------------------------------------------------------------------------
     # load all lfns relevant to this task
@@ -277,44 +362,13 @@ class Sample:
                 for site in self.Sites[1:]:
                     siteString += "," + site
             print(' Sites: %2d: %s'%(len(self.Sites),siteString))
-
+    
     #-----------------------------------------------------------------------------------------------
-    # add one queued job to the list
+    # reset the list of completed jobs
     #-----------------------------------------------------------------------------------------------
-    def addQueuedJob(self,file):
+    def resetCompletedJobs(self):
 
-        if file not in self.allJobs.keys():
-            print(' ERROR -- found queued job not in list of all jobs?! ->' + file + '<-')
-            #print(' DEBUG - length: %d'%(len(self.allJobs)))
-        if file in self.queuedJobs.keys():
-            print(" ERROR -- queued job appeared twice! Should not happen but no danger. (%s)"%file)
-            #sys.exit(1)
-        # add this job to the mix
-        self.queuedJobs[file] = self.allJobs[file]
-
-        return
-
-    #-----------------------------------------------------------------------------------------------
-    # add one held job to the list
-    #-----------------------------------------------------------------------------------------------
-    def addHeldJob(self,file):
-
-        if file not in self.allJobs.keys():
-            print(' ERROR -- found queued job not in list of all jobs?! ->' + file + '<-')
-        if file in self.heldJobs.keys():
-            print(" ERROR -- held job appeared twice! Should not happen but no danger. (%s)"%file)
-            #sys.exit(1)
-        # add this job to the mix
-        self.heldJobs[file] = self.allJobs[file]
-
-        return
-
-    #-----------------------------------------------------------------------------------------------
-    # reset the list of queued jobs
-    #-----------------------------------------------------------------------------------------------
-    def resetQueuedJobs(self):
-
-        self.queuedJobs = {}
+        self.completedJobs = {}
 
         return
 
@@ -328,71 +382,45 @@ class Sample:
         return
 
     #-----------------------------------------------------------------------------------------------
-    # add all jobs so far completed but not yet cataloged relevant to this task
-    # - they might fail cataloging but we assume they worked
+    # reset the list of number of failures per job
     #-----------------------------------------------------------------------------------------------
-    def addNoCatalogJob(self,file):
+    def resetNFailedJobs(self):
 
-        if file not in self.allJobs.keys():
-            print(' ERROR -- found queued job not in list of all jobs?! ->' + file + '<-')
-        if file in self.noCatalogJobs.keys():
-            print(" ERROR -- noCatalog job appeared twice! Should not happen. EXIT (%s)"%file)
-            sys.exit(1)
-        # add this job to the mix
-        self.noCatalogJobs[file] = self.allJobs[file]
+        self.nFailedJobs = {}
 
         return
 
     #-----------------------------------------------------------------------------------------------
-    # add all jobs so far completed relevant to this task
+    # reset the list of queued jobs
     #-----------------------------------------------------------------------------------------------
-    def addCompletedJob(self,file):
+    def resetQueuedJobs(self):
 
-        if   file not in self.allJobs.keys():
-            print(' ERROR -- found completed job not in list of all jobs?! ->' + file + '<-')
-        elif file in self.completedJobs.keys():
-            print(" ERROR -- completed job appeared twice! Should not happen. EXIT (%s)"%file)
-            sys.exit(1)
-        else:
-            # add this job to the mix
-            self.completedJobs[file] = self.allJobs[file]
+        self.queuedJobs = {}
+
+        return
+
+
+    #-----------------------------------------------------------------------------------------------
+    # reset the list of jobs not yet cataloged
+    #-----------------------------------------------------------------------------------------------
+    def resetNoCatalogJobs(self):
+
+        self.noCatalogJobs = {}
 
         return
 
     #-----------------------------------------------------------------------------------------------
-    # create the list with the number of failures of the given job
+    # present the current samples
     #-----------------------------------------------------------------------------------------------
-    def addNFailedJob(self,file,n):
-
-        # add the number of failures of each failed job
-        self.nFailedJobs["%s.root"%file] = n
-
-        return
-
-    #-----------------------------------------------------------------------------------------------
-    # create the list of missing Jobs extracted fromt he previously created lists
-    #-----------------------------------------------------------------------------------------------
-    def createMissingJobs(self):
-
-        # fill the remaining jobs from complete database
-        self.missingJobs = {}
-        for file,job in self.allJobs.items():
-            if file in self.missingJobs.keys():
-                print(" ERROR -- missing job appeared twice! Should never happen. EXIT. (%s)"%file)
-                sys.exit(1)
-            # is it already completed?
-            if file not in self.completedJobs.keys() and \
-               file not in self.noCatalogJobs.keys() and \
-               file not in self.queuedJobs.keys():
-                # adding this one to the missing ones
-                self.missingJobs[file] = job
-
-        # is this a brand new request (important for recording failed jobs)?
-        # -- this is not working when all jobs failed, we have no record then but it is also true for
-        # -- all jobs failing... disable this feature
-        #if len(self.completedJobs) != 0 or len(self.noCatalogJobs) != 0 or len(self.queuedJobs) != 0:
-        #    self.isNew = False
-        self.isNew = False
-
-        if DEBUG > 0:
-            print(' MISSING - Jobs: %6d'%(len(self.missingJobs)))
+    def show(self):
+        print(' ====  S a m p l e  ====')
+        print(' Dataset       : ' + self.dataset)
+        print(' Dbs           : ' + self.dbs)
+        print(' NEvtTotal     : ' + str(self.nEvtTotal))
+        print(' All Lfns      : ' + str(len(self.allLfns)))
+        print(' All Jobs      : ' + str(len(self.allJobs)))
+        print(' Queued Jobs   : ' + str(len(self.queuedJobs)))
+        print(' Held Jobs     : ' + str(len(self.heldJobs)))
+        print(' NoCatalog Jobs: ' + str(len(self.noCatalogJobs)))
+        print(' Completed Jobs: ' + str(len(self.completedJobs)))
+        print(' Missing Jobs  : ' + str(len(self.missingJobs)))

@@ -82,7 +82,7 @@ usage += "                     [ --help ]\n\n"
 valid = ['dataset=','config=','version=',"dbs=",'py=','delete=','debug=','help']
 try:
     opts, args = getopt.getopt(sys.argv[1:], "", valid)
-except getopt.GetoptError, ex:
+except getopt.GetoptError as ex:
     print(usage)
     print(str(ex))
     sys.exit(1)

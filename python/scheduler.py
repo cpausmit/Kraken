@@ -35,7 +35,7 @@ class Scheduler:
         self.nTotal = 0
         self.nMyTotal = 0
 
-        self.findCondorVersion()
+        self.condorVersion = self.findCondorVersion()
         self.update(host,user,base,nMyTotalMax,nTotalMax)
 
 
@@ -76,11 +76,14 @@ class Scheduler:
         if not self.isLocal():
             cmd = 'ssh -x ' + self.user + '@' + self.host + ' \"' + cmd + '\"'
 
+        cv = -1
         for line in os.popen(cmd).readlines():  # run command
-            self.condorVersion = int(line[:-1])
+            cv = int(line[:-1])
 
         if DEBUG > 0:
             print(" Condor version: %d"%(self.condorVersion))
+
+        return cv
 
     #-----------------------------------------------------------------------------------------------
     # find number of all jobs on this scheduler
@@ -115,6 +118,9 @@ class Scheduler:
             print(" CMD " + cmd)
         for line in os.popen(cmd).readlines():  # run command
             nMyJobs = int(line[:-1])
+
+        if DEBUG > 0:
+            print(" Jobs Counts - My: %d - Total: %d"%(nMyJobs,nJobs))
 
         return (nJobs,nMyJobs)
 
@@ -186,15 +192,15 @@ class Scheduler:
     #-----------------------------------------------------------------------------------------------
     def show(self):
 
-        print ' ====  S c h e d u l e r  ===='
-        print ' Here: ' + self.here
-        print ' Host: ' + self.host
-        print ' User: ' + self.user
-        print ' Base: ' + self.base
-        print ' HTCo: ' + str(self.condorVersion)
-        print ' ===== '
-        print ' My  : %6d  (MMax: %d)'%(self.nMyTotal,self.nMyTotalMax)
-        print ' Tot : %6d  (TMax: %d)'%(self.nTotal,self.nTotalMax)
+        print(' ====  S c h e d u l e r  ====')
+        print(' Here: ' + self.here)
+        print(' Host: ' + self.host)
+        print(' User: ' + self.user)
+        print(' Base: ' + self.base)
+        print(' HTCo: ' + str(self.condorVersion))
+        print(' ===== ')
+        print(' My  : %6d  (MMax: %d)'%(self.nMyTotal,self.nMyTotalMax))
+        print(' Tot : %6d  (TMax: %d)'%(self.nTotal,self.nTotalMax))
 
     #-----------------------------------------------------------------------------------------------
     # update on the fly

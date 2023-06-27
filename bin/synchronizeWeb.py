@@ -18,9 +18,9 @@ usage = "\nUsage: sycnhronizeWeb.py [ --help ]\n"
 valid = ['help']
 try:
     opts, args = getopt.getopt(sys.argv[1:], "", valid)
-except getopt.GetoptError, ex:
-    print usage
-    print str(ex)
+except getopt.GetoptError as ex:
+    print(usage)
+    print(str(ex))
     sys.exit(1)
 
 # --------------------------------------------------------------------------------------------------
@@ -29,12 +29,12 @@ except getopt.GetoptError, ex:
 # Read new values from the command line
 for opt, arg in opts:
     if opt == "--help":
-        print usage
+        print(usage)
         sys.exit(0)
 
 # Deal with obvious problems
 if not os.getenv('KRAKEN_AGENTS_WWW'):
-    print "\n Kraken agent environment is not initialized (KRAKEN_AGENTS_WWW).\n"
+    print("\n Kraken agent environment is not initialized (KRAKEN_AGENTS_WWW).\n")
     sys.exit(1)
 
 # --------------------------------------------------------------------------------------------------
@@ -46,16 +46,20 @@ myRx = rex.Rex()
 cmd = "date >& " + os.getenv('KRAKEN_AGENTS_LOG')  + '/heartbeat'
 (rc,out,err) = myRx.executeLocalAction(cmd)
 
+# update our cycle info (needed for the active productions)
+cmd = "cp  " + os.getenv('KRAKEN_AGENTS_BASE') + "/cycle.cfg " + os.getenv('KRAKEN_AGENTS_LOG')
+(rc,out,err) = myRx.executeLocalAction(cmd)
+
 if rc != 0:
-    print '\n ==== ERROR -- DATE (%s) ====\n\n%s'%(cmd,err)
-    print '\n ==== OUTPUT -- DATE (%s) ====\n\n%s'%(cmd,out)
+    print('\n ==== ERROR -- DATE (%s) ====\n\n%s'%(cmd,err))
+    print('\n ==== OUTPUT -- DATE (%s) ====\n\n%s'%(cmd,out))
 else:
-    print ' ==== DATE (%s) ===='%(cmd)
+    print(' ==== DATE (%s) ===='%(cmd))
 
 # issue full rsync on the log directory
 cmd = "rsync -Cavz --delete " + os.getenv('KRAKEN_AGENTS_LOG') + ' ' \
     +                           os.getenv('KRAKEN_AGENTS_WWW') + '/../'
-print ' Synchronizing: %s'%(cmd)
+print(' Synchronizing: %s'%(cmd))
 
 rc = 0
 out = ''
@@ -63,7 +67,7 @@ err = ''
 (rc,out,err) = myRx.executeLocalAction(cmd)
 
 if rc != 0:
-    print '\n ==== ERROR -- RSYNC (%s) ====\n\n%s'%(cmd,err)
-    print '\n ==== OUTPUT -- RSYNC (%s) ====\n\n%s'%(cmd,out)
+    print('\n ==== ERROR -- RSYNC (%s) ====\n\n%s'%(cmd,err))
+    print('\n ==== OUTPUT -- RSYNC (%s) ====\n\n%s'%(cmd,out))
 else:
-    print '\n ==== RSYNC (%s) ====\n\n%s'%(cmd,out)
+    print('\n ==== RSYNC (%s) ====\n\n%s'%(cmd,out))

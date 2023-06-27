@@ -16,7 +16,6 @@ A convenient location could be the Tier-2 it could also be the Tier-3 but Tier-2
 
 ## Running independent test job interactively
 
-
 ## Typical use for Panda file production
 
 ### Install your own code

@@ -166,7 +166,7 @@ def findDatasetProperties(dataset,dbsInst,debug=0):
 
                 nEvents = int(f[2])
 
-#            #print '%s: %d %d %f'%(fileName,nFiles,nEvents,totalSize/1000./1000./1000.)
+#            #print('%s: %d %d %f'%(fileName,nFiles,nEvents,totalSize/1000./1000./1000.))
 #            fId = fileIds.fileId(fileName,nEvents)
 #            lfn = fileIds.lfn(fId,block,path)
                 fId = fileIds.fileId(id+".root",nEvents)
@@ -174,7 +174,7 @@ def findDatasetProperties(dataset,dbsInst,debug=0):
                 #lfn.show()
                 lfns[fId.getName()] = lfn
                 if debug>-1:
-                    print " Adding: %s, %s"%(id,path)
+                    print(" Adding: %s, %s"%(id,path))
             else:
                 pass
                 #print(" LINE invalid")
@@ -323,7 +323,7 @@ def getProxy():
     for line in subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE).stdout.readlines():
         proxy = line[:-1]
     
-    return proxy
+    return proxy.decode()
 
 def insertDataset(db,process,setup,tier,dbsInst,sizeGb,nFiles,lfns,debug=0):
     
@@ -361,6 +361,7 @@ def isDatasetValid(dataset,dbsInst,debug=0):
     # test whether this dataset is a valid dataset
 
     proxy = getProxy()
+    print(" Proxy: %s"%(proxy))
     url = 'curl -s --cert %s -k -H "Accept: application/json"'%proxy \
         + ' "https://cmsweb.cern.ch/dbs/prod/global/DBSReader/'  \
         + 'datasets?dataset_access_type=VALID&dataset=%s"'%(dataset)
@@ -377,6 +378,7 @@ def isDatasetValid(dataset,dbsInst,debug=0):
 
         process = subprocess.Popen(url,stdout=subprocess.PIPE,shell=True)
         dbsList, error = process.communicate()
+        dbsList = dbsList.decode()
 
         if process.returncode != 0 or nTries > 2:
             print(" Received non-zero exit status: " + str(process.returncode))
@@ -527,7 +529,7 @@ usage += "                     [ --help ]\n\n"
 valid = ['dataset=','dbs=','debug=','exec','help']
 try:
     opts, args = getopt.getopt(sys.argv[1:], "", valid)
-except getopt.GetoptError, ex:
+except getopt.GetoptError as ex:
     print(usage)
     print(str(ex))
     sys.exit(1)
@@ -551,7 +553,7 @@ for opt, arg in opts:
     if opt == "--dbs":
         dbsInst = arg
     if opt == "--debug":
-        debug = arg
+        debug = int(arg)
     if opt == "--exec":
         exe = True
 

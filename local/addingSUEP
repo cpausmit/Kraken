@@ -1,0 +1,23 @@
+LIST="\
+/mc/SUEP-m400-md2-t0.5-generic/RunIIAutumn18-private/MINIAODSIM
+/mc/SUEP-m400-md2-t1-generic/RunIIAutumn18-private/MINIAODSIM
+/mc/SUEP-m400-md2-t2-generic/RunIIAutumn18-private/MINIAODSIM
+/mc/SUEP-m400-md2-t3-generic/RunIIAutumn18-private/MINIAODSIM
+/mc/SUEP-m400-md2-t4-generic/RunIIAutumn18-private/MINIAODSIM
+/mc/SUEP-m400-md3-t1.5-generic/RunIIAutumn18-private/MINIAODSIM
+/mc/SUEP-m400-md3-t3-generic/RunIIAutumn18-private/MINIAODSIM
+/mc/SUEP-m400-md3-t6-generic/RunIIAutumn18-private/MINIAODSIM
+/mc/SUEP-m400-md5-t1-generic/RunIIAutumn18-private/MINIAODSIM
+/mc/SUEP-m400-md5-t10-generic/RunIIAutumn18-private/MINIAODSIM
+/mc/SUEP-m400-md5-t5-generic/RunIIAutumn18-private/MINIAODSIM\
+"
+BASE=/cms/store/user/paus
+
+
+for sample in $LIST
+do
+
+  echo catalogPrivateMc.sh $BASE$sample
+  echo addDataset.py --dataset $sample
+
+done

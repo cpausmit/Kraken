@@ -19,7 +19,13 @@ class Lfn:
     # constructor to connect with existing setup
     #-----------------------------------------------------------------------------------------------
     def __init__(self,fullFileName):
-        self.lfn = fullFileName[fullFileName.find("/store/user"):]
+        # make sure we know what we deal with (official or kraken lfn)
+
+        idx = fullFileName.find("/store/user")
+        
+        self.lfn = fullFileName[:]
+        
+        print(" DB: %s"%(self.lfn))
         if self.lfn != "":
             f = self.lfn.split("/")
             self.fileId = f[-1].replace(".root","")
@@ -31,8 +37,9 @@ class Lfn:
     # present the full lfn information
     #-----------------------------------------------------------------------------------------------
     def show(self):
-        print ' LFN:      %s'%(self.lfn)
-        print ' -config:  %s'%(self.config)
-        print ' -version: %s'%(self.version)
-        print ' -dataset: %s'%(self.dataset)
-        print ' -fileId:  %s'%(self.fileId)
+        print(' LFN:      %s'%(self.lfn))
+        print(' -config:  %s'%(self.config))
+        print(' -version: %s'%(self.version))
+        print(' -dataset: %s'%(self.dataset))
+        print(' -fileId:  %s'%(self.fileId))
+

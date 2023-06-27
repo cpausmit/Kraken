@@ -1,7 +1,7 @@
 # basic general
-Request_Memory          = 6.0 GB
-Request_Disk            = 3 GB
-Request_Cpus            = 1
+Request_Memory          = 4.0 GB
+Request_Disk            = 6 GB
+Request_Cpus            = XX-NCPUS-XX
 Notification            = Error
 Rank                    = Mips
 GetEnv                  = False
@@ -9,17 +9,12 @@ Input                   = /dev/null
 should_transfer_files   = YES
 when_to_transfer_output = ON_EXIT
 on_exit_hold            = (ExitBySignal == True) || (ExitCode != 0)
-
-# MAX_TRANSFER_INPUT_MB
+notification            = never
 
 # make sure we get a reasonable slot
-+RequestMemory = 6000
-#+MaxWallTimeMins = 480
++RequestMemory          = 4000
 
 # CMS requirements
 use_x509userproxy       = True
 +AcctGroup              = "analysis"
 +AccountingGroup        = "analysis.paus"
-
-# OSG registered project name
-+ProjectName            = "CpDarkMatterSimulation"

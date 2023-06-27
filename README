@@ -1,0 +1,30 @@
+Test specific sites
+===================
+
+vomit
+
+cd ~/Tools/Kraken
+
+source ./agents/setup.sh
+source ./agents/cycle.cfg
+source ./config/run-local.sh
+
+cd -
+
+# TEST ONE FILE
+
+export CONFIG=nanosc
+export VERSION=E03
+export PY=nanosc
+export DSET=ScoutingPFHT+Run2018C-v1+RAW
+
+mkdir -p ~/tmp/$CONFIG/$VERSION
+cp ~/cms/cmssw/$VERSION/CMSSW*/kraken*tgz ~/cms/jobs/lfns/$DSET.lfns \
+   ~/tmp/$CONFIG/$VERSION
+cd ~/tmp/$CONFIG/$VERSION
+cp /tmp/x509up_u5410 .
+
+FILE=`head -1  ScoutingPFHT+Run2018C-v1+RAW.lfns |cut -d ' ' -f2`
+GPACK=`basename $FILE | sed 's/.root//'`
+
+~/Tools/Kraken/bin/releaseKraken.sh cmsRun $CONFIG $VERSION $PY $DSET $GPACK $FILE tmp_0_0

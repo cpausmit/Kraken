@@ -31,7 +31,7 @@ class Dataset:
         block.add_file(file_name,file_size)
 
     def show(self):
-        print " # Dataset: %s"%(self.name)
+        print(" # Dataset: %s"%(self.name)"
         for block_name in self.blocks:
             self.blocks[block_name].show()
 
@@ -39,7 +39,7 @@ class Dataset:
 
         (config,version,parent_dataset) = self.name.split('/')
 
-        print " Injecting into: %s"%(site)
+        print(" Injecting into: %s"%(site))
 
         # fundamental json with blocks and files to be added
         json = { 'dataset':
@@ -77,7 +77,7 @@ class Dataset:
 
         (config,version,parent_dataset) = self.name.split('/')
 
-        print " Injecting into: %s"%(site)
+        print(" Injecting into: %s"%(site))
 
         # fundamental json with blocks and files to be added
         json = { 'datasetreplica':
@@ -110,9 +110,9 @@ class Block:
         self.sizes[name] = size
 
     def show(self):
-        print " ## Block: %s"%(self.name)
+        print(" ## Block: %s"%(self.name))
         for file_name in self.sizes:
-            print " %s -- %d"%(file_name,self.sizes[file_name])
+            print(" %s -- %d"%(file_name,self.sizes[file_name]))
 
     def json(self,site="T2_US_MIT"):
         json = []

@@ -47,9 +47,10 @@ def addErrorAtSite(errorTag,siteTag,nErrsSitesTypes):
 
 def printErrorAtSite(nErrsSitesTypes):
 
+## d.iteritems() -> iter(d.items())
     # find all site tags
     siteTags = []
-    for errTag,nErrsSite in nErrsSitesTypes.iteritems():
+    for errTag,nErrsSite in iter(nErrsSitesTypes.items()):
         for siteTag in nErrsSite:
             if siteTag not in siteTags:
                 siteTags.append(siteTag)
@@ -59,14 +60,14 @@ def printErrorAtSite(nErrsSitesTypes):
         sys.stdout.write("%10s "%siteTag[:10])        
 
 
-    for errTag,nErrsSite in nErrsSitesTypes.iteritems():
+    for errTag,nErrsSite in iter(nErrsSitesTypes.items()):
         sys.stdout.write("\n %-10s "%errTag)
         for siteTag in siteTags:
             if siteTag in nErrsSite:
                 sys.stdout.write("%10d "%(nErrsSite[siteTag]))
             else:
                 sys.stdout.write("%10d "%(0))
-    print ''
+    print('')
 
     return
 
@@ -78,20 +79,20 @@ def findAllJobStubs(config,version,dataset,pattern,debug=0):
     if pattern != '':
         cmd = cmd + ' | grep %s'%(pattern)
     if debug > 0:
-        print " CMD: " + cmd
+        print(" CMD: " + cmd)
     
     p = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
     (out, err) = p.communicate()
     rc = p.returncode
     
     if debug > 0:
-        print "\n\n RC : " + str(rc)
-        print "\n\n OUT:\n" + out
-        print "\n\n ERR:\n" + err
+        print("\n\n RC : " + str(rc))
+        print("\n\n OUT:\n" + out.decode())
+        print("\n\n ERR:\n" + err.decode())
     
-    out = out.replace('.err','')
+    out = out.decode().replace('.err','')
     stubs = (out[:-1]).split("\n")                 # make sure to ignore the last '\n'
-    print ' Number of all jobs found: %d'%(len(stubs))
+    print(' Number of all jobs found: %d'%(len(stubs)))
 
     return stubs
 
@@ -103,8 +104,8 @@ def readPatterns(debug=0):
         data = eval(input)
     
     if debug > 0:
-        print " PATTERNS: "
-        print data
+        print(" PATTERNS: ")
+        print(data)
 
     oPs = data['outPatterns']
     ePs = data['errPatterns']
@@ -119,7 +120,7 @@ def isValidStub(stub):
         return False
 
     if not os.path.exists(stub+'.out') or not os.path.exists(stub+'.err'):
-        print ' Output/Error file not available: ' + stub + ' ' + stub[-7:]
+        print(' Output/Error file not available: ' + stub + ' ' + stub[-7:])
         return False
 
     return True
@@ -129,7 +130,7 @@ def isValidStub(stub):
 #                                         M A I N
 #---------------------------------------------------------------------------------------------------
 if not os.getenv('KRAKEN_AGENTS_WWW'):
-    print "\n Kraken agent environment is not initialized (KRAKEN_AGENTS_WWW).\n"
+    print("\n Kraken agent environment is not initialized (KRAKEN_AGENTS_WWW).\n")
     sys.exit(1)
 
 # Define the valid options which can be specified and check out the command line
@@ -138,9 +139,9 @@ usage = "\n analyzeErrors.py --config=<cfg>  --version=<vrs>  --dataset=<dset>"\
 valid = ['config=','version=','dataset=','pattern=','debug=','interactive','help']
 try:
     opts, args = getopt.getopt(sys.argv[1:], "", valid)
-except getopt.GetoptError, ex:
-    print usage
-    print str(ex)
+except getopt.GetoptError as ex:
+    print(usage)
+    print(str(ex))
     sys.exit(1)
 
 # Set defaults for each command line parameter/option
@@ -156,7 +157,7 @@ pattern=''
 # Read new values from the command line
 for opt, arg in opts:
     if opt == "--help":
-        print usage
+        print(usage)
         sys.exit(0)
     if opt == "--config":
         config = arg
@@ -180,14 +181,14 @@ nErrsSites = {}
 # keep track of output file patterns
 outCounts = {}
 outValues = {}
-for tag,value in outPatterns.iteritems():
+for tag,value in iter(outPatterns.items()):
     outCounts[tag] = 0
     outValues[tag] = ''
 
 # keep track of error file patterns
 errCounts = {}
 errValues = {}
-for tag,value in errPatterns.iteritems():
+for tag,value in iter(errPatterns.items()):
     errCounts[tag] = 0
     errValues[tag] = ''
 
@@ -207,12 +208,12 @@ for stub in stubs:
     hostName = 'undefined'
 
     if debug > 1:
-        print " Open: %s"%(stub+'.out')
+        print(" Open: %s"%(stub+'.out'))
 
     # first analyze the output
     with open(stub+'.out',"r") as f:
         for line in f:
-            for tag,value in outPatterns.iteritems():
+            for tag,value in iter(outPatterns.items()):
                 if value in line:
                     outCounts[tag] += 1
                     if tag == 'node':
@@ -226,19 +227,19 @@ for stub in stubs:
     errTag = 'ud'
     lError = False
     if debug > 1:
-        print " Open: %s"%(stub+'.err')
+        print(" Open: %s"%(stub+'.err'))
     with open(stub+'.err',"r") as f:
         for line in f:
-            for tag,value in errPatterns.iteritems():
+            for tag,value in iter(errPatterns.items()):
                 if value in line:
                     lError = True
                     errTag = tag
                     errCounts[tag] += 1
                     #errValues[tag] += line
                     if debug>0:
-                        print " ERR(%s) on %s in stub %s"%(errTag,hostName,stub)
+                        print(" ERR(%s) on %s in stub %s"%(errTag,hostName,stub))
                     if debug>1:
-                        print " ERR %s"%(line[:-1])
+                        print(" ERR %s"%(line[:-1]))
 
     if siteName in nErrsSites:
         pass
@@ -251,41 +252,42 @@ for stub in stubs:
     if errTag != 'ud':
         nErrSitesTypes = addErrorAtSite(errTag,siteName,nErrsSitesTypes)
 
-print ''
-print ' ---- ERROR SUMMARY ----'
-print '  error tag       count '
-print ' ======================='
+print('')
+print(' ---- ERROR SUMMARY ----')
+print('  error tag       count ')
+print(' =======================')
 nTotal = 0
 for tag in sorted(errPatterns):
-    print '  %-14s: %4d'%(tag,errCounts[tag])
+    print('  %-14s: %4d'%(tag,errCounts[tag]))
     nTotal += errCounts[tag]
-print ' ---------------------------------'
-print '  %-14s: %4d'%('TOTAL',nTotal)
-print ' ================================='
-print ''
-print ''
-print ' ------ ERROR SUMMARY SITE -------'
-print '  site tag                  count '
-print ' ================================='
+print(' ---------------------------------')
+print('  %-14s: %4d'%('TOTAL',nTotal))
+print(' =================================')
+print('')
+print('')
+print(' ------ ERROR SUMMARY SITE -------')
+print('  site tag                  count ')
+print(' =================================')
 nTotal = 0
 for tag in sorted(nErrsSites):
     if nErrsSites[tag]>0:
-        print '  %-25s: %4d'%(tag,nErrsSites[tag])
+        print('  %-25s: %4d'%(tag,nErrsSites[tag]))
     nTotal += nErrsSites[tag]
-print ' ---------------------------------'
-print '  %-25s: %4d'%('TOTAL',nTotal)
-print ' ================================='
-print ''
+print(' ---------------------------------')
+print('  %-25s: %4d'%('TOTAL',nTotal))
+print(' =================================')
+print('')
 
-print ' Err Matrix'
+print(' Err Matrix')
 printErrorAtSite(nErrsSitesTypes)
-print ''
+print('')
 
-ncountFile = "%s/reviewd/%s/%s/%s/ncounts.err"%(os.getenv('KRAKEN_AGENTS_WWW'),config,version,dataset)
-cmd = "cat %s"%(ncountFile)
-print("\n ERROR COUNTS PER FILE \n")
-if os.path.exists(ncountFile):
-    os.system(cmd)
+# we have a separate pointer to the file in the log
+#ncountFile = "%s/reviewd/%s/%s/%s/ncounts.err"%(os.getenv('KRAKEN_AGENTS_WWW'),config,version,dataset)
+#cmd = "cat %s"%(ncountFile)
+#print("\n ERROR COUNTS PER FILE \n")
+#if os.path.exists(ncountFile):
+#    os.system(cmd)
 
 if sys.stdin.isatty() and interactive:
     # running interactively
@@ -302,26 +304,26 @@ for stub in stubs:
         continue
 
     if not os.path.exists(stub+'.out') or  not os.path.exists(stub+'.err'):
-        print ' Output/Error file not available: ' + stub
+        print(' Output/Error file not available: ' + stub)
         continue
 
     if debug > 1:
-        print " Open: %s"%(stub+'.err')
+        print(" Open: %s"%(stub+'.err'))
 
     with open(stub+'.err',"r") as f:
         for line in f:
-            print line[:-1]
-        print ' File: %s.%s'%(stub,'err')
+            print(line[:-1])
+        print(' File: %s.%s'%(stub,'err'))
         answer = raw_input('Remove this held job? [N/y] ')
 
 if len(sys.argv) < 2:
-    print ' End (%d)'%(len(sys.argv))
-    print ' A: ' + sys.argv[0]
+    print(' End (%d)'%(len(sys.argv)))
+    print(' A: ' + sys.argv[0])
     sys.exit(0)
 elif sys.argv[1] == 'remove':
     pass
 else:
-    print ' Done (%d)'%(len(sys.argv))
+    print(' Done (%d)'%(len(sys.argv)))
     sys.exit(0)
 
 cmd = "condor_q " + os.getenv('USER') \
@@ -335,7 +337,7 @@ out = out.replace('.err','')
 lines = out.split("\n") 
 for line in lines:
     f = line.split(":")
-    print ' Line: ' + line
+    print(' Line: ' + line)
 
     if len(f) < 2:
         continue
@@ -345,6 +347,6 @@ for line in lines:
     stub = f[2]
 
     cmd = ' rm ' + stub + ".*; condor_rm " + clusterId + "." + procId
-    print cmd
+    print(cmd)
     os.system(cmd)
     

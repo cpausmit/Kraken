@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# Samples
+SUEP_SERVER=cmseos.fnal.gov
+SUEP_PATH=/store/group/lpcsuep/Production_v4.0/2018/MINIAOD
+SUEP_TMP=/tmp/suep_private_prod
+
+PATTERNS="
+mMed-400_mDark-2_temp-0.5,mMed-400_mDark-2_temp-1,mMed-400_mDark-2_temp-2,mMed-400_mDark-2_temp-3,mMed-400_mDark-2_temp-4,
+mMed-400_mDark-3_temp-1.5,mMed-400_mDark-3_temp-3,mMed-400_mDark-3_temp-6,
+mMed-400_mDark-5_temp-1,mMed-400_mDark-5_temp-5,mMed-400_mDark-5_temp-10
+"
+PATTERNS=`echo $PATTERNS | tr -d '\n'`
+PATTERNS=`echo $PATTERNS | tr ',' ' '`
+
+echo "\
+xrdfs $SUEP_SERVER ls $SUEP_PATH > $SUEP_TMP"
+xrdfs $SUEP_SERVER ls $SUEP_PATH > $SUEP_TMP
+
+for pattern in $PATTERNS
+do
+	
+    echo " Pattern: $pattern"
+    grep $pattern $SUEP_TMP
+
+done

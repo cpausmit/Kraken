@@ -1,0 +1,18 @@
+#!/bin/bash
+
+BASE=/cms/store/user/paus/
+
+for request in `cat $1 |tr ' ' ':' | grep -v ^#`
+do
+
+  echo $request
+  config=`echo $request | cut -d : -f1`
+  version=`echo $request | cut -d : -f2`
+  py=`echo $request | cut -d : -f3`
+  dataset=`echo $request | cut -d : -f4`
+
+  echo "\
+  addRequest.py --config $config --version $version --py $py --dataset $dataset"
+#  addRequest.py --config $config --version $version --py $py --dataset $dataset
+
+done

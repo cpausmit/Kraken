@@ -1,0 +1,4 @@
+Requirements = ( OSGVO_OS_STRING == "RHEL 7" && HAS_CVMFS_cms_cern_ch == True )
+
+# OSG registered project name
++ProjectName = "MIT_submit"

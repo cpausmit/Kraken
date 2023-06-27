@@ -147,7 +147,10 @@ chown ${KRAKEN_USER}:${KRAKEN_GROUP} -R $KRAKEN_AGENTS_LOG
 # install and start daemons
 #==========================
 
-install reviewd
+if [ -z "$KRAKEN_MINIMAL" ]  # only start the reviewer is KRAKEN_MINIMAL is not set
+then
+  install reviewd
+fi
 install catalogd
 install cleanupd
 

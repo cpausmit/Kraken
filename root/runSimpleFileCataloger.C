@@ -4,6 +4,7 @@
 #include <TSystem.h>
 #endif
 
+TFile* f;
 const TString slash      = "/";
 const TString hadoopDoor = "root://xrootd.cmsaf.mit.edu/";
 
@@ -11,8 +12,10 @@ void catalogFile(const char *dir, const char *file);
 void reset();
 
 //--------------------------------------------------------------------------------------------------
-void runSimpleFileCataloger(const char *dir  = "/tmp",
-			    const char *file = "SIDIS+pythia6+ep_18x100+run001+1900000_10000_tmp.root")
+//void runSimpleFileCataloger(const char *dir  = "/tmp",
+//			    const char *file = "SIDIS+pythia6+ep_18x100+run001+1900000_10000_tmp.root")
+void runSimpleFileCataloger(const char *dir  = "/cms/store/user/paus/mc/SUEP-m400-md2-t0.5-generic/RunIIAutumn18-private",
+			    const char *file = "")
 {
   // -----------------------------------------------------------------------------------------------
   // This script runs a full cataloging action on the given directory/file combination
@@ -21,7 +24,8 @@ void runSimpleFileCataloger(const char *dir  = "/tmp",
   if (strcmp(file,"") == 0) {
     string s;
     ifstream infile;
-    cout << " Open file" << endl;
+    cout << " Open input list file" << endl;
+    
     infile.open("tmp_list.txt");
     while (! infile.eof()) {
       getline(infile,s);
@@ -74,8 +78,12 @@ void catalogFile(const char *dir, const char *file)
   }
   
   printf("\n Opening: %s\n\n",fileName.Data());
-  TFile* f       = TFile::Open(fileName.Data());
-
+  f = TFile::Open(fileName.Data());
+  if (! f) {
+    printf(" ERROR opening file.\n\n");
+    return;
+  }
+  
   // Simplest access to total number of events
   long long nAll = -1;
   TH1F* h1 = (TH1F*)f->Get("htotal");
@@ -83,10 +91,11 @@ void catalogFile(const char *dir, const char *file)
     nAll = h1->GetEntries();
   
   // Now deal with trees
-  TTree *tree = 0, *allTree = 0;
-
+  TTree *tree = 0, *allTree = 0, *aodTree = 0;
+ 
   tree = (TTree*) f->FindObjectAny("events");
   allTree  = (TTree*) f->FindObjectAny("all");
+  aodTree  = (TTree*) f->FindObjectAny("tree");
 
   if (tree && allTree) {
     if (nAll < 0)
@@ -101,6 +110,14 @@ void catalogFile(const char *dir, const char *file)
       nAll = tree->GetEntries();
     printf("XX-CATALOG-XX 0000 %s %lld %lld %d %d %d %d\n",
 	   fileName.Data(),tree->GetEntries(),nAll,1,1,1,1);
+    return;
+  }
+
+  if (aodTree) {
+    if (nAll < 0)
+      nAll = aodTree->GetEntries();
+    printf("XX-CATALOG-XX 0000 %s %lld %lld %d %d %d %d\n",
+	   fileName.Data(),aodTree->GetEntries(),nAll,1,1,1,1);
     return;
   }
 

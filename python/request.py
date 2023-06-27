@@ -32,12 +32,20 @@ class Request:
         self.version = version
         self.py = py
 
+        self.establishState()
+
+    #-----------------------------------------------------------------------------------------------
+    # establish the full state of the request (this resets existing info)
+    #-----------------------------------------------------------------------------------------------
+    def establishState(self):
+        print(" -- Establish request status --")
         self.loadQueuedJobs()
         self.loadHeldJobs()
         self.loadCompletedJobs()
         self.loadNFailedJobs()
         self.sample.createMissingJobs()
-
+        return
+        
     #-----------------------------------------------------------------------------------------------
     # load all jobs so far completed relevant to this task
     #-----------------------------------------------------------------------------------------------
@@ -50,6 +58,10 @@ class Request:
     #-----------------------------------------------------------------------------------------------
     def loadCompletedJobs(self):
 
+        # initialize from scratch
+        self.sample.resetCompletedJobs()
+        self.sample.resetNoCatalogJobs()
+        
         # initialize from scratch
         path = self.base + '/' + self.config + '/' + self.version + '/' \
             + self.sample.dataset
@@ -125,6 +137,9 @@ class Request:
     #-----------------------------------------------------------------------------------------------
     def loadNFailedJobs(self):
 
+        # initialize from scratch
+        self.sample.resetNFailedJobs()
+       
         trunc = "%s/reviewd"%(os.getenv('KRAKEN_AGENTS_WWW'))
         file_name = "%s/%s/%s/%s/ncounts.err"%(trunc,self.config,self.version,self.sample.dataset)
 

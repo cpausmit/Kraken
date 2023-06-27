@@ -6,16 +6,18 @@
 #---------------------------------------------------------------------------------------------------
 import os,sys,re,getopt
 
-def getHeader():
+def getHeader(config,version):
     header = '<!DOCTYPE html><html><head><title>Kraken Production</title></head>' \
         + '<style>' \
-        + 'a:link{color:#000000; background-color:transparent; text-decoration:none}' \
-        + 'a:visited{color:#009000; background-color:transparent; text-decoration:none}' \
-        + 'a:hover{color:#900000;background-color:transparent; text-decoration:underline}' \
-        + 'a:active{color:#900000;background-color:transparent; text-decoration:underline}' \
+        + 'a:link{color:#202020; background-color:transparent; text-decoration:none}' \
+        + 'a:visited{color:#0074AA; background-color:transparent; text-decoration:none}' \
+        + 'a:hover{color:#000090;background-color:transparent; text-decoration:underline}' \
+        + 'a:active{color:#000040;background-color:transparent; text-decoration:underline}' \
         + 'body.ex{margin-top: 0px; margin-bottom:25px; margin-right: 25px; margin-left: 25px;}' \
-        + '</style><body class="ex" bgcolor="#eeeeee">' \
-        + '<body style="font-family: arial;font-size: 20px;font-weight: bold;color:#900000;">' \
+        + '</style><body class="ex" bgcolor="#ffefef">' \
+        + '<body style="font-family: arial;font-size: 20px;font-weight: bold;color:#405050;">' \
+        + '<code><a href="%s-%s_batch.png"><img width=30%% src=%s-%s_batch.png></a>'%(config,version,config,version) \
+        + '<a href="%s-%s_total.png"><img width=30%% src=%s-%s_total.png></a></code>'%(config,version,config,version) \
         + '<pre>\n'
     return header
 
@@ -33,9 +35,9 @@ usage = "\nUsage: htmlDressing.py [ --input=<id>  --help ]\n"
 valid = ['input=','version=','help']
 try:
     opts, args = getopt.getopt(sys.argv[1:], "", valid)
-except getopt.GetoptError, ex:
-    print usage
-    print str(ex)
+except getopt.GetoptError as ex:
+    print(usage)
+    print(str(ex))
     sys.exit(1)
 
 # --------------------------------------------------------------------------------------------------
@@ -48,7 +50,7 @@ version = '000'
 # Read new values from the command line
 for opt, arg in opts:
     if opt == "--help":
-        print usage
+        print(usage)
         sys.exit(0)
     if opt == "--input":
         input = arg
@@ -58,7 +60,8 @@ for opt, arg in opts:
 # Deal with obvious problems
 if input == "":
     cmd = "--input  parameter not provided. This is a required parameter."
-    raise RuntimeError, cmd
+    raise ValueError('No input was provided.')
+#raise RuntimeError as cmd
 
 # --------------------------------------------------------------------------------------------------
 # Here is where the real action starts -------------------------------------------------------------
@@ -66,8 +69,8 @@ if input == "":
 
 # find new file name
 htmlFile = input + '.html'
-#print ' ASCII: ' + input
-#print ' HTML:  ' + htmlFile
+#print(' ASCII: ' + input)
+#print(' HTML:  ' + htmlFile)
 
 fileInput  = open(input,'r')
 fileOutput = open(htmlFile,'w')
@@ -85,7 +88,7 @@ py = py.replace('status-','')
 py = py.replace('incomplete-','')
 
 # insert header
-fileOutput.write(getHeader())
+fileOutput.write(getHeader(config,version))
 
 # translate the body
 with open(input,"r") as fileInput:

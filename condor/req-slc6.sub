@@ -1,26 +1,6 @@
-Requirements = (isUndefined(IS_GLIDEIN) || \
-                (OSGVO_OS_STRING == "RHEL 7" && HAS_CVMFS_cms_cern_ch == true ) || \
-                GLIDEIN_REQUIRED_OS == "rhel7" || \
-                HAS_SINGULARITY == true || \
-                (Has_CVMFS_cms_cern_ch == true && (BOSCOGroup == "bosco_cms")) \
-	       ) && \
-               (isUndefined(GLIDEIN_Entry_Name) || \
-                !stringListMember(GLIDEIN_Entry_Name,"CMS_T2_US_Nebraska_Red,CMS_T2_US_Nebraska_Red_op,CMS_T2_US_Nebraska_Red_gw1,CMS_T2_US_Nebraska_Red_gw1_op,CMS_T2_US_Nebraska_Red_gw2,CMS_T2_US_Nebraska_Red_gw2_op,CMS_T3_MX_Cinvestav_proton_work,CMS_T3_US_Omaha_tusker,CMSHTPC_T3_US_Omaha_tusker,Engage_US_MWT2_iut2_condce,Engage_US_MWT2_iut2_condce_mcore,Engage_US_MWT2_osg_condce,Engage_US_MWT2_osg_condce_mcore,Engage_US_MWT2_uct2_condce,Engage_US_MWT2_uct2_condce_mcore,Glow_US_Syracuse_condor,Glow_US_Syracuse_condor-ce01,Gluex_US_NUMEP_grid1,HCC_US_BNL_gk01,HCC_US_BNL_gk02,HCC_US_BU_atlas-net2,HCC_US_BU_atlas-net2_long,HCC_US_SWT2_gk01,IceCube_US_Wisconsin_osg-ce,OSG_US_Clemson-Palmetto_condce,OSG_US_Clemson-Palmetto_condce_mcore,OSG_US_FIU_HPCOSGCE,OSG_US_Hyak_osg,OSG_US_IIT_iitgrid_rhel6,OSG_US_MWT2_mwt2_condce,OSG_US_MWT2_mwt2_condce_mcore,OSG_US_UConn_gluskap,OSG_US_SMU_mfosgce",",") \
-               ) && \
-               (isUndefined(GLIDEIN_Site) || !stringListMember(GLIDEIN_Site,"HOSTED_BOSCO_CE",","))
+Requirements = ( BOSCOCluster =!= "t3serv008.mit.edu" &&  BOSCOCluster =!= "ce03.cmsaf.mit.edu" && BOSCOCluster =!= "eofe8.mit.edu" ) && \
+               ( GLIDEIN_REQUIRED_OS == "rhel7" || HAS_SINGULARITY == true || Has_CVMFS_cms_cern_ch == true )
+
 +SingularityImage = "/cvmfs/singularity.opensciencegrid.org/opensciencegrid/osgvo-el6:latest"
 
-#
-#Has_CVMFS_cms_cern_ch == true && \
-#               ( \
-#                 ( Has_CVMFS_cms_cern_ch == true && \
-#                   OpSysAndVer == "CentOS6" && \
-#                   BOSCOCluster == "eofe5.mit.edu" && \
-#                   ( BOSCOGroup == "paus" || BOSCOGroup == "boj" ) \
-#                 ) || \
-#                 ( Has_CVMFS_cms_cern_ch == true && \
-#                   BOSCOCluster == "ce03.cmsaf.mit.edu" && \
-#                   ( BOSCOGroup == "bosco_cms" || BOSCOGroup == "bosco_cmshi" ) \
-#                 ) || \
-#                 ( HAS_SINGULARITY == TRUE ) \
-#               )
++DESIRED_Sites = "T2_CH_CERN,T2_CH_CERN_AI,T2_CH_CERN_HLT,T2_CH_CERN_Wigner,T2_DE_DESY,T2_DE_RWTH,T2_EE_Estonia,T2_ES_CIEMAT,T2_ES_IFCA,T2_FI_HIP,T2_FR_CCIN2P3,T2_FR_GRIF_IRFU,T2_FR_GRIF_LLR,T2_FR_IPHC,T2_HU_Budapest,T2_IN_TIFR,T2_IT_Bari,T2_IT_Legnaro,T2_IT_Pisa,T2_IT_Rome,T2_PL_Swierk,T2_PL_Warsaw,T2_PT_NCG_Lisbon,T2_UK_London_IC,T2_UK_SGrid_Bristol,T2_UK_SGrid_RALPP,T2_US_Caltech,T2_US_Florida,T2_US_MIT,T2_US_Nebraska,T2_US_Purdue,T2_US_UCSD,T2_US_Vanderbilt,T2_US_Wisconsin,T3_CH_CERN_CAF,T3_CH_CERN_DOMA,T3_CH_CERN_HelixNebula,T3_CH_CERN_HelixNebula_REHA,T3_US_HEPCloud,T3_US_OSG,T3_US_PSC,T3_US_SDSC"

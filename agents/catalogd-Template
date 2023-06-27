@@ -10,7 +10,7 @@ source XX-KRAKEN_AGENTS_BASE-XX/setup.sh
 export PATH=${PATH}:${KRAKEN_BASE}/bin:${FIBS_BASE}/bin:${T2TOOLS_BASE}/bin
 export PYTHONPATH=${PYTHONPATH}:${KRAKEN_BASE}/python:${FIBS_BASE}/python:${T2TOOLS_BASE}/python
 
-# daemon
+# this daemon
 daemon=`basename $0`
 
 # go to work area
@@ -18,6 +18,132 @@ cd $KRAKEN_AGENTS_WORK
 echo ""
 echo " Work area: "`pwd`
 echo ""
+
+function generate_catalog {
+  # generate the catalog and the status files for each request set
+
+  # read command line parameters
+  reqset="$1"      # given set of config:version:py1,py2,...
+  lF="$2"          # log file
+
+  # location for some plots
+  mydaemon=reviewd
+
+  echo " ==generate catalogs== Request Set: $reqset"                            >> $lF
+
+  cfg=`echo $reqset | cut -d: -f1`
+  vrs=`echo $reqset | cut -d: -f2`
+  pys=`echo $reqset | cut -d: -f3`
+
+  generateCatalogs.py $cfg/$vrs ''                                              >> $lF
+  failedFiles.py --book $cfg/$vrs --pattern ''                                  >> $lF
+
+  # Make relevant directories
+  #==========================
+  mkdir -p $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}
+
+  for py in `echo $pys | tr ',' ' '`
+  do
+    echo " ====-- cfg: $cfg, vrs: $vrs, py: $py"                                >> $lF
+    echo " "                                                                    >> $lF
+  
+    # Display only stuff
+    #===================
+
+    rm -f $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/status-$py
+    touch $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/status-$py
+
+    echo "#"        >> $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/status-$py
+    echo "# "`date` >> $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/status-$py
+    echo "#"        >> $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/status-$py
+    
+    echo " generating queue file"                                               >> $lF
+    $KRAKEN_BASE/bin/status.py --config=$cfg --version=$vrs \
+                    >  $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/queue 2> /dev/null
+
+    echo " making status files"                                                 >> $lF
+    stdbuf -o0 -e0 \
+      $KRAKEN_BASE/bin/reviewRequests.py --config=$cfg --version=$vrs --py=$py \
+           --displayOnly=1 >>  $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/status-$py
+  
+    # make sure ascii files get 'dressing'
+    echo " beautify status files"                                               >> $lF
+    $KRAKEN_BASE/bin/htmlDressing.py --version=$vrs \
+                     --input=$KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/status-$py
+
+
+    rm -f $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/incomplete-$py
+    touch $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/incomplete-$py
+
+    echo "#"        >> $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/incomplete-$py
+    echo "# "`date` >> $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/incomplete-$py
+    echo "#"        >> $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/incomplete-$py
+    
+    echo " making incomplete status files"                                      >> $lF
+    stdbuf -o0 -e0 \
+      $KRAKEN_BASE/bin/reviewRequests.py --config=$cfg --version=$vrs --py=$py \
+           --displayOnly=2 >>  $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/incomplete-$py
+  
+    # make sure ascii files get 'dressing'
+    echo " beautify incomplete status files"                                    >> $lF
+    $KRAKEN_BASE/bin/htmlDressing.py --version=$vrs \
+                     --input=$KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/incomplete-$py
+  
+    # keep log files up to speed
+    synchronizeWeb.py                                                           >> $lF
+  
+  done
+}
+
+function renew_checklist {
+  # generate the catalog and the status files for each request set
+
+  # read command line parameters
+  lF="$1"  # log file
+
+  # catalog monitor
+  echo " generating catalog monitor plots"                                        >> $lF
+  $KRAKEN_BASE/bin/analyzeCatalog.py                                              >> $lF
+  mv checkfile_activity*png $KRAKEN_AGENTS_LOG/${daemon}/
+  
+  # make sure the file exists
+  touch $FIBS_WORK/checkFile.list
+
+  # find out how many files are still in the list
+  nFilesLeft=`wc -l $FIBS_WORK/checkFile.list | cut -d' ' -f 1`
+  echo " Number of files left to catalog: $nFilesLeft"                            >> $lF
+
+  # produce a new checkFile.list file if there are no more requests left
+  if [ "$nFilesLeft" == "0" ]
+  then
+  
+    echo " Remake the list for cataloging."                                       >> $lF
+    rm -f tmp.list
+    touch tmp.list
+
+
+    # loop over all requested configurations
+    for reqset in $KRAKEN_REVIEW_CYCLE
+    do
+      echo " ==list file== Request Set: $reqset"                                  >> $lF
+  
+      cfg=`echo $reqset | cut -d: -f1`
+      vrs=`echo $reqset | cut -d: -f2`
+
+      echo " list /cms/store/user/paus/$cfg/$vrs/*/${KRAKEN_TMP_PREFIX}*/*.root"  >> $lF 
+      list /cms/store/user/paus/$cfg/$vrs/*/${KRAKEN_TMP_PREFIX}*/*.root \
+           | grep root | grep -v 'ls: ' | cut -d ' ' -f 2 >>  tmp.list
+    done
+ 
+    # list is complete: move it safely where it belongs
+    fibsLock.py --configFile=checkFile \
+                --cmd="wc tmp.list; mv tmp.list $FIBS_WORK/checkFile.list"        >> $lF
+
+    nFilesLeft=`wc -l $FIBS_WORK/checkFile.list | cut -d' ' -f 1`
+    echo " Remade the list for cataloging: $nFilesLeft files"                     >> $lF
+
+  fi
+}
 
 # infinite loop
 while [ 1 ]
@@ -56,134 +182,33 @@ do
   # ten loops over the process with one logfile (keep it small)
   for index in `echo 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19`
   do
-    # period nSeconds
-    let wait=$KRAKEN_CATALOG_CYCLE_SECONDS
-
-    echo " "                                                                        >> $logFile
-    echo " catalog loop $index started -- $tag (cycle wait $wait sec)"              >> $logFile
-    echo " "                                                                        >> $logFile
+    let wait=$KRAKEN_CATALOG_CYCLE_SECONDS   # period nSeconds
+    source $KRAKEN_BASE/agents/cycle.cfg     # load updated config
+    echo " ------------"                                                            >> $logFile
+    echo " CATALOG LOOP $index STARTED -- $tag (cycle wait $wait sec)"              >> $logFile
+    echo " ------------"                                                            >> $logFile
     echo "   --> "`date`                                                            >> $logFile
     echo " "                                                                        >> $logFile
 
-    # make sure the file exists
-    touch $FIBS_WORK/checkFile.list
-
-    # find out how many files are still in the list
-    nFilesLeft=`wc -l $FIBS_WORK/checkFile.list | cut -d' ' -f 1`
-    echo " Number of files left to catalog: $nFilesLeft"                            >> $logFile
-    # load updated config
-    source $KRAKEN_BASE/agents/cycle.cfg
-
-    if [ "$nFilesLeft" == "0" ]
-    then
-  
-      echo " Remake the list for cataloging."                                       >> $logFile
-      rm -f tmp.list
-      touch tmp.list
-
-
-      # loop over all requested configurations
-      for reqset in $KRAKEN_REVIEW_CYCLE
-      do
-        echo " ==list file== Request Set: $reqset"                                  >> $logFile
-  
-        cfg=`echo $reqset | cut -d: -f1`
-        vrs=`echo $reqset | cut -d: -f2`
-        pys=`echo $reqset | cut -d: -f3`
-
-        echo "list /cms/store/user/paus/$cfg/$vrs/*/${KRAKEN_TMP_PREFIX}*/*.root"  >> $logFile 
-        list /cms/store/user/paus/$cfg/$vrs/*/${KRAKEN_TMP_PREFIX}*/*.root \
-             | grep root | grep -v 'ls: ' | cut -d ' ' -f 2 >>  tmp.list
-
-      done
- 
-      # list is complete, let's move it safely where it belongs
-      fibsLock.py --configFile=checkFile \
-                  --cmd="mv tmp.list $FIBS_WORK/checkFile.list"                     >> $logFile
-
-      nFilesLeft=`wc -l $FIBS_WORK/checkFile.list | cut -d' ' -f 1`
-      echo " Remade the list for cataloging: $nFilesLeft files"                     >> $logFile
-    fi
+    renew_checklist $logFile
 
     # loop over all requested configurations
     for reqset in $KRAKEN_REVIEW_CYCLE
     do
-      echo " ==generate catalogs== Request Set: $reqset"                            >> $logFile
-
-      cfg=`echo $reqset | cut -d: -f1`
-      vrs=`echo $reqset | cut -d: -f2`
-      pys=`echo $reqset | cut -d: -f3`
-
-      generateCatalogs.py $cfg/$vrs ''                                              >> $logFile
-      failedFile.py --book $cfg/$vers --pattern ''                                  >> $logFile
-
-      for py in `echo $pys | tr ',' ' '`
-      do
-        mydaemon=reviewd
-
-        echo " ====-- cfg: $cfg, vrs: $vrs, py: $py"                                >> $logFile
-        echo " "                                                                    >> $logFile
-      
-        # Make relevant directories
-        #==========================
-
-        mkdir -p $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}
-      
-      
-        # Display only stuff
-        #===================
-
-        rm -f $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/status-$py
-        touch $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/status-$py
-
-        echo "#"        >> $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/status-$py
-        echo "# "`date` >> $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/status-$py
-        echo "#"        >> $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/status-$py
-        
-        stdbuf -o0 -e0 \
-          $KRAKEN_BASE/bin/reviewRequests.py --config=$cfg --version=$vrs --py=$py \
-               --displayOnly=1 >>  $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/status-$py
-      
-        # make sure ascii files get 'dressing'
-        $KRAKEN_BASE/bin/htmlDressing.py --version=$vrs \
-                         --input=$KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/status-$py
-
-
-        rm -f $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/incomplete-$py
-        touch $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/incomplete-$py
-
-        echo "#"        >> $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/incomplete-$py
-        echo "# "`date` >> $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/incomplete-$py
-        echo "#"        >> $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/incomplete-$py
-        
-        stdbuf -o0 -e0 \
-          $KRAKEN_BASE/bin/reviewRequests.py --config=$cfg --version=$vrs --py=$py \
-               --displayOnly=2 >>  $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/incomplete-$py
-      
-        # make sure ascii files get 'dressing'
-        $KRAKEN_BASE/bin/htmlDressing.py --version=$vrs \
-                         --input=$KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/incomplete-$py
-      
-        # keep log files up to speed
-        synchronizeWeb.py                                                           >> $logFile
-      
-      done
-
+       generate_catalog $reqset $logFile
     done
-
-    echo " "                                                                        >> $logFile
-    echo " completed review cycle."                                                 >> $logFile
-    echo " FINISH by updating log files on web."                                    >> $logFile
-
+ 
     # insure that the log information is updated
     mkdir -p $KRAKEN_AGENTS_WWW 
-
-    # sync the web area
     synchronizeWeb.py                                                               >> $logFile 2>&1
-
+ 
+    echo " "                                                                        >> $logFile
+    echo " completed review cycle."                                                 >> $logFile
+    echo " --------"                                                                >> $logFile
+    echo " FINISHED at "`date`                                                      >> $logFile
+    echo " --------"                                                                >> $logFile
     sleep $wait
   done
-
 
   # move log file to a dated version
   mv $logFile $KRAKEN_AGENTS_LOG/${daemon}/${daemon}-${tag}.log

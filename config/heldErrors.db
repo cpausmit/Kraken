@@ -25,6 +25,8 @@
                    'rootFatal': "Fatal Root Error",
                    'rootBytes': "bytecount too large",
                    'sysFatal': "A fatal system signal has occurred",
+		   'cmsRunFatal': "Begin Fatal Exception",
+		   'vertexExcep': "An exception of category 'VertexException'",
                    'io': "Input/output error",
                    'cvmfsNoFile': "cmsset_default.sh: No such file or director",
                    'cvmfsEndPoint': "cmsset_default.sh: Transport endpoint",

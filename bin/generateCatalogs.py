@@ -40,15 +40,15 @@ def getFiles(book,dataset):
     try:
         # Execute the SQL command
         if DEBUG>0:
-            print ' SQL: %s'%(sql)
+            print(' SQL: %s'%(sql))
         Cursor.execute(sql)
         if DEBUG>0:
-            print ' SQL: fetch results'
+            print(' SQL: fetch results')
         results = Cursor.fetchall()
         if DEBUG>0:
-            print ' SQL: DONE'
+            print(' SQL: DONE')
     except:
-        print 'ERROR(%s) - could not find request id.'%(sql)
+        print('ERROR(%s) - could not find request id.'%(sql))
 
     # found the request Id
     catalogedIds = fileIds.fileIds()
@@ -80,10 +80,10 @@ def writeRawFile(rawFile,book,dataset):
                 fHandle.write('%s/store/user/paus/%s/%s/%s %d %d 1 1 1 1\n' \
                                   %(XRDSE,book,dataset,fileName,nEvents,nEvents))
                 if DEBUG>0:
-                    print ' file: %s'%(fileName)
+                    print(' file: %s'%(fileName))
                 nFiles += 1
     except:
-        print ' ERROR-- could not write raw file.'
+        print(' ERROR-- could not write raw file.')
 
     return nFiles
 
@@ -110,7 +110,7 @@ def makeCatalog(dir,nFilesPerSet):
 
             fileName = g[-1]
             if len(f) != 7:
-                print ' Length is not six: %d'%len(f)
+                print(' Length is not six: %d'%len(f))
                 sys.exit(1)
 
             file = fileIds.fileId(fileName,int(f[1]),int(f[2]),int(f[3]),int(f[4]),int(f[5]),int(f[6]));
@@ -138,7 +138,7 @@ def makeCatalog(dir,nFilesPerSet):
 #===================================================================================================
 # make sure command line is complete
 if len(sys.argv) > 4 or  len(sys.argv) < 3:
-    print " ERROR -- number of arguments." + usage
+    print(" ERROR -- number of arguments." + usage)
     sys.exit(1)
 
 # command line variables
@@ -151,41 +151,47 @@ if len(sys.argv) > 3:
 cmd = 'list ' +  DATA + "/" + book
 if pattern != "":
     cmd += "| grep %s"%(pattern)
-
+    
 allDatasets = []
 for line in os.popen(cmd).readlines():
+    if line[0] != 'D':
+        continue
     f = (line[:-1].split("/"))[-1:]
     dataset = "/".join(f)
     allDatasets.append(dataset)
 
-print ' Number of datasets found: %d'%(len(allDatasets))
+print(' Number of datasets found: %d'%(len(allDatasets)))
 
 # loop over all matching datasets
 for dataset in allDatasets:
 
-    print ' --> %s'%(dataset)
+    if len(dataset)<4:
+        print(" WARNING -- skip wired dataset: %s"%(dataset))
+        continue
+    
+    print(' --> %s'%(dataset))
 
     catalogDir = '%s/%s/%s'%(CATALOG,book,dataset)
     if DEBUG>0:
-        print ' Makedir'
+        print(' Makedir')
     os.system('mkdir -p %s'%catalogDir)
     rawFile = '%s/RawFiles.00'%(catalogDir)
     if DEBUG>0:
-        print ' Write Raw'
+        print(' Write Raw')
     nFiles = writeRawFile(rawFile,book,dataset)
     if nFiles<1:
-        print ' INFO - no files found.'
+        print(' INFO - no files found.')
         continue
 
     # decide how many files per fileset
     if DEBUG>0:
-        print ' Make files*'
+        print(' Make files*')
     if nEventsPerSet > 0:
         if DEBUG>0:
-            print ' Making catalog'
+            print(' Making catalog')
         makeCatalog(catalogDir,nEventsPerSet)
         if DEBUG>0:
-            print ' Making catalog DONE'
+            print(' Making catalog DONE')
     else:
         if   nFiles > 400:
             makeCatalog(catalogDir,5)

@@ -23,6 +23,22 @@ usage = "\n   usage:  checkFile.py  <file> \n"
 #===================================================================================================
 #  H E L P E R S
 #===================================================================================================
+def isProxyValid():
+    # extract the number of events in a given catalog entry
+    cmd = 'voms-proxy-info -timeleft'
+    p = subprocess.Popen(cmd.split(" "),stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    (out, err) = p.communicate()
+    rc = p.returncode
+
+    nsec = 0
+    lines = out.decode().split("\n")
+    for line in lines:
+        if line != '':
+            nsec = int(line)
+
+    return (nsec >= 10)
+
+
 def catalogFile(file):
     # perfrom cataloging operation on one file (return the entry)
 
@@ -33,25 +49,25 @@ def catalogFile(file):
     rc = p.returncode
 
     entry = ''
-    lines = out.split("\n")
+    lines = out.decode().split("\n")
     for line in lines:
         if 'XX-CATALOG-XX 0000' in line:
             entry = line.replace('XX-CATALOG-XX 0000 ','')
 
-    print('\n o-o-o OUT o-o-o \n%s\n\n o-o-o ERR (%d) o-o-o \n%s'%(out,rc,err))
+    print('\n o-o-o OUT o-o-o \n%s\n\n o-o-o ERR (%d) o-o-o \n%s'%(out.decode(),rc,err.decode()))
 
     return (out,err,entry)
 
 def findFileSize(file):
 
-    size = 0
+    fileSize = 0
     cmd = "t2tools.py --action ls --source " +  file
     print(' LIST: ' + cmd)
     (rc,out,err) = remoteX.executeLocalAction(cmd)
-    size = long((out.split(" ")[0]).split(":")[1])
-    print(' SIZE: %ld'%size)
+    fileSize = long((out.split(" ")[0]).split(":")[1])
+    print(' SIZE: %ld'%fileSize)
 
-    return size
+    return fileSize
 
 def getName(file):
     # extract the unique file name
@@ -80,6 +96,7 @@ def getFileInfo(file):
 
     requestId = -1
     datasetId = -1
+    blockName = ""
     nEventsLfn = -1
     blockName = ""
 
@@ -145,10 +162,10 @@ def numberOfEventsInEntry(entry):
 
     return nEvents
 
-def makeDatabaseEntry(requestId,fileName,nEvents,size):
+def makeDatabaseEntry(requestId,fileName,nEvents,fileSize):
 
     sql = "insert into Files(RequestId,FileName,NEvents,SizeBytes) " \
-        + " values(%d,'%s',%d,%ld)"%(requestId,fileName,nEvents,size)
+        + " values(%d,'%s',%d,%ld)"%(requestId,fileName,nEvents,fileSize)
     print(' SQL: ' + sql)
     try:
         # Execute the SQL command
@@ -169,6 +186,11 @@ if len(sys.argv) < 1:
     print(" ERROR -- " + usage)
     sys.exit(1)
 
+if not isProxyValid():
+    print(" ERROR -- no valid proxy !!")
+    sys.exit(1)
+    
+    
 # command line variables
 file = sys.argv[1]
 print(" INFO - checkFile.py %s"%(file))
@@ -177,16 +199,15 @@ print(" INFO - checkFile.py %s"%(file))
 (out,err,entry) = catalogFile(file)
 nEvents = numberOfEventsInEntry(entry)
 
-# check whether to delete in case of mismatch or zombie state
-delete = os.environ.get('DELETE',False)
-if "Object is in 'zombie' state" in out:
+delete = False
+if "Object is in 'zombie' state" in out or nEvents == -1:
     delete = True
     print('\n o=o=o=o File corrupt, schedule deletion. o=o=o=o \n')
 
 print(' CATALOG: %d -- %s'%(nEvents,file))
 
 # Make sure database is there
-Db = MySQLdb.connect(read_default_file="/home/paus/.my.cnf",read_default_group="mysql",db="Bambu")
+Db = MySQLdb.connect(read_default_file="/home/tier3/cmsprod/.my.cnf",read_default_group="mysql",db="Bambu")
 Cursor = Db.cursor()
 
 # find all relevant infromation about the file
@@ -201,7 +222,9 @@ remoteX = rex.Rex('none','none')
 if nEvents == nEventsLfn and nEvents>0:
     # now move file to final location
     finalFile = getFinalFile(file)
-    size = findFileSize(file)
+    fileSize = findFileSize(file)
+    
+
     if Prefix in file:
         cmd = "t2tools.py --action mv --source " +  file + " --target " + finalFile
         print(' MOVE: ' + cmd)
@@ -216,7 +239,7 @@ if nEvents == nEventsLfn and nEvents>0:
                 
     
     # add a new catalog entry
-    makeDatabaseEntry(requestId,fileName,nEvents,size)
+    makeDatabaseEntry(requestId,fileName,nEvents,fileSize)
 
 else:
     print(' ERROR: event counts disagree or not positive (LFN %d,File %d). EXIT!'%\
@@ -226,3 +249,5 @@ else:
         cmd = "t2tools.py --action rm --source " +  file
         print(' REMOVE: DISABLED ' + cmd)
         ###(rc,out,err) = remoteX.executeLocalAction(cmd)
+
+    sys.exit(1)

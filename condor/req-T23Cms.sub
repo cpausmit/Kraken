@@ -1,0 +1,9 @@
+# Run on all avalaible resources excluding some that seem to fail a lot
+Requirements = TARGET.HasFileTransfer && \
+               ( isUndefined(IS_GLIDEIN) ||  HAS_SINGULARITY == true || \
+                (Has_CVMFS_cms_cern_ch == true && (BOSCOGroup == "bosco_cms")) \
+               ) && \
+               (isUndefined(GLIDEIN_Entry_Name) || \
+                !stringListMember(GLIDEIN_Entry_Name,"CMS_T2_US_Nebraska_Red,CMS_T2_US_Nebraska_Red_op,CMS_T2_US_Nebraska_Red_gw1,CMS_T2_US_Nebraska_Red_gw1_op,CMS_T2_US_Nebraska_Red_gw2,CMS_T2_US_Nebraska_Red_gw2_op,CMS_T3_US_Omaha_tusker,CMSHTPC_T3_US_Omaha_tusker",",") \
+               ) && \
+               (isUndefined(GLIDEIN_Site) || !stringListMember(GLIDEIN_Site,"HOSTED_BOSCO_CE",",") )

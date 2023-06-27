@@ -1,0 +1,7 @@
+BadNodes = ''
+# t3desk014.mit.edu \
+# t3btch063.mit.edu t3btch124.mit.edu t3btch125.mit.edu \
+# hibat0016.cmsaf.mit.edu hibat0019.cmsaf.mit.edu \
+# t2bat0053.cmsaf.mit.edu t2bat0079.cmsaf.mit.edu t2bat0165.cmsaf.mit.edu t2bat0227.cmsaf.mit.edu t2bat0239.cmsaf.mit.edu t2bat0462.cmsaf.mit.edu t2bat0464.cmsaf.mit.edu t2bat0465.cmsaf.mit.edu t2bat0466.cmsaf.mit.edu t2bat0467.cmsaf.mit.edu t2bat0468.cmsaf.mit.edu t2bat0469.cmsaf.mit.edu t2bat0485.cmsaf.mit.edu t2bat0488.cmsaf.mit.edu t2bat0489.cmsaf.mit.edu t2bat0490.cmsaf.mit.edu t2bat0491.cmsaf.mit.edu t2bat0492.cmsaf.mit.edu t2bat0494.cmsaf.mit.edu t2bat0497.cmsaf.mit.edu t2bat0498.cmsaf.mit.edu t2bat0499.cmsaf.mit.edu t2bat0500.cmsaf.mit.edu
+
+Requirements = ( $(Requirements) && stringListIMember(Machine,"$(BadNodes)") == False  )

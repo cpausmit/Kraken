@@ -41,9 +41,9 @@ class metaData:
     # present the current set of Meta Data
     #-----------------------------------------------------------------------------------------------
     def show(self):
-        print ' Number of:    events %9d  lumi sections %d'%(self.nEvents,self.nLumiSecs)
-        print ' Lowest  data: run    %9d  lumi section  %9d'%(self.minRun,self.minLumiSecInMinRun)
-        print ' Highest data: run    %9d  lumi section  %9d'%(self.maxRun,self.maxLumiSecInMaxRun)
+        print(' Number of:    events %9d  lumi sections %d'%(self.nEvents,self.nLumiSecs))
+        print(' Lowest  data: run    %9d  lumi section  %9d'%(self.minRun,self.minLumiSecInMinRun))
+        print(' Highest data: run    %9d  lumi section  %9d'%(self.maxRun,self.maxLumiSecInMaxRun))
     #-----------------------------------------------------------------------------------------------
     # adding meta data
     #-----------------------------------------------------------------------------------------------
@@ -107,7 +107,7 @@ class fileId(metaData):
         return self.name + '_tmp.root'
 
     def show(self):
-        print ' ==== Meta Data for File %s ===='%(self.name)
+        print(' ==== Meta Data for File %s ===='%(self.name))
         metaData.show(self)
 
     def showShort(self,filesetName,oFile=0,debug=1):
@@ -116,7 +116,7 @@ class fileId(metaData):
                                                   self.minRun,self.minLumiSecInMinRun, \
                                                   self.maxRun,self.maxLumiSecInMaxRun)
         if debug > 0:
-            print line
+            print(line)
         oFile.write(line+'\n')
 
 #---------------------------------------------------------------------------------------------------
@@ -138,14 +138,14 @@ class fileIds:
         # safely add another Id to the dictionary
 
         if fileId.name in self.duplicatedIds:
-            print ' ERROR -- fileId appeared at least twice already (%s).'%(fileId.name)
+            print(' ERROR -- fileId appeared at least twice already (%s).'%(fileId.name))
             return
 
         if fileId.name in self.ids:
-            print ' ERROR -- fileId is already in our dictionary (%s).'%(fileId.name)
+            print(' ERROR -- fileId is already in our dictionary (%s).'%(fileId.name))
             self.ids[fileId.name].show()
             fileId.show()
-            print ' ----'
+            print(' ----')
             self.duplicatedIds[fileId.name] = fileId
             # delete the key from the initial list
             del self.ids[fileId.name]            
@@ -170,7 +170,7 @@ class fileIds:
         if name in self.ids:
             fileId = self.ids[name]
         else:
-            print ' ERROR -- fileId is already in our dictionary (%s).'%(name)
+            print(' ERROR -- fileId is already in our dictionary (%s).'%(name))
 
         return fileId
 
@@ -182,23 +182,23 @@ class fileIds:
     def show(self):
         # show our fileIds ordered by ids
 
-        print ' List of Ids appearing once'
+        print(' List of Ids appearing once')
         for id in sorted(self.ids):
-            print " %s - %d"%(id,self.ids[id].nEvents)
-        print ' List of duplicated Ids'
+            print(" %s - %d"%(id,self.ids[id].nEvents))
+        print(' List of duplicated Ids')
         for id in sorted(self.duplicatedIds):
-            print " %s - %d"%(id,self.duplicatedIds[id].nEvents)
+            print(" %s - %d"%(id,self.duplicatedIds[id].nEvents))
 
     def showDuplicates(self):
         # show our fileIds ordered by ids
 
         if len(self.duplicatedIds) > 0:
-            print ' List of duplicated Ids'
+            print(' List of duplicated Ids')
         else:
-            print ' No duplicated Ids'
+            print(' No duplicated Ids')
             
         for id in sorted(self.duplicatedIds):
-            print " %s - %d"%(id,self.duplicatedIds[id].nEvents)
+            print(" %s - %d"%(id,self.duplicatedIds[id].nEvents))
 
 
 #---------------------------------------------------------------------------------------------------
@@ -235,7 +235,7 @@ class fileIdSet(metaData):
     def show(self):
         # present the contents of the fileset in various forms
 
-        print ' ==== Meta Data for Fileset %s ===='%(self.name)
+        print(' ==== Meta Data for Fileset %s ===='%(self.name))
         metaData.show(self)
 
     def showShort(self,oFile=0,debug=1):
@@ -245,7 +245,7 @@ class fileIdSet(metaData):
                                                       self.minRun,self.minLumiSecInMinRun, \
                                                       self.maxRun,self.maxLumiSecInMaxRun)
         if debug > 0:
-            print line
+            print(line)
         oFile.write(line+'\n')
 
     def showShortFiles(self,oFile=0,debug=1):
@@ -286,4 +286,4 @@ class lfn:
     def show(self):
         # present the contents of the lfn
         self.fileId.show()
-        print '   block: %s  path: %s'%(self.blockName,self.pathName)
+        print('   block: %s  path: %s'%(self.blockName,self.pathName))

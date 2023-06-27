@@ -9,7 +9,6 @@ import MySQLdb
 import rex
 
 DATA = os.environ.get('KRAKEN_SE_BASE','/cms/store/user/paus')
-#TRUNC = '/home/cmsprod/public_html/Kraken/agents/reviewd'
 TRUNC = '/local/cmsprod/Kraken/agents/reviewd'
 
 def findFiles(book,dataset):
@@ -20,8 +19,6 @@ def findFiles(book,dataset):
     cmd = "ls -1t %s/%s/%s/*.err "%(TRUNC,book,dataset)
     myRx = rex.Rex()  
     (rc,out,err) = myRx.executeLocalAction(cmd)
-
-    ##print(" =DEBUG= START - OUT ==\n%s\n =DEBUG= END - OUT.\n"%(out))
 
     # find list
     files = set()
@@ -86,9 +83,9 @@ usage += " Usage: failedFiles.py  [ --book=nanoao/510" \
 valid = ['book=','pattern=','verbose=','help']
 try:
     opts, args = getopt.getopt(sys.argv[1:], "", valid)
-except getopt.GetoptError, ex:
-    print usage
-    print str(ex)
+except getopt.GetoptError as ex:
+    print(usage)
+    print(str(ex))
     sys.exit(1)
 
 # --------------------------------------------------------------------------------------------------
@@ -102,7 +99,7 @@ pattern = "BdToPiMuNu_BMuonFilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen+RunII
 # Read new values from the command line
 for opt, arg in opts:
     if opt == "--help":
-        print usage
+        print(usage)
         sys.exit(0)
     if opt == "--book":
         book = arg
@@ -110,10 +107,10 @@ for opt, arg in opts:
         pattern = arg
 
 # say what we are looking at
-print ''
-print ' Book:    %s'%(book)
-print ' Pattern: %s'%(pattern)
-print ''
+print('')
+print(' Book:    %s'%(book))
+print(' Pattern: %s'%(pattern))
+print('')
 
 # make list of datasets in given book
 cmd = 'list ' +  DATA + "/" + book
@@ -126,14 +123,13 @@ for line in os.popen(cmd).readlines():
     dataset = "/".join(f)
     allDatasets.append(dataset)
 
-print ' Number of datasets found: %d'%(len(allDatasets))
+print(' Number of datasets found: %d'%(len(allDatasets)))
 
 # loop over all matching datasets
 for dataset in allDatasets:
 
     # find files and cataloged entries
     files = findFiles(book,dataset)
-    print(files)
     nerrors = findExistingFailedFiles(book,dataset)
 
     # update the file counts of the files that were found

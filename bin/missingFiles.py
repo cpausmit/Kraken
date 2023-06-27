@@ -6,13 +6,34 @@
 #---------------------------------------------------------------------------------------------------
 import sys,os,getopt,time
 import MySQLdb
+import kdb
 import rex
+
+def findAllLfns(book,dataset):
+
+    print(" INFO - loading all lfns (Tier-2).")
+
+    cmd = "cat %s/lfns/%s.lfns"%(os.getenv('KRAKEN_WORK'),dataset)
+    myRx = rex.Rex()  
+    (rc,out,err) = myRx.executeLocalAction(cmd)
+
+    # find list
+    lfns = {}
+    for row in out.split("\n"):
+        if len(row) < 3:
+            continue
+        f = row.split(" ")
+        lfn = f[1]
+        id = (f[1].split("/")[-1]).replace('.root','')
+        lfns[id] = lfn
+
+    return lfns
 
 def findAllFiles(book,dataset):
 
-    print " INFO - loading all physical files (Tier-2)."
+    print(" INFO - loading all physical files (Tier-2).")
 
-    cmd = "gfal-ls gsiftp://se01.cmsaf.mit.edu:2811/cms/store/user/paus/%s/%s "%(book,dataset) \
+    cmd = "list /cms/store/user/paus/%s/%s "%(book,dataset) \
         + "|grep root"
     myRx = rex.Rex()  
     (rc,out,err) = myRx.executeLocalAction(cmd)
@@ -22,14 +43,16 @@ def findAllFiles(book,dataset):
     for row in out.split("\n"):
         if len(row) < 2:
             continue
-        filename = "%s/%s"%(dataset,row)
+        f = row.split(" ")
+        id = (f[1].split("/")[-1]).replace('.root','')
+        filename = id
         files.add(filename)
 
     return files
 
 def findLocalFiles(book,dataset):
 
-    print " INFO - loading local physical files (Tier-3)."
+    print(" INFO - loading local physical files (Tier-3).")
 
     cmd = "hdfs dfs -ls /cms/store/user/paus/%s/%s "%(book,dataset) + "|grep root"
     myRx = rex.Rex()  
@@ -58,6 +81,32 @@ def findLocalFiles(book,dataset):
 
     return lFiles
 
+def processDataset(book,dataset):
+    # find files and cataloged entries
+    lfns = findAllLfns(book,dataset)
+    #print(lfns)
+    files = findAllFiles(book,dataset)
+    lFiles = findLocalFiles(book,dataset)
+    
+    # Calculate number of events
+    
+    print("")
+    nTotal = 0
+    nMissing = 0
+    print(' Search for missing files (nT2: %d, mT3: %d).'%(len(files),len(lFiles)))
+    for key in lfns:
+        if key in files:
+            nTotal += 1
+        else:
+            nMissing += 1
+            print(" missing: %s"%(lfns[key]))
+    
+
+    print(" ==== Book: %s   Dataset: %s ===="%(book,dataset))
+    print(" Number of lfns  (total):   %d"%(len(lfns)))
+    print(" Number of files (total):   %d"%(nTotal))
+    print(" Number of files (missing): %d"%(nMissing))
+
 #===================================================================================================
 # Main starts here
 #===================================================================================================
@@ -70,9 +119,9 @@ usage += " Usage: consistency.py  [ --book=pandaf/004" \
 valid = ['book=','dataset=','verbose=','help']
 try:
     opts, args = getopt.getopt(sys.argv[1:], "", valid)
-except getopt.GetoptError, ex:
-    print usage
-    print str(ex)
+except getopt.GetoptError as ex:
+    print(usage)
+    print(str(ex))
     sys.exit(1)
 
 # --------------------------------------------------------------------------------------------------
@@ -80,51 +129,37 @@ except getopt.GetoptError, ex:
 # --------------------------------------------------------------------------------------------------
 # Set defaults for each command line parameter/option
 verbose = 0
-book = "pandaf/010"
-dataset = "SinglePhoton+Run2017B-31Mar2018-v1+MINIAOD"
+book = ""
+dataset = ""
 
 # Read new values from the command line
 for opt, arg in opts:
     if opt == "--help":
-        print usage
+        print(usage)
         sys.exit(0)
     if opt == "--book":
         book = arg
     if opt == "--dataset":
         dataset = arg
 
+if book == "":
+    print(" ERROR - book cannot be empty: %s"%(book))
+    sy.exit(1)
+    
 # say what we are looking at
-print ''
-print ' Book:    %s'%(book)
-print ' Dataset: %s'%(dataset)
-print ''
-
-# split up thebook as usual
-config = book.split("/")[0]
-version = book.split("/")[1]
-
-# find files and cataloged entries
-files = findAllFiles(book,dataset)
-lFiles = findLocalFiles(book,dataset)
-
-# Calculate number of events
-
-print ""
-nTotal = 0
-nMissing = 0
-print ' Search for missing files (nT2: %d, mT3: %d).'%(len(files),len(lFiles))
-for file in files:
-    if file in lFiles:
-        nTotal += 1
-    else:
-        nMissing += 1
-        if verbose>0:
-            print " missing: %s"%(file)
-
-print " Number of files (total):   %d"%(nTotal)
-print " Number of files (missing): %d"%(nMissing)
-
-if nMissing == 0:
-    sys.exit(0)
+print('')
+print(' Book:    %s'%(book))
+if dataset != "":
+    print(' Dataset: %s'%(dataset))
+    print('')
+    processDataset(book,dataset)        
 else:
-    sys.exit(1)
+    print(' Found a list of datsets')
+    print('')
+    config = book.split("/")[0]
+    version = book.split("/")[1]
+    # list requests
+    db = kdb.Kdb()
+    for row in db.find_requests(config,version):
+        dataset = "%s+%s+%s"%(row[0],row[1],row[2])
+        processDataset(book,dataset)        

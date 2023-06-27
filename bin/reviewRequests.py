@@ -19,19 +19,23 @@ PREFIX = os.getenv('KRAKEN_TMP_PREFIX')
 CATALOG = os.getenv('KRAKEN_CATALOG_OUTPUT')
 JOBS = os.getenv('KRAKEN_WORK') + '/jobs'
 
+filesRecord = {}
+
 #---------------------------------------------------------------------------------------------------
 # H E L P E R
 #---------------------------------------------------------------------------------------------------
-def cleanupTask(task):
+def cleanupTask(task,kill=False):
     # cleanup task at hand
 
     # ----------------------------------------------------------------------------------------------
     # Get all parameters for the production
     # ----------------------------------------------------------------------------------------------
     cleaner = Cleaner(task)
+    if kill:
+        cleaner.killQueued()
     cleaner.logCleanup()
 
-    print ''
+    print('')
 
     return
 
@@ -54,34 +58,169 @@ def displayLine(row):
         percentage = 100.0 * float(nDone)/float(nAll)
 
     if nDone != nAll:
-        print "  %6.2f  %5d/ %5d  %s"%(percentage,nDone,nAll,datasetName)
+        print("  %6.2f  %5d/ %5d  %s"%(percentage,nDone,nAll,datasetName))
     else:
-        print "  %6.2f  %5d= %5d  %s"%(percentage,nDone,nAll,datasetName)
+        print("  %6.2f  %5d= %5d  %s"%(percentage,nDone,nAll,datasetName))
 
+def filterRequests(requests,displayOnly):
+    # filter all requests
+    
+    nDone = 0
+    nAll = 0
+    nAllTotal = 0
+    nDoneTotal = 0
+    nMissingTotal = 0
+    percentageTotal = 0.0
+    # initial filter and calculation loop
+    for row in requests:
+        
+        if debug:
+            print(row)
+    
+        if row[0] is None:
+            print(" Row[0] is null")
+            print(row)
+            continue
+    
+        process = row[0]
+        setup = row[1]
+        tier = row[2]
+        dbs = row[3]
+        nFiles = int(row[4])
+        requestId = int(row[8])
+        dbNFilesDone = int(row[9])
+    
+        # make up the proper mit dataset name
+        datasetName = process + '+' + setup+ '+' + tier
+    
+        if pattern in datasetName:
+            (nDone,nAll) = productionStatus(config,version,datasetName,debug)
+            nMissing = nAll-nDone
+    
+            # filtered list
+            filteredRequests.append(row)
+    
+            if nMissing > 0 or nAll == 0 or (nAll != 0 and nDone == 0):
+                # incomplete and filtered result
+                incompleteRequests.append(row)
+    
+            nAllTotal += nAll
+            nDoneTotal += nDone
+            nMissingTotal += nMissing
+    
+    # finish up the calculations
+    if nAllTotal > 0:
+        percentageTotal = 100.0 * float(nDoneTotal)/float(nAllTotal)
 
+    print('#---------------------------------------------------------------------------')
+    print('#')
+    print('#                            O V E R V I E W ')
+    print('#                              %s/%s'%(config,version))
+    print('#')
+    print('# Perct    Done/ Total--Dataset Name')
+    print('# ----------------------------------')
+    print('# %6.2f  %5d/ %5d  TOTAL         -->  %6.2f%% (%d) missing.'\
+        %(percentageTotal,nDoneTotal,nAllTotal,100.-percentageTotal,nMissingTotal))
+    print('#---------------------------------------------------------------------------')
+    
+    # incomplete in alphabetic order
+    if displayOnly == 2:
+        for row in incompleteRequests:
+            displayLine(row)
+    
+    # all in alphabetic order
+    if displayOnly == 1:
+        for row in filteredRequests:
+            displayLine(row)
+    
+    print('#')
+    print('# %6.2f  %5d/ %5d  TOTAL         -->  %6.2f%% (%d) missing.'\
+        %(percentageTotal,nDoneTotal,nAllTotal,100.-percentageTotal,nMissingTotal))
+    print('#')
+
+    # if only display, we are done
+    if displayOnly != 0:
+        sys.exit(0)
+    
+    return
+    
 def findDomain():
     domain = os.uname()[1]
     f = domain.split('.')
 
     return '.'.join(f[1:])
 
+def findFilesInDb(requestId,debug=0):
+    # find all files in database for a given request
+
+    files = []
+
+    # Access the database to determine all requests
+    db = MySQLdb.connect(read_default_file="/etc/my.cnf",read_default_group="mysql",db="Bambu")
+    cursor = db.cursor()
+    sql = "select FileName from Files where RequestId=%d"%(requestId)
+    if debug:
+        print(' SQL: ' + sql)
+    
+    # Try to access the database
+    try:
+        # Execute the SQL command
+        cursor.execute(sql)
+        results = cursor.fetchall()
+    except:
+        print(" Error (%s): unable to fetch data."%(sql))
+        sys.exit(0)
+
+    for r in results:
+        files.append(r[0])
+        
+    return files
+
+def findFilesOnDisk(config,version,dataset,debug=0):
+    # find all files on disk for a given request
+    
+#    files = []
+#
+#    myRx = rex.Rex()
+#    cmd = "list /cms/store/user/paus/%s/%s/%s 2> /dev/null|grep .root"%(config,version,dataset)
+#    if debug > 0:
+#        print(" CMD: %s"%(cmd))
+#    (rc,out,err) = myRx.executeLocalAction(cmd)
+#
+#    if debug > 0:
+#        print(" RC: %d\n OUT:\n%s\n ERR:\n%s\n"%(rc,out,err))
+#    
+#    for line in out.decode().split("\n"):
+#        file = line.split("/")[-1]
+#        if file != '':
+#            files.append(file.replace(".root",""))
+#    
+    return filesRecord[dataset]
+    
 def findNumberOfFilesDone(config,version,dataset,debug=0):
     # Find out how many files have been completed for this dataset so far
 
     if debug > 0:
-        print " Find completed files for dataset: %s"%(dataset)
+        print(" Find completed files for dataset: %s"%(dataset))
 
-    cmd = "list /cms/store/user/paus/%s/%s/%s 2> /dev/null | grep .root | wc -l"\
-        %(config,version,dataset)
+    myRx = rex.Rex()
+    cmd = "list /cms/store/user/paus/%s/%s/%s 2> /dev/null|grep .root"%(config,version,dataset)
     if debug > 0:
-        print " CMD: %s"%(cmd)
+        print(" CMD: %s"%(cmd))
+    (rc,out,err) = myRx.executeLocalAction(cmd)
 
-    nFilesDone = 0
-    try:
-        for line in os.popen(cmd).readlines():   # run command
-            nFilesDone = int(line[:-1])
-    except:
-        nFileDone = -1
+    if debug > 0:
+        print(" RC: %d\n OUT:\n%s\n ERR:\n%s\n"%(rc,out,err))
+    
+    files = []
+    for line in out.split("\n"):
+        file = line.split("/")[-1]
+        if file != '':
+            files.append(file.replace(".root",""))
+
+    nFilesDone = len(files)
+    #print("Append: %s"%dataset)
+    filesRecord[dataset] = files
 
     return nFilesDone
 
@@ -99,7 +238,7 @@ def findPath(config,version):
     seTable = os.environ['KRAKEN_BASE'] + '/' + config + '/' + version + '/' + 'seTable'
     if not os.path.exists(seTable):
         cmd = "seTable file not found: %s" % seTable
-        raise RuntimeError, cmd
+        raise RuntimeError(cmd)
     # extract the path name
     cmd = 'grep ^' + storageTag + ' ' + seTable + ' | cut -d = -f2 | sed \'s# : ##\''
     path = ''
@@ -110,14 +249,45 @@ def findPath(config,version):
 
 def generateCondorId():
     # condor id
+    
     cmd = "date +" + PREFIX + "%y%m%d_%H%M%S"
     for line in os.popen(cmd).readlines():  # run command
         line = line[:-1]
         condorId = line
         
-    print "\n CondorId: " + condorId + "\n"
+    print("\n CondorId: " + condorId + "\n")
 
     return condorId
+
+def getAllRequests(config,version,py):
+    # collect all datasets matching this set of (config,version,py), no further selection yet
+    
+    results = []
+
+    # Access the database to determine all requests
+    db = MySQLdb.connect(read_default_file="/etc/my.cnf",read_default_group="mysql",db="Bambu")
+    cursor = db.cursor()
+    sql = 'select ' + \
+        'Datasets.DatasetProcess,Datasets.DatasetSetup,Datasets.DatasetTier,'+\
+        'Datasets.DatasetDbsInstance,Datasets.DatasetNFiles,' + \
+        'RequestConfig,RequestVersion,RequestPy,RequestId,RequestNFilesDone from Requests ' + \
+        'left join Datasets on Requests.DatasetId = Datasets.DatasetId '+ \
+        'where RequestConfig="' + config + '" and RequestVersion = "' + version + \
+        '" and RequestPy = "' + py + \
+        '" order by Datasets.DatasetProcess, Datasets.DatasetSetup, Datasets.DatasetTier;'
+    if debug:
+        print(' SQL: ' + sql)
+    
+    # Try to access the database
+    try:
+        # Execute the SQL command
+        cursor.execute(sql)
+        requests = cursor.fetchall()      
+    except:
+        print(" Error (%s): unable to fetch data."%(sql))
+        sys.exit(0)
+        
+    return requests
 
 def productionStatus(config,version,dataset,debug=0):
     # make sure we can see the Tier-2 disks: returns -1 on failure
@@ -125,7 +295,7 @@ def productionStatus(config,version,dataset,debug=0):
     cmd = "cat %s/%s/%s/%s/Files 2> /dev/null | wc -l"\
         %(CATALOG,config,version,dataset)
     if debug > 0:
-        print " CMD: %s"%(cmd)
+        print("CMD: %s"%(cmd))
 
     nDone = 0
     try:
@@ -136,7 +306,7 @@ def productionStatus(config,version,dataset,debug=0):
 
     cmd = "grep root %s/%s.jobs 2> /dev/null | wc -l"%(JOBS,dataset)
     if debug > 0:
-        print " CMD: %s"%(cmd)
+        print(" CMD: %s"%(cmd))
 
     nAll = 0
     try:
@@ -145,8 +315,25 @@ def productionStatus(config,version,dataset,debug=0):
     except:
         nAll = -1
     
-    return(nDone,nAll)
+    return (nDone,nAll)
 
+def removeMissingFileFromDb(requestId,file,debug=0):
+    # remove a missing file from the database
+
+    # Access the database to determine all requests
+    db = MySQLdb.connect(read_default_file="/etc/my.cnf",read_default_group="mysql",db="Bambu")
+    cursor = db.cursor()
+    sql = "delete from Files where RequestId=%d and fileName='%s'"%(requestId,file)
+
+    print(' sql: %s'%(sql))
+    try:
+        # execute the SQL command
+        print(" Deleting: %s"%(file))
+        cursor.execute(sql)
+    except:
+        print(" Error (%s): unable to delete data."%(sql))
+
+    
 def setupScheduler(local,nJobsMax):
     # Setup the scheduler we are going to use (once for all following submissions)
 
@@ -188,7 +375,7 @@ def submitTask(task):
 
     else:
         # Nothing to do here
-        print '\n INFO - we are done here.\n'
+        print('\n INFO - we are done here.\n')
         
     return
 
@@ -201,37 +388,42 @@ def testEnvironment(config,version,py):
         os.system('hostname')
         os.system('pwd')
         cmd = "\n Local work directory does not exist: %s\n" % dir
-        raise RuntimeError, cmd
+        raise RuntimeError(cmd)
  
     # Look for the standard CMSSW python configuration file (empty file is fine)
     cmsswFile = os.environ['KRAKEN_BASE'] + '/' + config + '/' + version + '/' + py + '.py'
     if not os.path.exists(cmsswFile):
         cmd = "Cmssw file not found: %s" % cmsswFile
-        raise RuntimeError, cmd
+        raise RuntimeError(cmd)
 
     # Make sure the Tier-2 is up and running
     testResult = testTier2Disk(debug)
     if debug>0:
-        print ' Test result: %d'%(testResult) 
+        print(' Test result: %d'%(testResult))
     
     if testResult != 0:
-        print '\n ERROR -- Tier-2 disks seem unavailable, please check! EXIT review process.\n'
+        print('\n ERROR -- Tier-2 disks seem unavailable, please check! EXIT review process.\n')
         sys.exit(0)
     else:
-        print '\n INFO -- Tier-2 disks are available, start review process.\n'
+        print('\n INFO -- Tier-2 disks are available, start review process.\n')
 
+    # Make sure we have a valid ticket, because now we will need it
+    cmd = "voms-proxy-init --valid 168:00 -voms cms >& /dev/null"
+    os.system(cmd)
+    os.system("voms-proxy-info -timeleft| awk '{print \" certificate valid for \" $1/3600 \" hrs\"}'")
+        
 def testTier2Disk(debug=0):
     # make sure we can see the Tier-2 disks: returns -1 on failure
 
     cmd = "list /cms/store/user/paus 2> /dev/null"
     if debug > 0:
-        print " CMD: %s"%(cmd)
+        print(" CMD: %s"%(cmd))
 
     myRx = rex.Rex()
     (rc,out,err) = myRx.executeLocalAction("list /cms/store/user/paus 2> /dev/null")
 
     if debug > 0:
-        print " RC: %d\n OUT:\n%s\n ERR:\n%s\n"%(rc,out,err)
+        print(" RC: %d\n OUT:\n%s\n ERR:\n%s\n"%(rc,out,err))
 
     return rc
 
@@ -250,19 +442,20 @@ usage += "                         --useExistingSites\n"
 usage += "                         --displayOnly=<status> [ default: 0, 1-all, 2-incomplete only ]\n"
 usage += "                         --local\n"
 usage += "                         --submit\n"
+usage += "                         --kill\n"
 usage += "                         --cleanup\n"
 usage += "                         --debug\n"
 usage += "                         --help\n\n"
 
 # Define the valid options which can be specified and check out the command line
 valid = ['config=','version=','py=','pattern=','nJobsMax=','displayOnly=', \
-         'help','cleanup','submit','useExistingLfns','useExistingJobs','useExistingSites','local',
+         'help','cleanup','submit','kill','useExistingLfns','useExistingJobs','useExistingSites','local',
          'debug']
 try:
     opts, args = getopt.getopt(sys.argv[1:], "", valid)
-except getopt.GetoptError, ex:
-    print usage
-    print str(ex)
+except getopt.GetoptError as ex:
+    print(usage)
+    print(str(ex))
     sys.exit(1)
 
 # Get all parameters for the production
@@ -272,10 +465,11 @@ config = 'filefi'
 version = '000'
 py = 'data'
 pattern = ''
-nJobsMax = 40000
+nJobsMax = 20000
 displayOnly = 0
 cleanup = False
 submit = False
+kill = False
 useExistingLfns = False
 useExistingJobs = False
 useExistingSites = False
@@ -285,7 +479,7 @@ debug = False
 # Read new values from the command line
 for opt, arg in opts:
     if opt == "--help":
-        print usage
+        print(usage)
         sys.exit(0)
     if opt == "--config":
         config = arg
@@ -303,6 +497,8 @@ for opt, arg in opts:
         cleanup = True
     if opt == "--submit":
         submit = True
+    if opt == "--kill":
+        kill = True
     if opt == "--local":
         local = True
     if opt == "--useExistingLfns":
@@ -314,116 +510,11 @@ for opt, arg in opts:
     if opt == "--debug":
         debug = True
 
-# Access the database to determine all requests
-db = MySQLdb.connect(read_default_file="/etc/my.cnf",read_default_group="mysql",db="Bambu")
-cursor = db.cursor()
-sql = 'select ' + \
-    'Datasets.DatasetProcess,Datasets.DatasetSetup,Datasets.DatasetTier,'+\
-    'Datasets.DatasetDbsInstance,Datasets.DatasetNFiles,' + \
-    'RequestConfig,RequestVersion,RequestPy,RequestId,RequestNFilesDone from Requests ' + \
-    'left join Datasets on Requests.DatasetId = Datasets.DatasetId '+ \
-    'where RequestConfig="' + config + '" and RequestVersion = "' + version + \
-    '" and RequestPy = "' + py + \
-    '" order by Datasets.DatasetProcess, Datasets.DatasetSetup, Datasets.DatasetTier;'
-if debug:
-    print ' SQL: ' + sql
+loopRequests = []
+filteredRequests = []
+incompleteRequests = []
 
-# Try to access the database
-try:
-    # Execute the SQL command
-    cursor.execute(sql)
-    results = cursor.fetchall()      
-except:
-    print " Error (%s): unable to fetch data."%(sql)
-    sys.exit(0)
-
-#==========================================
-# F I L T E R  A N D  S E L E C T  L O O P
-#==========================================
-
-# Take the result from the database and look at it
-filteredResults = []
-incompleteResults = []
-nDone = 0
-nAll = 0
-nAllTotal = 0
-nDoneTotal = 0
-nMissingTotal = 0
-
-# initial filter and calculation loop
-for row in results:
-    
-    if debug:
-        print row
-
-    if row[0] is None:
-        print " Row[0] is null"
-        print row
-        continue
-
-    process = row[0]
-    setup = row[1]
-    tier = row[2]
-    dbs = row[3]
-    nFiles = int(row[4])
-    requestId = int(row[8])
-    dbNFilesDone = int(row[9])
-
-    # make up the proper mit dataset name
-    datasetName = process + '+' + setup+ '+' + tier
-
-    if pattern in datasetName:
-        (nDone,nAll) = productionStatus(config,version,datasetName,debug)
-        nMissing = nAll-nDone
-
-        # filtered list
-        filteredResults.append(row)
-
-        if nMissing > 0 or nAll == 0 or (nAll != 0 and nDone == 0):
-            # incomplete and filtered result
-            incompleteResults.append(row)
-
-        nAllTotal += nAll
-        nDoneTotal += nDone
-        nMissingTotal += nMissing
-
-# finish up the calculations
-percentageTotal = 0.0
-if nAllTotal > 0:
-    percentageTotal = 100.0 * float(nDoneTotal)/float(nAllTotal)
-
-#========================
-# D I S P L A Y  L O O P
-#========================
-
-print '#---------------------------------------------------------------------------'
-print '#'
-print '#                            O V E R V I E W '
-print '#                              %s/%s'%(config,version)
-print '#'
-print '# Perct    Done/ Total--Dataset Name'
-print '# ----------------------------------'
-print '# %6.2f  %5d/ %5d  TOTAL         -->  %6.2f%% (%d) missing.'\
-    %(percentageTotal,nDoneTotal,nAllTotal,100.-percentageTotal,nMissingTotal)
-print '#---------------------------------------------------------------------------'
-
-# incomplete in alphabetic order
-if displayOnly == 2:
-    for row in incompleteResults:
-        displayLine(row)
-
-# all in alphabetic order
-if displayOnly == 1:
-    for row in filteredResults:
-        displayLine(row)
-
-print '#'
-print '# %6.2f  %5d/ %5d  TOTAL         -->  %6.2f%% (%d) missing.'\
-    %(percentageTotal,nDoneTotal,nAllTotal,100.-percentageTotal,nMissingTotal)
-print '#'
-
-if displayOnly != 0:
-    sys.exit(0)
+filterRequests(getAllRequests(config,version,py),displayOnly)
 
 # Basic tests first
 testEnvironment(config,version,py)
@@ -433,32 +524,29 @@ path = findPath(config,version)
 
 # Decide which list to work through
 if cleanup:
-    loopSamples = filteredResults
+    loopRequests = filteredRequests
 else:
-    loopSamples = incompleteResults
+    loopRequests = incompleteRequests
 
 #==================
 # M A I N  L O O P
 #==================
 
-# Make sure we have a valid ticket, because now we will need it
-cmd = "voms-proxy-init --valid 168:00 -voms cms >& /dev/null"
-os.system(cmd)
-os.system("voms-proxy-info -timeleft| awk '{print \" certificate valid for \" $1/3600 \" hrs\"}'")
-
 # Get our scheduler ready to use
 scheduler = setupScheduler(local,nJobsMax)
 
 # Initial message 
-print ''
-print ' @-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@'
-print ''
-print '                    S T A R T I N G   R E V I E W   C Y L E '
-print ''
-print ' @-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@'
+print('')
+print(' @-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@')
+print('')
+print('                    S T A R T I N G   R E V I E W   C Y L E ')
+print('')
+print(' @-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@')
 
 # Take the result from the database and look at it
-for row in loopSamples:
+for row in loopRequests:
+
+    # decode the request as known by the database
     process = row[0]
     setup = row[1]
     tier = row[2]
@@ -472,13 +560,25 @@ for row in loopSamples:
 
     # check how many files are done
     nFilesDone = findNumberOfFilesDone(config,version,datasetName)
-    print ' Number of files completed: %d (last check: %d) -- Dataset: %s' \
-        %(nFilesDone,dbNFilesDone,datasetName)
+    print(' Number of files completed: %d (last check: %d) -- Dataset: %s' \
+        %(nFilesDone,dbNFilesDone,datasetName))
+
+    # find files in DB
+    filesInDb = findFilesInDb(requestId)
+    
+    # find files in disk
+    filesOnDisk = findFilesOnDisk(config,version,datasetName)
+    
+    for file in filesInDb:
+        if file not in filesOnDisk:
+            print(" WARNING ---- Missing file found: %s"%(file))
+            removeMissingFileFromDb(requestId,file)
+
 
     # what to do when the two numbers disagree
     if dbNFilesDone == -1:
         # this is a new dataset
-        print '\n INFO - this seems to be a new dataset.'
+        print('\n INFO - this seems to be a new dataset.')
         pass
         
     elif dbNFilesDone != nFilesDone:
@@ -491,19 +591,19 @@ for row in loopSamples:
         else:
             if nFilesDone > 0: # looks like files have disappeared, but not all -> we should update
                 lUpdate = True
-                print '\n WARNING -- files have disappeared but there are files (%d -> %d now)'\
-                    %(dbNFilesDone,nFilesDone)
+                print('\n WARNING -- files have disappeared but there are files (%d -> %d now)'\
+                    %(dbNFilesDone,nFilesDone))
             else:              # looks like we did not connect with the storage
                 lUpdate = False
-                print '\n WARNING -- files have all disappeared, very suspicious (%d -> %d now)'\
-                    %(dbNFilesDone,nFilesDone)
+                print('\n WARNING -- files have all disappeared, very suspicious (%d -> %d now)'\
+                    %(dbNFilesDone,nFilesDone))
 
         # 
         if lUpdate:
             sql = 'update Requests set RequestNFilesDone=%d'%(nFilesDone) + \
                 ' where RequestId=%d'%(requestId)
             if debug:
-                print ' SQL: ' + sql
+                print(' SQL: ' + sql)
 
             # Try to access the database
             try:
@@ -511,25 +611,25 @@ for row in loopSamples:
                 cursor.execute(sql)
                 results = cursor.fetchall()      
             except:
-                print " Error (%s): unable to update the database."%(sql)
+                print(" Error (%s): unable to update the database."%(sql))
                 sys.exit(0)
         
     # did we already complete the job?
     if not cleanup:
         if nFilesDone == nFiles:   # this is the case when all is done
-            print ' DONE all files have been produced.\n'
+            print(' DONE all files have been produced.\n')
             continue
         elif nFilesDone < nFiles:  # second most frequent case: work started but not completed
-            print ' files missing, submit the missing ones.\n'
+            print(' files missing, submit the missing ones.\n')
         else:                      # weird, more files found than available               
-            print '\n ERROR more files found than available in dataset. NO ACTION on this dataset'
-            print '       done: %d   all: %d'%(nFilesDone,nFiles)
+            print('\n ERROR more files found than available in dataset. NO ACTION on this dataset')
+            print('       done: %d   all: %d'%(nFilesDone,nFiles))
             cmd = 'addDataset.py --exec --dataset=' + datasetName
-            print '       updating the dataset from dbs: ' + cmd
+            print('       updating the dataset from dbs: ' + cmd)
             os.system(cmd)
     
     # if work not complete consider further remainder
-    print '\n # # # #  New dataset: %s  # # # # \n'%(datasetName)
+    print('\n # # # #  New dataset: %s  # # # # \n'%(datasetName))
 
     # Get sample info, make request and generate the task
     sample = Sample(datasetName,dbs,useExistingLfns,useExistingLfns,useExistingSites)
@@ -538,11 +638,11 @@ for row in loopSamples:
 
     # Submit task
     if submit:
-        cleanupTask(task)
+        cleanupTask(task,kill)
         submitTask(task)
 
     # Cleanup task (careful all tasks being submitted get cleaned up)
-    if cleanup and row not in incompleteResults:
+    if cleanup and row not in incompleteRequests:
         cleanupTask(task)
 
 sys.exit(0)

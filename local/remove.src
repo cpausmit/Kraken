@@ -1,0 +1,21 @@
+#!/bin/bash
+
+BASE=/cms/store/user/paus/
+CONFIG=nanosc
+VERSION=E04
+PY=nanosc
+
+for request in `cat $1 |tr ' ' ':' | grep -v ^#`
+do
+
+  echo $request
+  config=`echo $request | cut -d : -f1`
+  version=`echo $request | cut -d : -f2`
+  py=`echo $request | cut -d : -f3`
+  dataset=`echo $request | cut -d : -f4`
+
+  echo "\
+  removeData.py --exec --config $config --version $version --py $py --pattern $dataset"
+  removeData.py --exec --config $CONFIG --version $VERSION --py $PY --pattern $dataset
+
+done

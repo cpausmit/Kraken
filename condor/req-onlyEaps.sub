@@ -1,4 +1,4 @@
 Requirements = OpSysMajorVer == 7 && \
                HAS_CVMFS_cms_cern_ch == true && \
-               BOSCOCluster == "eofe5.mit.edu" && \
+               BOSCOCluster == "eofe8.mit.edu" && \
                ( BOSCOGroup == "paus" )

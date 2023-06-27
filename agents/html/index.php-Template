@@ -2,72 +2,41 @@
 <html>
 <head>
 <title>Agent XX-NAME-XX</title>
+<link rel="shortcut icon" type="image/x-icon" href="../kraken.png" />
 </head>
 <style>
-a:link{color:#000000; background-color:transparent; text-decoration:none}
-a:visited{color:#009000; background-color:transparent; text-decoration:none}
-a:hover{color:#900000;background-color:transparent; text-decoration:underline}
-a:active{color:#900000;background-color:transparent; text-decoration:underline}
+a:link{color:#202020; background-color:transparent; text-decoration:none}
+a:visited{color:#0074AA; background-color:transparent; text-decoration:none}
+a:hover{color:#000090;background-color:transparent; text-decoration:underline}
+a:active{color:#000040;background-color:transparent; text-decoration:underline}
 body.ex{margin-top: 0px; margin-bottom:25px; margin-right: 25px; margin-left: 25px;}
 </style>
 
-<body class="ex" bgcolor="#EEEEEE">
-<body style="font-family: arial;font-size: 20px;font-weight: bold;color:#900000;">
+<body class="ex" bgcolor="#ffefef">
+<body style="font-family: arial;font-size: 20px;font-weight: bold;color:#405050;">
 <hr>
 <a href="../index.php" alt="Agent XX-NAME-XX">
 <img src="../agent-XX-NAME-XX.jpg" alt="Agent XX-NAME-XX">
 </a>
 <h1>XX-NAME-XX agent (aka XX-AKA-XX) </h1>
 <?php
-//$cycle = 'XX-KRAKEN_BASE-XX/agents/cycle.cfg';
-//$output = shell_exec('ls -1r */*/status*.html');
-//$f = explode("\n",$output);
-//if (sizeof($f) > 1) {
-//
-//  $active = shell_exec('source ' . $cycle . '; echo $KRAKEN_REVIEW_CYCLE');
-//  print '<h2>Active Reviews</h2>';
-//  print '<ul>';
-//  $f = explode(" ",$active);
-//  foreach ($f as &$request) {
-//    print '<li>' . $request . "</li>\n";
-//  }
-//  print '</ul>';
-//
-//  print '<h2>Status</h2>';
-//  print '<ul>';
-//  $f = explode("\n",$output);
-//  $book = "";
-//  $pys = array();
-//  $search = array("status-",".html");
-//  $replace = array("","");
-//  foreach ($f as &$file) {
-//    if ($file != "") {
-//      $text = str_replace($search,$replace,$file);
-//      $g = explode("/",$text);
-//      if ($g[0].'/'.$g[1] == $book) {
-//	$pys[] = $g[2];
-//      }
-//      else {
-//	if ($book != '') {
-//	  print '<li> '.$book.' : ';
-//	  foreach ($pys as &$py) {
-//	    print ' <a href="'.$book.'/status-'.$py.'.html">'.$py.'</a>';
-//	  }
-//	}
-//	$book = $g[0].'/'.$g[1];
-//	$pys = array();
-//	$pys[] = $g[2];
-//      }
-//    }
-//  }
-//  // do not forget last elemet
-//  print '<li> '.$book.' : ';
-//  foreach ($pys as &$py) {
-//    print ' <a href="'.$book.'/status-'.$py.'.html">'.$py.'</a>';
-//  }
-//
-//  print '</ul>';
-//}
+$output = shell_exec('ls -t *.png');
+$f = explode("\n",$output);
+if (sizeof($f) > 1) {
+  print '<h2>Plots</h2>';
+  print '<ul>';
+  $n = 1;
+  foreach ($f as &$file) {
+    if ($file != "") {
+      print '   <a href="' . $file . '"><img width=30% src=' . $file . '></a>';
+      if ($n%2 == 0) {
+        print("<br>");
+      }
+      $n = $n + 1;
+    }
+  }
+  print '</ul>';
+}
 print '<h2>Logfiles</h2>';
 print '<ul>';
 $output = shell_exec('ls -t *.log | head -5');
@@ -80,7 +49,7 @@ foreach ($f as &$file) {
 print '</ul>';
 ?>
 <hr>
-<p style="font-family: arial;font-size: 10px;font-weight: bold;color:#900000;">
+<p style="font-family: arial;font-size: 10px;font-weight: bold;color:#405050;">
 <!-- hhmts start -->
 <?php
 $output = shell_exec('cat ../heartbeat');

@@ -49,6 +49,21 @@ class Cleaner:
         self.rex = rex.Rex(self.task.scheduler.host,self.task.scheduler.user)
 
     #-----------------------------------------------------------------------------------------------
+    # kill all queued jobs (running, idle, held etc.)
+    #-----------------------------------------------------------------------------------------------
+    def killQueued(self):
+
+        print('\n ====  C l e a n e r -- kill queue ====')
+
+        # run condor command to kill all queued jobs from this task
+        self.removeAllJobs()
+
+        # regenerate the request status
+        self.task.request.establishState()
+        
+        return
+
+    #-----------------------------------------------------------------------------------------------
     # analyze known failures
     #-----------------------------------------------------------------------------------------------
     def logCleanup(self):
@@ -114,6 +129,9 @@ class Cleaner:
 
         print(' - remove completed logs')
 
+        #print(' -->>> SKIPPING')
+        #return
+        
         #for file,job in self.task.sample.completedJobs.iteritems():
         for (file,job) in self.task.sample.completedJobs.items():
             # we will make a lot of reference to the ID
@@ -217,6 +235,33 @@ class Cleaner:
         return
 
     #-----------------------------------------------------------------------------------------------
+    # remove all jobs from the queue
+    #-----------------------------------------------------------------------------------------------
+    def removeAllJobs(self):
+
+        base = self.task.scheduler.base + "/%s/data"%self.activity
+        iwd = base + "/%s/%s/%s"%\
+            (self.task.request.config,self.task.request.version,self.task.request.sample.dataset)
+        cmd = 'condor_rm -constraint "Iwd==\\\"%s\\\""'%(iwd)
+        irc = 0
+        rc = 0
+
+        print(' - remove all jobs: %s'%(cmd))
+        if not self.task.scheduler.isLocal():
+            (irc,rc,out,err) = self.rex.executeAction(cmd)
+            if DEBUG > 0 and (irc != 0 or rc != 0):
+                print(' IRC: %d'%(irc))
+        else:
+            (rc,out,err) = self.rex.executeLocalAction(cmd)
+            
+        if DEBUG > 0 and (irc != 0 or rc != 0):
+            print(' RC: %d'%(rc))
+            print(' ERR:\n%s'%(err))
+            print(' OUT:\n%s'%(out))
+
+        return
+    
+    #-----------------------------------------------------------------------------------------------
     # remove held jobs from the queue
     #-----------------------------------------------------------------------------------------------
     def removeHeldJobs(self):
@@ -253,6 +298,9 @@ class Cleaner:
 
         print(' - find failed logs')
 
+        #print(' -->>> SKIPPING')
+        #return
+
         # make sure this is not a new workflow
         if (self.task.request.sample.isNew):
             print(" - savedFailedLogs: new workflow needs no logs saving.")
@@ -278,7 +326,7 @@ class Cleaner:
         (rc,out,err) = self.rex.executeLocalAction(cmd)
 
         # construct the script to make the tar ball
-        self.logSaveScript += 'cd %s/logs/%s/%s/%s\ntar --ignore-failed-read --create --gzip --file %s-%s-%s.tgz'\
+        self.logSaveScript += 'cd %s/logs/%s/%s/%s \n pwd \n tar --ignore-failed-read --create --gzip --file %s-%s-%s.tgz'\
             %(self.activity,cfg,vers,dset,cfg,vers,dset)
 
         # find out whether we have held jobs == failures
@@ -298,8 +346,9 @@ class Cleaner:
 
         # log saver script
         (irc,rc,out,err) = self.rex.executeLongAction(self.logSaveScript)
-        if DEBUG > 0:
-            print(" CMD:%s\n IRC: %s RC: %s\n OUT: \n%s\n ERR: \n%s"%(self.logSaveScript,irc,rc,out,err))
+        if DEBUG>0:
+            print(" CMD: %s\n IRC: %s RC: %s\n OUT: \n%s\n ERR: \n%s"%\
+                  (self.logSaveScript,irc,rc,out,err))
 
         # pull the tar ball over
         cmd = 'scp ' + self.task.scheduler.user + '@' + self.task.scheduler.host \
@@ -321,9 +370,12 @@ class Cleaner:
             print(' Remove local tar: %s'%(cmd))
         (rc,out,err) = self.rex.executeLocalAction(cmd)
         
-        cmd = 'rm -f %s/logs/%s/%s/%s/%s-%s-%s.tgz'%(self.activity,cfg,vers,dset,cfg,vers,dset)
+        cmd = 'rm -f %s/logs/%s/%s/%s/%s-%s-%s.tgz %s-%s-%s.tgz'%(self.activity,cfg,vers,dset,cfg,vers,dset,cfg,vers,dset)
         if DEBUG>0:
             print(' Remove remote tar: %s'%(cmd))
         (irc,rc,out,err) = self.rex.executeAction(cmd)
+        if DEBUG>0:
+            print(" CMD: %s\n IRC: %s RC: %s\n OUT: \n%s\n ERR: \n%s"%\
+                  (cmd,irc,rc,out,err))
 
         return
