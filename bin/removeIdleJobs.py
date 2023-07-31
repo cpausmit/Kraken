@@ -41,8 +41,7 @@ user = 'cmsprod'
 if local:
     scheduler = Scheduler('t3serv015.mit.edu',user)
 else:
-    user = 'paus'
-    scheduler = Scheduler('submit.mit.edu',user,'/work/paus')
+    scheduler = Scheduler(os.getenv('KRAKEN_CONDOR_SCHEDD'),os.getenv('KRAKEN_REMOTE_USER'),'/work/submit/paus')
 
 # Issue the condor command
 cmd = 'condor_rm -constraint "JobStatus==1&&Owner==\\"'+user+'\\""'

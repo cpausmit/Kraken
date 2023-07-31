@@ -10,7 +10,7 @@ DEBUG = 0
 
 #---------------------------------------------------------------------------------------------------
 """
-Class:  Scheduler(host='submit.mit.edu',user='paus')
+Class:  Scheduler(host='submit05.mit.edu',user='paus')
 Each sample can be described through this class
 """
 #---------------------------------------------------------------------------------------------------
@@ -20,9 +20,7 @@ class Scheduler:
     #-----------------------------------------------------------------------------------------------
     # constructor
     #-----------------------------------------------------------------------------------------------
-    def __init__(self,
-                 host='submit.mit.edu',user='paus',base='',
-                 nMyTotalMax=35000,nTotalMax=100000):
+    def __init__(self,host='submit05.mit.edu',user='paus',base='',nMyTotalMax=35000,nTotalMax=100000):
 
         self.here = socket.gethostname()
         self.host = host
@@ -74,7 +72,7 @@ class Scheduler:
     def findCondorVersion(self):
         cmd = 'condor_q -v|grep CondorVersion:|cut -d \' \' -f2|cut -d \'.\' -f1'
         if not self.isLocal():
-            cmd = 'ssh -x ' + self.user + '@' + self.host + ' \"' + cmd + '\"'
+            cmd = f'ssh -x {self.user}@{self.host} \" {cmd} \"'
 
         cv = -1
         for line in os.popen(cmd).readlines():  # run command
@@ -96,7 +94,7 @@ class Scheduler:
             cmd = 'condor_q |grep running|cut -d\' \' -f13|tail -1  2> /dev/null'
 
         if not self.isLocal():
-            cmd = 'ssh -x ' + self.user + '@' + self.host + ' \"' + cmd + '\"'
+            cmd = f'ssh -x {self.user}@{self.host} \" {cmd} \"'
 
         nJobs = 1000000
         if DEBUG > 0:
@@ -105,12 +103,12 @@ class Scheduler:
             nJobs = int(line[:-1])
 
         if self.condorVersion == 9:
-            cmd = 'condor_q ' + self.user + '|grep running|grep query|cut -d\' \' -f12 2> /dev/null'
+            cmd = f'condor_q {self.user}|grep running|grep query|cut -d\' \' -f12 2> /dev/null'
         else:
-            cmd = 'condor_q ' + self.user + '|grep running|cut -d\' \' -f11 2> /dev/null'
+            cmd = f'condor_q {self.user} |grep running|cut -d\' \' -f11 2> /dev/null'
 
         if not self.isLocal():
-            cmd = 'ssh -x ' + self.user + '@' + self.host + ' \"' + cmd + '\"'
+            cmd = f'ssh -x {self.user}@{self.host} \" {cmd} \"'
             #print("findNumberOfTotalJobs: %s"%(cmd))
 
         nMyJobs = 1000000
@@ -129,7 +127,7 @@ class Scheduler:
     #-----------------------------------------------------------------------------------------------
     def findHome(self,host,user):
 
-        cmd = 'ssh -x ' + user + '@' + host + ' pwd'
+        cmd = f'ssh -x {user}@{host} pwd'
         #print("findHome: %s"%(cmd))
         home = ''
         for line in os.popen(cmd).readlines():  # run command
@@ -143,7 +141,7 @@ class Scheduler:
     #-----------------------------------------------------------------------------------------------
     def findRemoteUid(self,host,user):
 
-        cmd = 'ssh -x ' + user + '@' + host + ' id -u'
+        cmd = f'ssh -x {user}@{host} id -u'
         #print("findRemoteUid: %s"%(cmd))
         ruid = ''
         for line in os.popen(cmd).readlines():  # run command
@@ -182,7 +180,7 @@ class Scheduler:
         else:
             localProxy = self.findLocalProxy()
             remoteProxy = "/tmp/x509up_u" + self.ruid
-            cmd = "scp -q " + localProxy + " " + self.user + '@' +  self.host + ':' + remoteProxy
+            cmd = f"scp -q {localProxy} {self.user}@{self.host}: {remoteProxy}"
             os.system(cmd)
 
         return
@@ -193,11 +191,11 @@ class Scheduler:
     def show(self):
 
         print(' ====  S c h e d u l e r  ====')
-        print(' Here: ' + self.here)
-        print(' Host: ' + self.host)
-        print(' User: ' + self.user)
-        print(' Base: ' + self.base)
-        print(' HTCo: ' + str(self.condorVersion))
+        print(f' Here: {self.here}')
+        print(f' Host: {self.host}')
+        print(f' User: {self.user}')
+        print(f' Base: {self.base}')
+        print(f' HTCo: {str(self.condorVersion)}')
         print(' ===== ')
         print(' My  : %6d  (MMax: %d)'%(self.nMyTotal,self.nMyTotalMax))
         print(' Tot : %6d  (TMax: %d)'%(self.nTotal,self.nTotalMax))
@@ -205,7 +203,7 @@ class Scheduler:
     #-----------------------------------------------------------------------------------------------
     # update on the fly
     #-----------------------------------------------------------------------------------------------
-    def update(self,host='submit.mit.edu',user='paus',base='',nMyTotalMax=20000,nTotalMax=100000):
+    def update(self,host='submit05.mit.edu',user='paus',base='',nMyTotalMax=20000,nTotalMax=100000):
 
         self.host = host
         self.user = user

@@ -52,6 +52,9 @@ class Task:
         self.common = self.logs + '/' + os.getenv('KRAKEN_COMMON')
         self.lfnFile = self.logs + '/' + self.sample.dataset + '.lfns'
         self.x509Proxy = self.findX509Proxy()
+        # make sure the schedd is prep'ed
+        cmd = f"scp -q /tmp/{self.x509Proxy} {self.scheduler.user}@{self.scheduler.host}:/tmp/"
+        os.system(cmd)
 
         # show what we got
         print('')

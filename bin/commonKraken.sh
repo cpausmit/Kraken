@@ -45,6 +45,11 @@ function customise {
       echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeDileptonPlusX --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeV0ForMuonFake --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBmmMuonId \
             --customise PhysicsTools/NanoAOD/V10/nano_cff.nanoAOD_customizeV10 \
             --customise_commands=\"process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))\""
+  elif [ "$version" == "524" ]
+  then
+      echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeDileptonPlusX --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeV0ForMuonFake --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBmmMuonId --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_keepLowPtMuons \
+            --customise PhysicsTools/NanoAOD/V10/nano_cff.nanoAOD_customizeV10 \
+            --customise_commands=\"process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))\""
   elif [ "$version" == "A00" ] || [ "$version" == "A01" ] || [ "$version" == "A02" ]
   then
     echo "PhysicsTools/SUEPNano/nano_suep_cff.SUEPNano_customize \
@@ -161,8 +166,15 @@ function conditions {
 
   if [  "`echo $cmssw | grep ^12_`" != "" ]
   then
-    echo auto:run2_data
-    return
+    if   [ "`echo $dataset | grep +Run2016`" != "" ] || [ "`echo $dataset | grep +Run2017`" != "" ] || [ "`echo $dataset | grep +Run2018`" != "" ] 
+    then
+      echo auto:run2_data
+      return
+    elif [ "`echo $dataset | grep +RunIISummer..UL18....AOD`" != "" ]
+    then
+      echo auto:phase1_2018_realistic
+      return
+    fi
   fi
   
   ## -DATA- STARTS HERE

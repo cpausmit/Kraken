@@ -69,7 +69,7 @@ def findAllJobs(config,version):
         cmd += " | grep ' %s %s '"%(config,version)
     print(" Review condor queue")
     #print(" Output based on: %s\n"%(cmd))
-    myRx = rex.Rex("submit04.mit.edu","paus")
+    myRx = rex.Rex(os.getenv('KRAKEN_CONDOR_SCHEDD'),os.getenv('KRAKEN_REMOTE_USER'))
     (irc,rc,out,err) = myRx.executeLongAction(cmd)
 
     return out.split("\n")

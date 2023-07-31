@@ -113,21 +113,10 @@ scheduler = None
 if local:
     scheduler = Scheduler('t3serv019.mit.edu',os.getenv('USER','cmsprod'),'',nJobsMax)
 else:
-    scheduler = Scheduler('submit04.mit.edu',
+    scheduler = Scheduler(os.getenv('KRAKEN_CONDOR_SCHEDD'),
                           os.getenv('KRAKEN_REMOTE_USER','paus'),
                           '/home/submit/%s'%(os.getenv('KRAKEN_REMOTE_USER','paus')),
                           nJobsMax)
-
-#if local:
-#    scheduler = Scheduler('t3serv019.mit.edu',
-#                          os.getenv('USER','paus'),
-#                          '/home/%s'%(os.getenv('KRAKEN_REMOTE_USER','paus')),
-#                          nJobsMax)
-#else:
-#    scheduler = Scheduler('submit.mit.edu',
-#                          os.getenv('KRAKEN_REMOTE_USER','paus'),
-#                          '/work/%s'%(os.getenv('KRAKEN_REMOTE_USER','paus')),
-#                          nJobsMax)
 
 # Generate the request
 request = Request(scheduler,sample,config,version,py)

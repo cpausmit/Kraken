@@ -15,8 +15,10 @@ echo " Load Kraken functions."
 ls -l
 if [ -f "./commonKraken.sh" ]
 then
+  echo " Loading the local commonKraken.sh"
   source ./commonKraken.sh
 else
+  echo " Loading "`which commonKraken.sh`
   source commonKraken.sh    
 fi
 

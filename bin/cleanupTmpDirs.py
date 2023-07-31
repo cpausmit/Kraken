@@ -14,7 +14,7 @@ DIR = "/cms/store/user/paus"
 def findActiveStubs():
 
     cmd = 'condor_q -constraint "JobStatus!=5" -format "%s\\n" Args|cut -d\' \' -f8'
-    myRx = Rex('submit.mit.edu','paus');
+    myRx = rex.Rex(os.getenv('KRAKEN_CONDOR_SCHEDD'),os.getenv('KRAKEN_REMOTE_USER'))
     irc = 0
 
     #print " CMD : " + cmd

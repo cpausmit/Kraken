@@ -290,7 +290,8 @@ def getAllRequests(config,version,py):
     return requests
 
 def productionStatus(config,version,dataset,debug=0):
-    # make sure we can see the Tier-2 disks: returns -1 on failure
+    # give the status of production in terms of all and so far produced files
+    # -> make sure we can see the Tier-2 disks: returns -1 on failure
 
     cmd = "cat %s/%s/%s/%s/Files 2> /dev/null | wc -l"\
         %(CATALOG,config,version,dataset)
@@ -341,8 +342,8 @@ def setupScheduler(local,nJobsMax):
     if local:
         scheduler = Scheduler('t3serv019.mit.edu',os.getenv('USER','cmsprod'),'',nJobsMax)
     else:
-        scheduler = Scheduler('submit04.mit.edu',
-                              os.getenv('KRAKEN_REMOTE_USER','paus'),
+        scheduler = Scheduler(os.getenv('KRAKEN_CONDOR_SCHEDD'),
+                              os.getenv('KRAKEN_REMOTE_USER'),
                               '/home/submit/%s'%(os.getenv('KRAKEN_REMOTE_USER','paus')),
                               nJobsMax)
     return scheduler

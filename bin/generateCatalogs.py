@@ -168,8 +168,6 @@ for dataset in allDatasets:
     if len(dataset)<4:
         print(" WARNING -- skip wired dataset: %s"%(dataset))
         continue
-    
-    print(' --> %s'%(dataset))
 
     catalogDir = '%s/%s/%s'%(CATALOG,book,dataset)
     if DEBUG>0:
@@ -179,6 +177,7 @@ for dataset in allDatasets:
     if DEBUG>0:
         print(' Write Raw')
     nFiles = writeRawFile(rawFile,book,dataset)
+    print(' --> %s (nFiles: %d)'%(dataset,nFiles))
     if nFiles<1:
         print(' INFO - no files found.')
         continue
