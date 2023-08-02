@@ -2,7 +2,7 @@
 # --------------------------------------------------------------------------------------------------
 # Process to keep monitoring alive and well.
 #
-# v1.0                                                                         C.Paus (Apr 27, 2015)
+# v1.0                                                                         C.Paus (Aug 2, 2023)
 # --------------------------------------------------------------------------------------------------
 # environment has to be setup: Kraken, Kraken agents, FiBS
 source XX-KRAKEN_AGENTS_BASE-XX/setup.sh
