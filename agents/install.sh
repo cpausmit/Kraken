@@ -96,10 +96,13 @@ then
   cat ./catalogd-Template \
     | sed -e "s#XX-KRAKEN_BASE-XX#$BASE#" -e "s#XX-KRAKEN_AGENTS_BASE-XX#$AGENTS_BASE#" \
     > ./catalogd
+  cat ./monitord-Template \
+    | sed -e "s#XX-KRAKEN_BASE-XX#$BASE#" -e "s#XX-KRAKEN_AGENTS_BASE-XX#$AGENTS_BASE#" \
+    > ./monitord
   cat ./cleanupd-Template \
     | sed -e "s#XX-KRAKEN_BASE-XX#$BASE#" -e "s#XX-KRAKEN_AGENTS_BASE-XX#$AGENTS_BASE#" \
     > ./cleanupd
-  chmod 750 ./catalogd ./cleanupd ./reviewd
+  chmod 750 ./catalogd ./cleanupd ./monitord ./reviewd
 else
   echo ""
   echo " ERROR - setup.sh-Template does not exist."
@@ -147,11 +150,12 @@ chown ${KRAKEN_USER}:${KRAKEN_GROUP} -R $KRAKEN_AGENTS_LOG
 # install and start daemons
 #==========================
 
-if [ -z "$KRAKEN_MINIMAL" ]  # only start the reviewer is KRAKEN_MINIMAL is not set
+if [ -z "$KRAKEN_MINIMAL" ]  # only start the reviewer if KRAKEN_MINIMAL is NOT set
 then
   install reviewd
 fi
 install catalogd
+install monitord
 install cleanupd
 
 # install web pages

@@ -215,14 +215,14 @@ for stub in stubs:
     n_output = -1
     for line in data_out.split('\n'):
         if options.debug > 1:
-            print(line)
+            print("LINE: ",line)
 
         if 'checkFile.py ' in line:
             f = line.split('/')
             config = f[5]
             version = f[6]
             dataset = f[7]
-            file = f[9].replace('_tmp.root','')
+            file = f[-1].replace('_tmp.root','')
         elif 'SQL: insert' in line:
             status = 0
         elif 'Compare: ' in line:

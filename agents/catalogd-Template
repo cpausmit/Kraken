@@ -101,10 +101,10 @@ function renew_checklist {
   # read command line parameters
   lF="$1"  # log file
 
-  # catalog monitor
-  echo " generating catalog monitor plots"                                        >> $lF
-  $KRAKEN_BASE/bin/analyzeCatalog.py                                              >> $lF
-  mv checkfile_activity*png $KRAKEN_AGENTS_LOG/${daemon}/
+#  # catalog monitor
+#  echo " generating catalog monitor plots"                                        >> $lF
+#  $KRAKEN_BASE/bin/analyzeCatalog.py                                              >> $lF
+#  mv checkfile_activity*png $KRAKEN_AGENTS_LOG/${daemon}/
   
   # make sure the file exists
   touch $FIBS_WORK/checkFile.list

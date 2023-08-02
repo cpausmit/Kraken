@@ -1,0 +1,14 @@
+[Unit]
+Description=Monitor - will monitor the cataloging process.
+After=syslog.target
+
+[Service]
+ExecStart=/usr/local/Kraken/agents/monitord
+PIDFile=/var/run/monitord.pid
+Type=simple
+RemainAfterExit=no
+User=cmsprod
+Group=submit-cms
+
+[Install]
+WantedBy=multi-user.target

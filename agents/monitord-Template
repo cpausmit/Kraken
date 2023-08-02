@@ -1,0 +1,98 @@
+#!/bin/bash
+# --------------------------------------------------------------------------------------------------
+# Process to keep monitoring alive and well.
+#
+# v1.0                                                                         C.Paus (Apr 27, 2015)
+# --------------------------------------------------------------------------------------------------
+# environment has to be setup: Kraken, Kraken agents, FiBS
+source XX-KRAKEN_AGENTS_BASE-XX/setup.sh
+# it is unclear to me why this does not get properly loaded in the line before
+export PATH=${PATH}:${KRAKEN_BASE}/bin:${FIBS_BASE}/bin:${T2TOOLS_BASE}/bin
+export PYTHONPATH=${PYTHONPATH}:${KRAKEN_BASE}/python:${FIBS_BASE}/python:${T2TOOLS_BASE}/python
+
+# this daemon
+daemon=`basename $0`
+
+# go to work area
+cd $KRAKEN_AGENTS_WORK
+echo ""
+echo " Work area: "`pwd`
+echo ""
+
+function analyze_cataloging {
+  # produce monitoring plot for the cataloging (checkFile)
+
+  # read command line parameters
+  lF="$1"  # log file
+
+  # catalog monitor
+  echo " generating catalog monitor plots"                                        >> $lF
+  $KRAKEN_BASE/bin/analyzeCatalog.py                                              >> $lF
+  mv checkfile_activity*png $KRAKEN_AGENTS_LOG/${daemon}/
+}
+
+# infinite loop
+while [ 1 ]
+do
+
+  # make sure the log directory exists
+  mkdir -p $KRAKEN_AGENTS_LOG/${daemon}
+  if [ -e "$KRAKEN_AGENTS_LOG/${daemon}" ]
+  then
+    #echo " Monitor log area exists. Let's start!"
+    sleep 1
+  else
+    echo ""
+    echo " Monitor area could not be found ($KRAKEN_AGENTS_LOG). EXIT!"
+    echo ""
+    exit 1
+  fi
+
+  # generate specific log file
+  tag=`date "+%s"`
+  logFile=$KRAKEN_AGENTS_LOG/${daemon}/${daemon}.log
+  rm -f $logFile
+  touch $logFile
+  echo ""                                                                           >> $logFile
+  echo " = = = =  I N I T I A L  K R A K E N  E N V I R O N M E N T  = = = = ="     >> $logFile
+  echo ""                                                                           >> $logFile
+  env  | grep ^KRAKEN                                                               >> $logFile
+  echo ""                                                                           >> $logFile
+  echo " = = = =  I N I T I A L  M O N I T O R  E N V I R O N M E N T  = = = ="     >> $logFile
+  echo ""                                                                           >> $logFile
+  env  | grep ^KRAKEN_MONITOR                                                       >> $logFile
+  echo ""                                                                           >> $logFile
+  echo "[ PYTHON PATH: $PYTHONPATH ]"                                               >> $logFile
+  echo ""                                                                           >> $logFile
+
+  # ten loops over the process with one logfile (keep it small)
+  for index in `echo 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19`
+  do
+    let wait=$KRAKEN_MONITOR_CYCLE_SECONDS   # period nSeconds
+    source $KRAKEN_BASE/agents/cycle.cfg     # load updated config
+    echo " ------------"                                                            >> $logFile
+    echo " MONITOR LOOP $index STARTED -- $tag (cycle wait $wait sec)"              >> $logFile
+    echo " ------------"                                                            >> $logFile
+    echo "   --> "`date`                                                            >> $logFile
+    echo " "                                                                        >> $logFile
+
+    analyze_cataloging $logFile
+    
+    # insure that the log information is updated
+    mkdir -p $KRAKEN_AGENTS_WWW 
+    synchronizeWeb.py                                                               >> $logFile 2>&1
+ 
+    echo " "                                                                        >> $logFile
+    echo " completed monitoring cycle."                                             >> $logFile
+    echo " --------"                                                                >> $logFile
+    echo " FINISHED at "`date`                                                      >> $logFile
+    echo " --------"                                                                >> $logFile
+    sleep $wait
+  done
+
+  # move log file to a dated version
+  mv $logFile $KRAKEN_AGENTS_LOG/${daemon}/${daemon}-${tag}.log
+
+done
+
+exit 0;

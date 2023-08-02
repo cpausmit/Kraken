@@ -25,7 +25,7 @@ function killAgent {
   then
     killall $process
   fi
-  list=`ps auxw |grep $KRAKEN_USER | grep -v grep | grep jobSitter| tr -s ' '| cut -d ' ' -f2`
+  list=`ps auxw |grep $KRAKEN_USER|grep -v grep|grep jobSitter|tr -s ' '|cut -d ' ' -f2`
   if [ "$list" != "" ]
   then
     kill $list
@@ -50,6 +50,7 @@ source ./setup.sh
 
 killAgent reviewd reviewRequests.py
 killAgent catalogd
+killAgent monitord
 killAgent cleanupd reviewRequests.py
 
 exit 0
