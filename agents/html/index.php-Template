@@ -16,7 +16,7 @@ body.ex{margin-top: 0px; margin-bottom:25px; margin-right: 25px; margin-left: 25
 <body style="font-family: arial;font-size: 20px;font-weight: bold;color:#405050;">
 <hr>
 <a href="../index.php" alt="Agent XX-NAME-XX">
-<img src="../agent-XX-NAME-XX.jpg" alt="Agent XX-NAME-XX">
+<img width=85% src="../agent-XX-NAME-XX.jpg" alt="Agent XX-NAME-XX">
 </a>
 <h1>XX-NAME-XX agent (aka XX-AKA-XX) </h1>
 <?php

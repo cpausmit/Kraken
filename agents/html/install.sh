@@ -50,6 +50,9 @@ cat $KRAKEN_BASE/agents/html/index.php-Template \
    | sed 's/XX-NAME-XX/catalogd/g' | sed 's/XX-AKA-XX/Johnson/' \
    > $KRAKEN_AGENTS_LOG/catalogd/index.php
 cat $KRAKEN_BASE/agents/html/index.php-Template \
+   | sed 's/XX-NAME-XX/monitord/g' | sed 's/XX-AKA-XX/Brown/' \
+   > $KRAKEN_AGENTS_LOG/monitord/index.php
+cat $KRAKEN_BASE/agents/html/index.php-Template \
    | sed 's/XX-NAME-XX/cleanupd/g' | sed 's/XX-AKA-XX/Williams/' \
    > $KRAKEN_AGENTS_LOG/cleanupd/index.php
 

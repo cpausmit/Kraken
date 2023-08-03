@@ -79,9 +79,10 @@ if (sizeof($f) > 1) {
 <td><pre>   </pre></td><td VALIGN=top>
 <h2>The Agents</h2>
 <pre>
-    <a href="reviewd">reviewd</a> -- request review logs
     <a href="catalogd">catalogd</a> -- catalog creation log
     <a href="cleanupd">cleanupd</a> -- cleanup logs
+    <a href="monitord">monitord</a> -- monitor for cataloging
+    <a href="reviewd">reviewd</a> -- request review logs
 </pre>
 </td></tr></table>
 
