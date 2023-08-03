@@ -7,18 +7,18 @@
 import os,sys,re,getopt
 
 def getHeader(config,version):
-    header = '<!DOCTYPE html><html><head><title>Kraken Production</title></head>' \
-        + '<style>' \
-        + 'a:link{color:#202020; background-color:transparent; text-decoration:none}' \
-        + 'a:visited{color:#0074AA; background-color:transparent; text-decoration:none}' \
-        + 'a:hover{color:#000090;background-color:transparent; text-decoration:underline}' \
-        + 'a:active{color:#000040;background-color:transparent; text-decoration:underline}' \
-        + 'body.ex{margin-top: 0px; margin-bottom:25px; margin-right: 25px; margin-left: 25px;}' \
-        + '</style><body class="ex" bgcolor="#ffefef">' \
-        + '<body style="font-family: arial;font-size: 20px;font-weight: bold;color:#405050;">' \
+    header = '<!DOCTYPE html><html><head><title>Kraken Production</title></head>\n' \
+        + '<style>\n' \
+        + 'a:link{color:#202020; background-color:transparent; text-decoration:none}\n' \
+        + 'a:visited{color:#0074AA; background-color:transparent; text-decoration:none}\n' \
+        + 'a:hover{color:#000090;background-color:transparent; text-decoration:underline}\n' \
+        + 'a:active{color:#000040;background-color:transparent; text-decoration:underline}\n' \
+        + 'body.ex{margin-top: 0px; margin-bottom:25px; margin-right: 25px; margin-left: 25px;}\n' \
+        + '</style><body class="ex" bgcolor="#ffefef">\n' \
+        + '<body style="font-family: arial;font-size: 20px;font-weight: bold;color:#405050;">\n' \
         + '<code><a href="%s-%s_batch.png"><img width=30%% src=%s-%s_batch.png></a>'%(config,version,config,version) \
-        + '<a href="%s-%s_total.png"><img width=30%% src=%s-%s_total.png></a></code>'%(config,version,config,version) \
-        + '<pre>\n'
+        + '  <a href="%s-%s_total.png"><img width=30%% src=%s-%s_total.png></a></code>'%(config,version,config,version) \
+        + '\n<pre>\n'
     return header
 
 def getFooter():
@@ -29,7 +29,7 @@ def getFooter():
 # Main starts here
 #===================================================================================================
 # Define string to explain usage of the script
-usage = "\nUsage: htmlDressing.py [ --input=<id>  --help ]\n"
+usage = "\nUsage: htmlDressing.py [ --input=<id>  --version=<v>  --help ]\n"
 
 # Define the valid options which can be specified and check out the command line
 valid = ['input=','version=','help']
