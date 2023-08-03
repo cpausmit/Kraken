@@ -20,26 +20,12 @@ PATTERN_B = '%a %b %d %H:%M:%S %Z %Y'
 RECORD = {}
 PLOT_FIRST = True
 
-def makeCompleteDir(dir):
-    # make directory were files are moved once processed
-    os.system("mkdir -p %s-done"%(dir))
-    os.system("mkdir -p %s-save"%(dir))
-    return
-
-def moveFiles(dir,stub,debug):
-    # make directory were files are moved once processed
-    cmd = "mv %s/%s.??? %s-done/"%(dir,stub,dir)
-    if debug > 1:
-        print(" Moving: %s"%(cmd))
-    os.system(cmd)
-    return
-
-def saveFiles(dir,stub,debug):
-    # make directory were files are moved once processed
-    cmd = "mv %s/%s.??? %s-save/"%(dir,stub,dir)
-    if debug > 1:
-        print(" Moving: %s"%(cmd))
-    os.system(cmd)
+def appendRecord(record):
+    # append the record to the already existing one
+    print(" Appending latest record to existing file (%d)"%(len(record)))
+    with open('%s/checkFileActivity.db'%(options.base),"a") as f:
+        for key in record:
+            f.write('%s,%s\n'%(key,record[key]))
     return
 
 def findAllJobStubs(dir,debug=0):
@@ -144,6 +130,19 @@ def reviewStub(record,options,stub):
     moveFiles(options.base,stub,int(options.debug))
 
     return
+def makeCompleteDir(dir):
+    # make directory were files are moved once processed
+    os.system("mkdir -p %s-done"%(dir))
+    os.system("mkdir -p %s-save"%(dir))
+    return
+
+def moveFiles(dir,stub,debug):
+    # make directory were files are moved once processed
+    cmd = "mv %s/%s.??? %s-done/"%(dir,stub,dir)
+    if debug > 1:
+        print(" Moving: %s"%(cmd))
+    os.system(cmd)
+    return
 
 def plot(record,min_t,max_t,opt='ALL',name='tmp'):
 
@@ -153,12 +152,15 @@ def plot(record,min_t,max_t,opt='ALL',name='tmp'):
     
     # plot the record with the given option
     if opt == "save":
+        #plt.text(0.01,0.99,name,ha='right',va='top')
         plt.legend(loc='upper left')
+        plt.xlabel('date/time [%s]'%(name), fontsize=18)
         # save plot for later viewing
         plt.savefig("checkfile_activity_%s.png"%(name),bbox_inches='tight',dpi=400)
         plt.close()
     elif opt == "show":
         # show the plot for interactive use
+        #plt.text(0.01,0.99,name,ha='right',va='top')
         plt.legend(loc='upper left')
         plt.show()
     else:
@@ -213,36 +215,6 @@ def plot(record,min_t,max_t,opt='ALL',name='tmp'):
 
     return (min_t,max_t)
         
-def readRecord():
-    # write the record efficicently to file
-
-    record = {}
-    filename = '%s/checkFileActivity.db'%(options.base)
-    
-    if not os.path.exists(filename):
-        print(" No previously existing record found.")
-        return record
-        
-    print(" Reading record from existing file.")
-    
-    with open('%s/checkFileActivity.db'%(options.base),"r") as f:
-        data = f.read()
-    for d in data.split("\n"):
-        if ',' not in d:
-            continue
-        (key, value) = d.split(",")
-        record[key] = value
-    print(" record read (%d)."%(len(record)))
-    return record
-
-def appendRecord(record):
-    # append the record to the already existing one
-    print(" Appending latest record to existing file (%d)"%(len(record)))
-    with open('%s/checkFileActivity.db'%(options.base),"a") as f:
-        for key in record:
-            f.write('%s,%s\n'%(key,record[key]))
-    return
-
 def plotRecord(record):
     # produce all standard plots for a given record
     
@@ -298,6 +270,36 @@ def plotRecord(record):
     plot(RECORD,min_t,max_t,'-3')
     plot(RECORD,min_t,max_t,'save','month')
     #plot(RECORD,min_t,max_t,'show','month')
+
+def readRecord():
+    # write the record efficicently to file
+
+    record = {}
+    filename = '%s/checkFileActivity.db'%(options.base)
+    
+    if not os.path.exists(filename):
+        print(" No previously existing record found.")
+        return record
+        
+    print(" Reading record from existing file.")
+    
+    with open('%s/checkFileActivity.db'%(options.base),"r") as f:
+        data = f.read()
+    for d in data.split("\n"):
+        if ',' not in d:
+            continue
+        (key, value) = d.split(",")
+        record[key] = value
+    print(" record read (%d)."%(len(record)))
+    return record
+
+def saveFiles(dir,stub,debug):
+    # make directory were files are moved once processed
+    cmd = "mv %s/%s.??? %s-save/"%(dir,stub,dir)
+    if debug > 1:
+        print(" Moving: %s"%(cmd))
+    os.system(cmd)
+    return
         
 def writeRecord(record):
     # write the record efficicently to file
