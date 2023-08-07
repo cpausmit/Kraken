@@ -29,7 +29,7 @@ if (sizeof($f) > 1) {
   foreach ($f as &$file) {
     if ($file != "") {
       print '   <a href="' . $file . '"><img width=30% src=' . $file . '></a>';
-      if ($n%2 == 0) {
+      if ($n%3 == 0) {
         print("<br>");
       }
       $n = $n + 1;

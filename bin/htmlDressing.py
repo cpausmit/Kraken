@@ -16,9 +16,9 @@ def getHeader(config,version):
         + 'body.ex{margin-top: 0px; margin-bottom:25px; margin-right: 25px; margin-left: 25px;}\n' \
         + '</style><body class="ex" bgcolor="#ffefef">\n' \
         + '<body style="font-family: arial;font-size: 20px;font-weight: bold;color:#405050;">\n' \
-        + '<code><a href="%s-%s_batch.png"><img width=30%% src=%s-%s_batch.png></a>'%(config,version,config,version) \
+        + '<hr>\n<code><a href="%s-%s_batch.png"><img width=30%% src=%s-%s_batch.png></a>'%(config,version,config,version) \
         + '  <a href="%s-%s_total.png"><img width=30%% src=%s-%s_total.png></a></code>'%(config,version,config,version) \
-        + '\n<pre>\n'
+        + '\n<hr>\n<pre>\n'
     return header
 
 def getFooter():

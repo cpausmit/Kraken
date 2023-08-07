@@ -54,7 +54,7 @@ function customise {
   then
     echo "PhysicsTools/SUEPNano/nano_suep_cff.SUEPNano_customize \
             --customise_commands=\"process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))\""
-  elif [ "$version" == "D00" ] || [ "$version" == "D01" ] || [ "$version" == "D02" ]
+  elif [ "$version" == "D00" ] || [ "$version" == "D01" ] || [ "$version" == "D02" ] || [ "$version" == "D03" ]
   then
     echo "Hrare/NanoAOD/nano_cff.nanoAOD_customizeMesons \
             --customise_commands=\"process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))\""
