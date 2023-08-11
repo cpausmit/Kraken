@@ -8,7 +8,7 @@
 # --------------------------------------------------------------------------------------------------
 
 function install {
-  # function that will install the daemon named as the given first parameter
+  # function that will install the daemon named as the given fir parameter
   #   example: install reviewd
 
   # command line parameter

@@ -1,4 +1,14 @@
 #!/bin/bash
+usage=" $0 [ -q ] [ -h ]"
+if   [ ".$1" == ".-h" ]
+then
+    echo $usage
+    exit 0
+elif [ ".$1" == ".-q" ]
+then
+    wc -l checkFile.list /home/tier3/cmsprod/cms/work/fibs/checkFile.list
+    exit 0
+fi
 
 list /cms/store/user/paus/nano*/???/*/tmp_*| cut -d ' ' -f 2 > checkFile.list
 nNew=`wc -l checkFile.list`
