@@ -56,7 +56,7 @@ def catalogFile(file):
 
     print('\n o-o-o OUT o-o-o \n%s\n\n o-o-o ERR (%d) o-o-o \n%s'%(out.decode(),rc,err.decode()))
 
-    return (out,err,entry)
+    return (out.decode(),err.decode(),entry)
 
 def findFileSize(file):
 
@@ -64,7 +64,7 @@ def findFileSize(file):
     cmd = "t2tools.py --action ls --source " +  file
     print(' LIST: ' + cmd)
     (rc,out,err) = remoteX.executeLocalAction(cmd)
-    fileSize = long((out.split(" ")[0]).split(":")[1])
+    fileSize = int((out.split(" ")[0]).split(":")[1])
     print(' SIZE: %ld'%fileSize)
 
     return fileSize
@@ -171,11 +171,11 @@ def makeDatabaseEntry(requestId,fileName,nEvents,fileSize):
         # Execute the SQL command
         Cursor.execute(sql)
     except MySQLdb.IntegrityError as e:
-        if not e[0] == 1062:
+        if e.args[0] == 1062:
+            print(" WARNING -- entry was already in table.")
+        else:
             print('ERROR(%s) - could not insert new file.'%(sql))
             raise
-        else:
-            print(" WARNING -- entry was already in table.")
 
 
 #===================================================================================================

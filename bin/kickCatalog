@@ -1,8 +1,8 @@
 #!/bin/bash
-usage=" $0 [ -q ] [ -h ]"
+usage=" usage: "`basename $0`" [ -q ] [ -h ]"
 if   [ ".$1" == ".-h" ]
 then
-    echo $usage
+    echo "$usage"
     exit 0
 elif [ ".$1" == ".-q" ]
 then

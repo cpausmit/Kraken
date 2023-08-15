@@ -33,7 +33,8 @@ logFile=/tmp/$logFile
 
 echo " Initialize CMSSW"; echo " "
 source /cvmfs/cms.cern.ch/cmsset_default.sh
-cd     /cvmfs/cms.cern.ch/slc6_amd64_gcc530/cms/cmssw-patch/CMSSW_8_0_26_patch2/src
+dir=`scram list -a|grep CMSSW| head -2| grep cvmfs | tr -s ' ' |cut -d ' ' -f3`
+cd     $dir/src
 eval   `scram runtime -sh`
 cd -   >& /dev/null
 
