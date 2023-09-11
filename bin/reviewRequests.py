@@ -244,7 +244,6 @@ def findPath(config,version):
     path = ''
     for line in os.popen(cmd).readlines():
         path = line[:-1] +  '/' + config + '/' + version
-
     return path
 
 def generateCondorId():

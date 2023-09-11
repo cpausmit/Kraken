@@ -180,7 +180,8 @@ class Scheduler:
         else:
             localProxy = self.findLocalProxy()
             remoteProxy = "/tmp/x509up_u" + self.ruid
-            cmd = f"scp -q {localProxy} {self.user}@{self.host}: {remoteProxy}"
+            cmd = f"scp -q {localProxy} {self.user}@{self.host}:{remoteProxy}"
+            print(cmd)
             os.system(cmd)
 
         return

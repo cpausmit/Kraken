@@ -45,7 +45,7 @@ function customise {
       echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeDileptonPlusX --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeV0ForMuonFake --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBmmMuonId \
             --customise PhysicsTools/NanoAOD/V10/nano_cff.nanoAOD_customizeV10 \
             --customise_commands=\"process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))\""
-  elif [ "$version" == "524" ]
+  elif [ "$version" == "524" ] || [ "$version" == "525" ]
   then
       echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeDileptonPlusX --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeV0ForMuonFake --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBmmMuonId --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_keepLowPtMuons \
             --customise PhysicsTools/NanoAOD/V10/nano_cff.nanoAOD_customizeV10 \
