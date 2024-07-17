@@ -32,26 +32,26 @@ def getDatasetId(process,setup,tier,cursor,debug):
     sql = "select DatasetId from Datasets where " \
         + "DatasetProcess='%s' and DatasetSetup='%s' and DatasetTier='%s';"%(process,setup,tier)
     if debug>0:
-        print ' select: ' + sql
+        print(' select: ' + sql)
     results = []
     try:
         # Execute the SQL command
         cursor.execute(sql)
         results = cursor.fetchall()
     except:
-        print " Error (%s): unable to fetch data."%(sql)
+        print(" Error (%s): unable to fetch data."%(sql))
         sys.exit(0)
     
     if len(results) <= 0:
-        print ' Requested dataset not defined, check database (nEntries=%d).'%(len(results))
+        print(' Requested dataset not defined, check database (nEntries=%d).'%(len(results)))
         sys.exit(0)
     elif len(results) > 1:
-        print ' Requested dataset not well defined, check database (nEntries=%d).'%(len(results))
+        print(' Requested dataset not well defined, check database (nEntries=%d).'%(len(results)))
         sys.exit(0)
     else:
         datasetId = int(results[0][0])
         if debug>0:
-            print ' DatasetId=%d.'%(datasetId)
+            print(' DatasetId=%d.'%(datasetId))
 
     return datasetId
 
@@ -62,7 +62,7 @@ def getRequestId(datasetId,config,version,cursor,debug):
     sql = "select RequestId from Requests where DatasetId=%d"%(datasetId) \
         + " and RequestConfig='%s' and RequestVersion='%s'"%(config,version)
     if debug>0:
-        print ' select: ' + sql
+        print(' select: ' + sql)
 
     results = []
     try:
@@ -70,7 +70,7 @@ def getRequestId(datasetId,config,version,cursor,debug):
         cursor.execute(sql)
         results = cursor.fetchall()
     except:
-        print 'ERROR(%s) - could not find request id.'%(sql)
+        print('ERROR(%s) - could not find request id.'%(sql))
 
     # found the request Id
     for row in results:
@@ -91,16 +91,16 @@ def remove(lfn,exe):
     datasetId = getDatasetId(process,setup,tier,cursor,debug)
     requestId = getRequestId(datasetId,lfn.config,lfn.version,cursor,debug)
 
-    print ' Ids: dataset=%d  request=%d'%(datasetId,requestId)
+    print(' Ids: dataset=%d  request=%d'%(datasetId,requestId))
     if requestId < 0:
-        print ' ERROR - no request id was found to match your request. (Is your python config correct?)'
+        print(' ERROR - no request id was found to match your request. (Is your python config correct?)')
         sys.exit(1)
 
     removeFile(lfn,requestId)
     
     # Re-generate the catalog after the deletion
     cmd = 'generateCatalogs.py %s/%s %s'%(lfn.config,lfn.version,lfn.dataset)
-    print ' ctg: %s'%(cmd)
+    print(' ctg: %s'%(cmd))
     if exe:
         os.system(cmd)
     
@@ -109,31 +109,31 @@ def removeFile(lfn,requestId):
 
     # delete from T2
     cmd = 't2tools.py --action=rm --source=/cms%s'%(lfn.lfn)
-    print ' t2t: %s'%(cmd)
+    print(' t2t: %s'%(cmd))
     if exe:
         os.system(cmd)
     
-    # delete from T3
-    cmd = 'hdfs dfs -rm /cms%s'%(lfn.lfn)
-    print ' loc: %s'%(cmd)
-    if exe:
-        os.system(cmd)
+    ## delete from T3
+    #cmd = 'hdfs dfs -rm /cms%s'%(lfn.lfn)
+    #print(' loc: %s'%(cmd))
+    #if exe:
+    #    os.system(cmd)
 
     # delete from the database (for catalogs)
     sql  = "delete from Files where RequestId=%d and fileName='%s'"%(requestId,lfn.fileId)
-    print ' sql: %s'%(sql)
+    print(' sql: %s'%(sql))
     if exe:
         try:
             # Execute the SQL command
             cursor.execute(sql)
         except:
-            print " Error (%s): unable to delete data."%(sql)
+            print(" Error (%s): unable to delete data."%(sql))
 
-    # delete from dynamo
-    cmd = "dynamo-delete-one-file %s"%(lfn.lfn)
-    print ' dyn: %s'%(cmd)
-    if exe:
-        os.system(cmd)
+    ## delete from dynamo
+    #cmd = "dynamo-delete-one-file %s"%(lfn.lfn)
+    #print(' dyn: %s'%(cmd))
+    #if exe:
+    #    os.system(cmd)
 
 
 #===================================================================================================
@@ -150,9 +150,9 @@ usage += "                     [ --help ]\n\n"
 valid = ['fileName=','debug=','exec','help']
 try:
     opts, args = getopt.getopt(sys.argv[1:], "", valid)
-except getopt.GetoptError, ex:
-    print usage
-    print str(ex)
+except getopt.GetoptError as ex:
+    print(usage)
+    print(str(ex))
     sys.exit(1)
 
 # --------------------------------------------------------------------------------------------------
@@ -166,7 +166,7 @@ fileName = ''
 # Read new values from the command line
 for opt, arg in opts:
     if opt == "--help":
-        print usage
+        print(usage)
         sys.exit(0)
     if opt == "--fileName":
         fileName = arg

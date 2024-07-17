@@ -133,9 +133,11 @@ for request in requests:
     key = "%s-%s-%s"%(config,version,dataset)
 
     input = "%s/%s.jobs"%(JOBS,dataset)
-    with open(input,'r') as f:
-        for count, line in enumerate(f):
-            pass
+    count = -1
+    if os.path.exists(input):
+        with open(input,'r') as f:
+            for count, line in enumerate(f):
+                pass
     n_total = count + 1
 
     db = kdb.Kdb()

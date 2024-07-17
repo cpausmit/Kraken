@@ -32,5 +32,7 @@
                    'cvmfsEndPoint': "cmsset_default.sh: Transport endpoint",
                    'time': "time: command not found",
                    'illegal': "*** Break *** illegal instruction",
+		   'operExpired': "Run: [ERROR] Operation expired",
+		   'fatal': "FATAL:",
                  },
 }

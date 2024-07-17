@@ -151,7 +151,7 @@ then
   fi
 elif [ ${PY} == "nanodp" ]
 then
-  echo " MW production"
+  echo " DarkPhoton production"
   cat $CMSSW_BASE/$CONFIG/$VERSION/${PY}.py \
       | sed -e "s@XX-LFN-XX@$LFN@g" -e "s@XX-GPACK-XX@$GPACK@g" \
       > $WORKDIR/${PY}.py
@@ -255,6 +255,24 @@ pwd
 ls -lhrt
 
 sample=`echo $GPACK | sed 's/\(.*\)_nev.*/\1/'`
+
+## TESTING >>
+
+pwd=`pwd`
+for file in `echo ${GPACK}*`
+do
+  # now do the backup copy using xrootd
+  echo " Xrootd pre-trial:\
+  xrdcp file:///$pwd/${file} \
+        root://$REMOTE_SERVER_XRD/${REMOTE_BASE_XRD}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}"
+  xrdcp file:///$pwd/${file} \
+        root://$REMOTE_SERVER_XRD/${REMOTE_BASE_XRD}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}
+  rcCmsCp=$?
+  echo " PreCopying: $file"
+  echo " PreCopy RC: $rcCmsCp"
+done
+
+## TESTING <<
 
 # unset CMS environment
 eval `scram unsetenv -sh`

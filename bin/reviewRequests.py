@@ -246,7 +246,7 @@ def findPath(config,version):
         path = line[:-1] +  '/' + config + '/' + version
     return path
 
-def generateCondorId():
+def generateCondorId(debug=0):
     # condor id
     
     cmd = "date +" + PREFIX + "%y%m%d_%H%M%S"
@@ -254,7 +254,8 @@ def generateCondorId():
         line = line[:-1]
         condorId = line
         
-    print("\n CondorId: " + condorId + "\n")
+    if debug:
+        print("\n CondorId: " + condorId + "\n")
 
     return condorId
 

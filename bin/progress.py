@@ -13,50 +13,50 @@ import timeseries
 mlp.rcParams['axes.linewidth'] = 2
 
 NOW = datetime.datetime.now().strftime("%m/%d/%y, %H:%M")
-
-#---------------------------------------------------------------------------------------------------
-def plot(options,figure="total",last='not-defined'):
-    # define the figure
-    
-    plt.figure(options.name+'_'+figure)
-
-    if   figure == "total":
-        plt.plot(times,totals,marker="",ls='dashed',linewidth=1,label='total')
-        plt.plot(times,dones,marker="o",ls='solid',linewidth=2,label='done')
-        plt.plot(times,nocatalogs,marker="o",ls='solid',linewidth=1,label='no catalog')
-        plt.plot(times,batches,marker="o",ls='solid',linewidth=1,label='in batch')
-    elif figure == "batch":    
-        plt.figure(options.name+'_'+figure)
-        plt.plot(times,nocatalogs,marker="o",ls='dashed',linewidth=1,label='no catalog')
-        plt.plot(times,batches,marker="o",ls='solid',linewidth=1,label='in batch')
-        plt.plot(times,idles,marker="o",ls='solid',linewidth=1,label='idle')
-        plt.plot(times,runnings,marker="o",ls='solid',linewidth=1,label='running')
-        plt.plot(times,helds,marker="o",ls='solid',linewidth=1,label='held')
-    
-    plt.legend(frameon=False)
-    plt.legend(title='ends: '+last)
-    
-    ax = plt.gca()
-    ax.annotate(NOW, xy=(-0.13,0),xycoords=('axes fraction','figure fraction'),
-                size=10, ha='left', va='bottom')
-    #ax.annotate('ends: '+last, xy=(0.99,0.01), xycoords=('axes fraction','axes fraction'),
-    #            size=10, ha='right', va='bottom')
-    
-    # make plot nicer
-    plt.xlabel(options.xtitle, fontsize=18)
-    plt.ylabel(figure+' '+options.ytitle, fontsize=18)
-    
-    # make axis tick numbers larger
-    plt.xticks(fontsize=14)
-    plt.yticks(fontsize=14)
-    
-    # make sure to noe have too much white space around the plot
-    plt.subplots_adjust(top=0.99, right=0.99, bottom=0.13, left=0.12)
-    
-    # save plot for later viewing
-    plt.savefig(options.name+'_'+figure+".png",bbox_inches='tight',dpi=400)
-        
-    return
+## 
+## #---------------------------------------------------------------------------------------------------
+## def plot(options,figure="total",last='not-defined'):
+##     # define the figure
+## 
+##     plt.figure(options.name+'_'+figure)
+##     print("PLOT MARKERSER")
+##     if   figure == "total":
+##         plt.plot(times,totals,marker="",ls='dashed',linewidth=1,label='total')
+##         plt.plot(times,dones,marker=".",ls='solid',linewidth=2,label='done')
+##         plt.plot(times,nocatalogs,marker="o",ls='solid',linewidth=1,label='no catalog')
+##         plt.plot(times,batches,marker="s",ls='solid',linewidth=1,label='in batch')
+##     elif figure == "batch":    
+##         plt.figure(options.name+'_'+figure)
+##         plt.plot(times,nocatalogs,marker=".",ls='dashed',linewidth=1,label='no catalog')
+##         plt.plot(times,batches,marker="o",ls='solid',linewidth=1,label='in batch')
+##         plt.plot(times,idles,marker="s",ls='solid',linewidth=1,label='idle')
+##         plt.plot(times,runnings,marker="^",ls='solid',linewidth=1,label='running')
+##         plt.plot(times,helds,marker="v",ls='solid',linewidth=1,label='held')
+##     
+##     plt.legend(frameon=False)
+##     plt.legend(title='ends: '+last)
+##     
+##     ax = plt.gca()
+##     ax.annotate(NOW, xy=(-0.13,0),xycoords=('axes fraction','figure fraction'),
+##                 size=10, ha='left', va='bottom')
+##     #ax.annotate('ends: '+last, xy=(0.99,0.01), xycoords=('axes fraction','axes fraction'),
+##     #            size=10, ha='right', va='bottom')
+##     
+##     # make plot nicer
+##     plt.xlabel(options.xtitle, fontsize=18)
+##     plt.ylabel(figure+' '+options.ytitle, fontsize=18)
+##     
+##     # make axis tick numbers larger
+##     plt.xticks(fontsize=14)
+##     plt.yticks(fontsize=14)
+##     
+##     # make sure to noe have too much white space around the plot
+##     plt.subplots_adjust(top=0.99, right=0.99, bottom=0.13, left=0.12)
+##     
+##     # save plot for later viewing
+##     plt.savefig(options.name+'_'+figure+".png",bbox_inches='tight',dpi=400)
+##         
+##     return
 
 #---------------------------------------------------------------------------------------------------
 def readDataFromFile(file_name): 

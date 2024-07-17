@@ -31,7 +31,7 @@ class Dataset:
         block.add_file(file_name,file_size)
 
     def show(self):
-        print(" # Dataset: %s"%(self.name)"
+        print(" # Dataset: %s"%(self.name))
         for block_name in self.blocks:
             self.blocks[block_name].show()
 

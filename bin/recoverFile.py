@@ -13,8 +13,7 @@ from data import Datasets
 from data import Dataset
 from data import Block
 
-file_list = "missing-g.txt"
-# T2_US_MIT_compare_missing.txt"
+recover_input = "recover.list"
 
 # ==================================================================================================
 # H E L P E R S
@@ -41,16 +40,20 @@ def find_py(dset_name):
         if 'PromptReco' in dset_name:
             py = 'data-2018prompt'
 
+    py = 'nano'
+
+            
     return py
 
 def make_recovery_lists(data):
     lfns = []
     for line in data.split("\n"):
         f = line.split(" ")
+        #print(line,len(f))
         if len(f) > 0 and f[0].find("/store/user")>-1:
             lfn = Lfn(f[0])
             lfns.append(lfn)
-    print " Found %d entries."%(len(lfns))
+    print(" Found %d entries."%(len(lfns)))
 
     datasets = Datasets()
     for lfn in lfns:
@@ -60,7 +63,7 @@ def make_recovery_lists(data):
         block_name = "INVALID"
         file_size = -1
         # add the file
-        print " Add LFN: %s"%(lfn.lfn)
+        print(" Add LFN: %s"%(lfn.lfn))
         dataset.add_block_file(block_name,lfn.lfn,file_size)
 
     return datasets
@@ -70,13 +73,13 @@ def make_recovery_lists(data):
 # ==================================================================================================
 
 # Read the list of files and make a list of datasets
-print " Open missing files list: %s"%(file_list)
-with open(file_list,"r") as fh:
+print(" Open missing files list: %s"%(recover_input))
+with open(recover_input,"r") as fh:
     data = fh.read()
 
 datasets = make_recovery_lists(data)
-#print " "
-#datasets.show()
+print(" ")
+datasets.show()
 
 # Go through the list of files and recover
 last = ""
@@ -86,11 +89,11 @@ for dataset_name in sorted(datasets.datasets):
 
     book = "/".join(dataset_name.split("/")[0:2])
     if book != last:
-        print ' New book (%s), make inventory.'%(book)
+        print(' New book (%s), make inventory.'%(book))
         files = find_files("/cms/store/user/paus/%s"%(book))
-        print " FILE[0] -- %s"%(files[0])
+        print(" FILE[0] -- %s"%(files[0]))
 
-    print " DATASET recovery: %s"%(dataset.name)
+    print(" DATASET recovery: %s"%(dataset.name))
     reprocess = False
     
     for block_name in dataset.blocks:
@@ -100,19 +103,19 @@ for dataset_name in sorted(datasets.datasets):
             # is the file really missing
             mkey = "/".join(key.split("/")[-2:])
             if   mkey in files:
-                print " File already exists on Tier2. Do nothing. (%s)"%(mkey)
+                print(" File already exists on Tier2. Do nothing. (%s)"%(mkey))
             # find it on Tier-3
             elif os.path.exists("/mnt/hadoop/cms%s"%(key)):
-                print " From T3: %s"%(key)
+                print(" From T3: %s"%(key))
                 cmd = "t2tools.py --action=up --source /mnt/hadoop/cms%s --target /cms%s"%(key,key)
-                print " CMD: %s"%(cmd)
+                print(" CMD: %s"%(cmd))
                 os.system(cmd)
             # lost, so remove from DB and reprocess
             else:
                 reprocess = True
-                print " Lost: %s"%(key)
+                print(" Lost: %s"%(key))
                 cmd = "removeFile.py --exe --fileName /cms%s"%(key)
-                print " CMD: %s"%(cmd)
+                print(" CMD: %s"%(cmd))
                 os.system(cmd)
         
     if reprocess:
@@ -123,7 +126,7 @@ for dataset_name in sorted(datasets.datasets):
         py = find_py(dset_name)
 
         cmd = " reviewRequests.py --submit --config=%s --version=%s --py=%s --pattern=%s"%(config,version,py,dset_name)
-        print " CMD: %s"%(cmd)
+        print(" CMD: %s"%(cmd))
         os.system(cmd)
 
     last = book

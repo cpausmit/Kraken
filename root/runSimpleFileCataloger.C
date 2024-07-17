@@ -86,9 +86,12 @@ void catalogFile(const char *dir, const char *file)
   
   // Simplest access to total number of events
   long long nAll = -1;
-  TH1F* h1 = (TH1F*)f->Get("htotal");
+  TH1F* h1 = (TH1F*)f->FindObjectAny("htotal");
   if (h1)
     nAll = h1->GetEntries();
+  else
+    printf(" WARNING did not find htotal in.\n\n");
+    
   
   // Now deal with trees
   TTree *tree = 0, *allTree = 0, *aodTree = 0;

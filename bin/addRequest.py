@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 #---------------------------------------------------------------------------------------------------
 # Add a new dataset production request into the Bambu database.
 #

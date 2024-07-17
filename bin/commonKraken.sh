@@ -1,3 +1,17 @@
+#  DYto2L-2Jets_MLL-50_PTLL-40to100_1J_TuneCP5_13p6TeV_amcatnloFXFX-pythia8+Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v2-v1+MINIAODSIM
+#  DYto2L-2Jets_MLL-50_PTLL-40to100_2J_TuneCP5_13p6TeV_amcatnloFXFX-pythia8+Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v2-v1+MINIAODSIM
+#  DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8+Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v2-v3+MINIAODSIM
+#  DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8+Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v14-v1+MINIAODSIM
+#  DYto2L-4Jets_MLL-50_TuneCP5_13p6TeV_madgraphMLM-pythia8+Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v14-v1+MINIAODSIM
+#
+#  Run3Summer23BPixMiniAODv4 
+#  era: Run3_2023
+#  conditions: 130X_mcRun3_2023_realistic_postBPix_v2
+#  
+#  Run3Summer23MiniAODv4 
+#  era: Run3_2023
+#  conditions: 130X_mcRun3_2023_realistic_v14
+#  ￼
 #----------------------------------------------------------------------------------------------------
 #  U S E F U L   V A R I A B L E S
 #----------------------------------------------------------------------------------------------------
@@ -50,11 +64,15 @@ function customise {
       echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeDileptonPlusX --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeV0ForMuonFake --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBmmMuonId --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_keepLowPtMuons \
             --customise PhysicsTools/NanoAOD/V10/nano_cff.nanoAOD_customizeV10 \
             --customise_commands=\"process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))\""
+  elif [ "$version" == "526" ] || [ "$version" == "527" ] || [ "$version" == "528" ] || [ "$version" == "529" ] || [ "$version" == "530" ]
+  then
+      echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeDileptonPlusX --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeV0ForMuonFake --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBmmMuonId --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_keepLowPtMuons \
+            --customise_commands=\"process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))\""
   elif [ "$version" == "A00" ] || [ "$version" == "A01" ] || [ "$version" == "A02" ]
   then
     echo "PhysicsTools/SUEPNano/nano_suep_cff.SUEPNano_customize \
             --customise_commands=\"process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))\""
-  elif [ "$version" == "D00" ] || [ "$version" == "D01" ] || [ "$version" == "D02" ] || [ "$version" == "D03" ]
+  elif [ "$version" == "D00" ] || [ "$version" == "D01" ] || [ "$version" == "D02" ] || [ "$version" == "D03" ] || [ "$version" == "D04" ]
   then
     echo "Hrare/NanoAOD/nano_cff.nanoAOD_customizeMesons \
             --customise_commands=\"process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))\""
@@ -84,76 +102,113 @@ function era {
     if   [ "`echo $dataset | grep _HIPM_UL2016`" != "" ]
     then
       echo Run2_2016_HIPM,run2_nanoAOD_106Xv2
+      return
     elif [ "`echo $dataset | grep _UL2016`" != "" ]
     then
       echo Run2_2016,run2_nanoAOD_106Xv2
+      return
     else
       echo Run2_2016,run2_nanoAOD_94X2016
+      return
     fi
   elif [ "`echo $dataset | grep +Run2017`" != "" ]
   then
     if [ "`echo $dataset | grep _UL2017`" != "" ]
     then
       echo Run2_2017,run2_nanoAOD_106Xv2
+      return
     else
       echo Run2_2017,run2_nanoAOD_94XMiniAODv2
+      return
     fi
   elif [ "`echo $dataset | grep +Run2018`" != "" ]
   then
     if   [ "`echo $dataset | grep UL2017`" != "" ]
     then
       echo Run2_2018,run2_nanoAOD_106Xv2
+      return
     elif [ "`echo $dataset | grep UL2018`" != "" ]
     then
       echo Run2_2018,run2_nanoAOD_106Xv2
+      return
     fi
   elif  [ "`echo $dataset | grep +Run2022`" != "" ]
   then
+    echo Run3,run3_nanoAOD_124
+    return
+  elif [ "`echo $dataset | grep +Run2023`" != "" ]
+  then
     echo Run3
-  
+    return
+
   ## --MC-- STARTS HERE
   #  GJets_HT-600ToInf_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1+NANOAODSIM
   elif [ "`echo $dataset | grep +RunIISummer..UL16....AODv2`" != "" ]
   then
     echo Run2_2016,run2_nanoAOD_106Xv2
+    return
   elif [ "`echo $dataset | grep +RunIISummer..UL16....AOD`" != "" ]
   then
     echo Run2_2016,run2_nanoAOD_106Xv1
+    return
   elif [ "`echo $dataset | grep +RunIISummer..UL17....AODv2`" != "" ]
   then
     echo Run2_2017,run2_nanoAOD_106Xv2
+    return
   elif [ "`echo $dataset | grep +RunIISummer..UL17....AOD`" != "" ]
   then
     echo Run2_2017,run2_nanoAOD_106Xv1
+    return
   elif [ "`echo $dataset | grep +RunIISummer..UL18....AODv2`" != "" ]
   then
     echo Run2_2018,run2_nanoAOD_106Xv2
+    return
   elif [ "`echo $dataset | grep +RunIISummer..UL18....AOD`" != "" ]
   then
     echo Run2_2018,run2_nanoAOD_106Xv1
+    return
   
   elif [ "`echo $dataset | grep +RunIISummer16`" != "" ]
   then
     if [ "`echo $dataset | grep MiniAODv2`" != "" ]
     then
       echo Run2_2016,run2_miniAOD_80XLegacy
+      return
     else
       echo Run2_2016,run2_nanoAOD_94X2016
+      return
     fi
   elif [ "`echo $dataset | grep +RunIIFall17`" != "" ]
   then
     echo Run2_2017,run2_nanoAOD_94XMiniAODv2
+    return
   elif [ "`echo $dataset | grep +RunIIAutumn18`" != "" ]
   then
     echo Run2_2018,run2_nanoAOD_102Xv1
+    return
   elif [ "`echo $dataset | grep SUEP`" != "" ]
   then
     echo Run2_2018,run2_nanoAOD_102Xv1
+    return
   elif  [ "`echo $dataset | grep +Run3Summer22`" != "" ]
   then
-    echo Run3
+    if   [ "`echo $dataset | grep MiniAODv3`" != "" ]
+    then
+      echo Run3,run3_nanoAOD_124
+      return
+    else
+      echo Run3
+      return
+    fi
+  elif [ "`echo $dataset | grep +Run3Summer23BPixMiniAODv4`" != "" ]
+  then
+    echo Run3_2023
+  elif [ "`echo $dataset | grep +Run3Summer23MiniAODv4`" != "" ]
+  then
+    echo Run3_2023
   else
     echo UNKNOWN
+    return
   fi
 }
 
@@ -163,7 +218,7 @@ function conditions {
   # read command line parameters
   dataset=`echo $1 |sed -e 's#^/##' -e 's#/#+#'`
   cmssw="$2"
-
+  
   if [  "`echo $cmssw | grep ^12_`" != "" ]
   then
     if   [ "`echo $dataset | grep +Run2016`" != "" ] || [ "`echo $dataset | grep +Run2017`" != "" ] || [ "`echo $dataset | grep +Run2018`" != "" ] 
@@ -175,6 +230,22 @@ function conditions {
       echo auto:phase1_2018_realistic
       return
     fi
+  else
+    if   [ "`echo $dataset | grep MiniAODv2XXXXXX`" != "" ] ## ?? this was weird ?
+    then
+      echo auto:phase1_2018_realistic
+      return
+    else
+      if  [ "`echo $dataset | grep +Run2022`" != "" ]
+      then
+        echo 130X_dataRun3_v2
+        return
+      elif  [ "`echo $dataset | grep +Run2023`" != "" ]
+      then
+        echo 130X_dataRun3_PromptAnalysis_v1
+        return
+      fi
+    fi
   fi
   
   ## -DATA- STARTS HERE
@@ -183,75 +254,115 @@ function conditions {
     if [ "`echo $dataset | grep UL2016`" != "" ]
     then
       echo 106X_dataRun2_v35
+      return
     else	
       echo 102X_dataRun2_v12
+      return
     fi
   elif [ "`echo $dataset | grep +Run2017`" != "" ]
   then
     if   [ "`echo $dataset | grep 09Aug2019_UL2017`" != "" ]
     then
       echo 106X_dataRun2_v20
+      return
     elif [ "`echo $dataset | grep UL2017`" != "" ]
     then
       echo 106X_dataRun2_v35
+      return
     else
       echo 102X_dataRun2_v12
+      return
     fi
   elif [ "`echo $dataset | grep +Run2018[A-C]`" != "" ]
   then
     if [ "`echo $dataset | grep UL2018`" != "" ]
     then
       echo 106X_dataRun2_v35
+      return
     else
       echo 102X_dataRun2_v12
+      return
     fi
   elif [ "`echo $dataset | grep +Run2018D`" != "" ]
   then
     if [ "`echo $dataset | grep UL2018`" != "" ]
     then
       echo 106X_dataRun2_v35
+      return
     else
       echo 102X_dataRun2_Prompt_v15
+      return
     fi
   elif  [ "`echo $dataset | grep +Run2022`" != "" ]
   then
-    echo 124X_dataRun3_Prompt_v4
+    if [ "`echo $dataset | grep UL2018`" != "" ]
+    then
+      echo 124X_dataRun3_Prompt_v4
+      return
+    else	
+      echo 130X_dataRun3_v2
+      return
+    fi
+  elif  [ "`echo $dataset | grep +Run2023`" != "" ]
+  then
+    echo 130X_dataRun3_PromptAnalysis_v1
+    return
+  elif  [ "`echo $dataset | grep +Run2023`" != "" ]
+  then
+    echo 130X_dataRun3_PromptAnalysis_v1
+    return
   
   # --MC-- STARTS HERE
   elif [ "`echo $dataset | grep +RunIISummer..UL16....AODAPV`" != "" ]
   then
     echo 106X_mcRun2_asymptotic_preVFP_v11
+    return
   elif [ "`echo $dataset | grep +RunIISummer..UL16....AOD`" != "" ]
   then
     echo 106X_mcRun2_asymptotic_v17
+    return
   elif [ "`echo $dataset | grep +RunIISummer..UL17....AOD`" != "" ]
   then
     echo 106X_mc2017_realistic_v9
+    return
   elif [ "`echo $dataset | grep +RunIISummer..UL18....AOD`" != "" ]
   then
     echo 106X_upgrade2018_realistic_v16_L1v1
+    return
   elif [ "`echo $dataset | grep +RunIISummer16`" != "" ]
   then
     if [ "`echo $dataset | grep MiniAODv2`" != "" ]
     then
       echo 94X_mcRun2_asymptotic_v2
+      return
     else
       echo 102X_mcRun2_asymptotic_v7
+      return
     fi
   elif [ "`echo $dataset | grep +RunIIFall17`" != "" ]
   then
     echo 102X_mc2017_realistic_v7
+    return
   elif [ "`echo $dataset | grep +RunIIAutumn18`" != "" ]
   then
     echo 102X_upgrade2018_realistic_v20
   elif [ "`echo $dataset | grep SUEP`" != "" ]
   then
     echo 102X_upgrade2018_realistic_v20
+    return
   elif  [ "`echo $dataset | grep +Run3Summer22`" != "" ]
   then
     echo 124X_mcRun3_2022_realistic_postEE_v1
+    return
+  elif [ "`echo $dataset | grep +Run3Summer23BPixMiniAODv4`" != "" ]
+  then
+    echo 130X_mcRun3_2023_realistic_postBPix_v2
+  elif [ "`echo $dataset | grep +Run3Summer23MiniAODv4`" != "" ]
+  then
+    echo 130X_mcRun3_2023_realistic_v14
   else
     echo UNKNOWN
+    return
   fi
 }
 

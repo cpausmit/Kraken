@@ -176,7 +176,8 @@ class Sample:
     
         # give notice that file already exists
         if os.path.exists(jobFile):
-            print(" INFO -- Job file found: %s. Someone already worked on this dataset." % jobFile)
+            if DEBUG > 0:
+                print(" INFO -- Job file found: %s. Someone already worked on this dataset." % jobFile)
     
         # remove what we need to to start clean
         cmd = 'rm -f ' +  jobFile + '-TMP'
@@ -186,13 +187,15 @@ class Sample:
         if not self.useExistingJobs or not os.path.exists(jobFile) or os.stat(jobFile).st_size == 0:
             cmd = 'input.py --dbs=' + self.dbs + ' --option=job --dataset=' + self.dataset \
                   + ' | sort -u > ' + jobFile + '-TMP'
-            print(' Input: ' + cmd)
+            if DEBUG > 0:
+                print(' Input: ' + cmd)
             os.system(cmd)
     
         # move the new file into the proper location
         if os.path.exists(jobFile + '-TMP'):
             cmd = 'mv ' + jobFile + '-TMP ' + jobFile
-            print(' Move: ' + cmd)
+            if DEBUG > 0:
+                print(' Move: ' + cmd)
             os.system(cmd)
     
         return jobFile
@@ -206,7 +209,8 @@ class Sample:
     
         # give notice that file already exists
         if os.path.exists(lfnFile):
-            print(" INFO -- Lfn file found: %s. Someone already worked on this dataset." % lfnFile)
+            if DEBUG > 0:
+                print(" INFO -- Lfn file found: %s. Someone already worked on this dataset." % lfnFile)
     
         # remove what we need to to start clean
         cmd = 'rm -f ' +  lfnFile + '-TMP'
@@ -216,13 +220,15 @@ class Sample:
         if not self.useExistingLfns or not os.path.exists(lfnFile) or os.stat(lfnFile).st_size == 0:
             cmd = 'input.py --dbs=' + self.dbs + ' --option=lfn --dataset=' + self.dataset \
                   + ' | sort -u > ' + lfnFile + '-TMP'
-            print(' Input: ' + cmd)
+            if DEBUG > 0:
+                print(' Input: ' + cmd)
             os.system(cmd)
     
         # move the new file into the proper location
         if os.path.exists(lfnFile + '-TMP'):
             cmd = 'mv ' + lfnFile + '-TMP ' + lfnFile
-            print(' Move: ' + cmd)
+            if DEBUG > 0:
+                print(' Move: ' + cmd)
             os.system(cmd)
     
         return lfnFile
@@ -236,7 +242,8 @@ class Sample:
 
         # check whether file exists already
         if os.path.exists(siteFile):
-            print(" INFO -- Site file found: %s. Someone already worked on this dataset." % siteFile)
+            if DEBUG > 0:
+                print(" INFO -- Site file found: %s. Someone already worked on this dataset." % siteFile)
 
         # remove what we need to to start clean
         cmd = 'rm -f ' +  siteFile + '-TMP'
@@ -263,7 +270,8 @@ class Sample:
     #-----------------------------------------------------------------------------------------------
     def loadAllLfns(self, lfnFile):
         
-        print(' LFN file: %s\n'%(lfnFile))
+        if DEBUG > 0:
+            print(' LFN file: %s\n'%(lfnFile))
 
         # initialize from scratch
         self.allLfns = {}
@@ -299,7 +307,8 @@ class Sample:
     #-----------------------------------------------------------------------------------------------
     def loadAllJobs(self, jobFile):
         
-        print(' JOB file: %s\n'%(jobFile))
+        if DEBUG > 0:
+            print(' JOB file: %s\n'%(jobFile))
 
         # initialize from scratch
         self.allJobs = {}

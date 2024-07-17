@@ -10,7 +10,7 @@ DEBUG = 0
 
 #---------------------------------------------------------------------------------------------------
 """
-Class:  Scheduler(host='submit05.mit.edu',user='paus')
+Class:  Scheduler(host='submit06.mit.edu',user='paus')
 Each sample can be described through this class
 """
 #---------------------------------------------------------------------------------------------------
@@ -20,7 +20,7 @@ class Scheduler:
     #-----------------------------------------------------------------------------------------------
     # constructor
     #-----------------------------------------------------------------------------------------------
-    def __init__(self,host='submit05.mit.edu',user='paus',base='',nMyTotalMax=35000,nTotalMax=100000):
+    def __init__(self,host='submit06.mit.edu',user='paus',base='',nMyTotalMax=35000,nTotalMax=100000):
 
         self.here = socket.gethostname()
         self.host = host
@@ -92,7 +92,7 @@ class Scheduler:
             cmd = 'condor_q -all|grep running|cut -d\' \' -f13|tail -1  2> /dev/null'
         else:
             cmd = 'condor_q |grep running|cut -d\' \' -f13|tail -1  2> /dev/null'
-
+            
         if not self.isLocal():
             cmd = f'ssh -x {self.user}@{self.host} \" {cmd} \"'
 
@@ -102,7 +102,7 @@ class Scheduler:
         for line in os.popen(cmd).readlines():  # run command
             nJobs = int(line[:-1])
 
-        if self.condorVersion == 9:
+        if self.condorVersion > 8:
             cmd = f'condor_q {self.user}|grep running|grep query|cut -d\' \' -f12 2> /dev/null'
         else:
             cmd = f'condor_q {self.user} |grep running|cut -d\' \' -f11 2> /dev/null'
@@ -110,7 +110,7 @@ class Scheduler:
         if not self.isLocal():
             cmd = f'ssh -x {self.user}@{self.host} \" {cmd} \"'
             #print("findNumberOfTotalJobs: %s"%(cmd))
-
+        
         nMyJobs = 1000000
         if DEBUG > 0:
             print(" CMD " + cmd)
@@ -181,7 +181,7 @@ class Scheduler:
             localProxy = self.findLocalProxy()
             remoteProxy = "/tmp/x509up_u" + self.ruid
             cmd = f"scp -q {localProxy} {self.user}@{self.host}:{remoteProxy}"
-            print(cmd)
+            #print(cmd)
             os.system(cmd)
 
         return
@@ -204,7 +204,7 @@ class Scheduler:
     #-----------------------------------------------------------------------------------------------
     # update on the fly
     #-----------------------------------------------------------------------------------------------
-    def update(self,host='submit05.mit.edu',user='paus',base='',nMyTotalMax=20000,nTotalMax=100000):
+    def update(self,host='submit06.mit.edu',user='paus',base='',nMyTotalMax=20000,nTotalMax=100000):
 
         self.host = host
         self.user = user

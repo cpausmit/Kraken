@@ -151,12 +151,11 @@ class Task:
     # find the OS version of given SW release
     #-----------------------------------------------------------------------------------------------
     def findOsVersion(self):
-        cmd = "ls -1 %s/%s/SW_%s/lib|cut -d_ -f1|tail -1"%\
+        cmd = "ls -1 %s/%s/CMSSW_%s/lib|cut -d_ -f1|tail -1"%\
             (os.getenv('KRAKEN_SW'),self.request.version,self.swVersion)
         #print(" CMD: " + cmd)
         myRex = rex.Rex()
         (rc,out,err) = myRex.executeLocalAction(cmd)
-        osVersion = ""
         osVersion = out[:-1]
         if osVersion == "":
             osVersion = 'slc7'

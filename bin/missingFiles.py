@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 #---------------------------------------------------------------------------------------------------
 # Find missing data and orphan data on disk.
 #
@@ -8,6 +8,8 @@ import sys,os,getopt,time
 import MySQLdb
 import kdb
 import rex
+
+missing_output = 'missing.list'
 
 def findAllLfns(book,dataset):
 
@@ -84,7 +86,6 @@ def findLocalFiles(book,dataset):
 def processDataset(book,dataset):
     # find files and cataloged entries
     lfns = findAllLfns(book,dataset)
-    #print(lfns)
     files = findAllFiles(book,dataset)
     lFiles = findLocalFiles(book,dataset)
     
@@ -94,13 +95,16 @@ def processDataset(book,dataset):
     nTotal = 0
     nMissing = 0
     print(' Search for missing files (nT2: %d, mT3: %d).'%(len(files),len(lFiles)))
-    for key in lfns:
-        if key in files:
-            nTotal += 1
-        else:
-            nMissing += 1
-            print(" missing: %s"%(lfns[key]))
-    
+
+    with open(missing_output,'a') as fM:
+        for key in lfns:
+            if key in files:
+                nTotal += 1
+            else:
+                nMissing += 1
+                print(" missing: %s"%(lfns[key]))
+                # important to write the LFN not the full file name (no 'cms\')
+                fM.write(f"/store/user/paus/{book}/{dataset}/{key}.root\n")
 
     print(" ==== Book: %s   Dataset: %s ===="%(book,dataset))
     print(" Number of lfns  (total):   %d"%(len(lfns)))
@@ -112,11 +116,11 @@ def processDataset(book,dataset):
 #===================================================================================================
 # Define string to explain usage of the script
 usage  = "\n"
-usage += " Usage: consistency.py  [ --book=pandaf/004" \
-       + "  [ --dataset=SinglePhoton+Run2017B-31Mar2018-v1+MINIAOD [ --help ] ] ]\n\n"
+usage += " Usage: missingFiles.py  [ --book=pandaf/004" \
+       + "  [ --pattern=Single [ --dataset=SinglePhoton+Run2017B-31Mar2018-v1+MINIAOD [ --help ] ] ] ]\n\n"
 
 # Define the valid options which can be specified and check out the command line
-valid = ['book=','dataset=','verbose=','help']
+valid = ['book=','dataset=','pattern=','verbose=','help']
 try:
     opts, args = getopt.getopt(sys.argv[1:], "", valid)
 except getopt.GetoptError as ex:
@@ -131,6 +135,7 @@ except getopt.GetoptError as ex:
 verbose = 0
 book = ""
 dataset = ""
+pattern = ""
 
 # Read new values from the command line
 for opt, arg in opts:
@@ -141,11 +146,16 @@ for opt, arg in opts:
         book = arg
     if opt == "--dataset":
         dataset = arg
+    if opt == "--pattern":
+        pattern = arg
 
 if book == "":
     print(" ERROR - book cannot be empty: %s"%(book))
-    sy.exit(1)
-    
+    sys.exit(1)
+
+# reset the missing file list
+os.system(f"rm {missing_output}; touch {missing_output}")
+
 # say what we are looking at
 print('')
 print(' Book:    %s'%(book))
@@ -161,5 +171,7 @@ else:
     # list requests
     db = kdb.Kdb()
     for row in db.find_requests(config,version):
+
         dataset = "%s+%s+%s"%(row[0],row[1],row[2])
-        processDataset(book,dataset)        
+        if pattern in dataset:
+            processDataset(book,dataset)        

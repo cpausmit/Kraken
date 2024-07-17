@@ -247,7 +247,9 @@ else:
 
     if delete:
         cmd = "t2tools.py --action rm --source " +  file
-        print(' REMOVE: DISABLED ' + cmd)
+        print(' REMOVING FILE: ' + cmd,file=sys.stderr)
+        print(' REMOVING FILE: ' + cmd)
+        print('\n !!!! WARNING !!!! -- REMOVAL is DISABLED')
         ###(rc,out,err) = remoteX.executeLocalAction(cmd)
 
     sys.exit(1)

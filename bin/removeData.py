@@ -107,12 +107,16 @@ def getRequestId(datasetId,config,version,py,cursor,debug):
 def remove(dataset,config,version,dbs,py,exe):
     # remove the full dataset and database info
 
+    print(f" Dataset: {dataset}")
+
     # make sure to get dataset convention right
     if dataset[0] != '/':
         dataset = '/' + dataset.replace('+','/')
 
     # Decompose dataset into the three pieces (process, setup, tier)
     f = dataset.split('/')
+    if len(f) < 4:
+        return
     process = f[1]
     setup   = f[2]
     tier    = f[3]
@@ -334,12 +338,14 @@ for line in os.popen(cmd).readlines():  # run command
     if pattern in dataset:
         datasets.append(dataset)
         
-# there was no match, use the pattern itself as the only dataset
+## there was no match, use the pattern itself as the only dataset
+## --> this should actually never happen because the dataset name will match itself
 if len(datasets)==0:
-    print(" No match found, try explicit pattern: %s."%(pattern))
-    datasets.append(pattern)
-    #print(datasets)
-        
+    print(" INFO -- No matching dataset found.")
+#    print(" No match found, try explicit pattern: %s."%(pattern))
+#    datasets.append(pattern)
+
+
 # loop over all datasets identified 
 for dataset in datasets:
     if debug>-1:

@@ -99,32 +99,37 @@ class Timeseries:
                 new_times.append(time)
                 new_jsums.append(jsum)
             else:
-                print(" Dropping time: %d"%(time))
+                #print(" Dropping time: %d"%(time))
+                pass
         self.times = new_times
         self.jsums = new_jsums
         return
     
     def merge(self,key,ts):
         if len(self.times) !=  len(ts.times):
-            print(" ERROR - time series have different length (this %d vs added %d)"%(len(self.times),len(ts.times)))
+            #print(" ERROR - time series have different length (this %d vs added %d)"%(len(self.times),len(ts.times)))
+            pass
             #return 1
+
         i = 0
         drop_times = []
-
         for time,jsum in zip(self.times,self.jsums):
-            if time != ts.times[i]:
-                print(" ERROR - (%s,%s)"%(self.key,ts.key))
-                print("       time series out of sync (this %d vs added %d)"%(time,ts.times[i]))
-                while (time>ts.times[i]):
-                    print(" WARNING - Ignore new record (%d)."%(ts.times[i]))
-                    i += 1
-                    if i>len(ts.times)-1:
-                        break
-                if (time<ts.times[i]):
-                    print(" WARNING - Drop existing record (%d)."%(time))
-                    drop_times.append(time) # keep record of what needs to be dropped
-                    continue
-            jsum.merge(ts.jsums[i])
+            if len(ts.times)>i:
+                if len(ts.times)>i and time != ts.times[i]:
+                    #print(" ERROR - (%s,%s)"%(self.key,ts.key))
+                    #print("       time series out of sync (this %d vs added %d)"%(time,ts.times[i]))
+                    while (time>ts.times[i]):
+                        #print(" WARNING - Ignore new record (%d)."%(ts.times[i]))
+                        i += 1
+                        if i>len(ts.times)-1:
+                            break
+                    if (len(ts.times)<=i):
+                        print(f" ERROR - index: {i} ({len(ts.times)}")
+                    if (time<ts.times[i]):
+                        #print(" WARNING - Drop existing record (%d)."%(time))
+                        drop_times.append(time) # keep record of what needs to be dropped
+                        continue
+                jsum.merge(ts.jsums[i])
             i += 1
 
         self.drop(drop_times)
@@ -145,7 +150,7 @@ class Timeseries:
         for time,jsum in zip(self.times,self.jsums):
 
             if i>=len(ts.times):
-                print(" WARNING - Drop existing record (%d)."%(time))
+                #print(" WARNING - Drop existing record (%d)."%(time))
                 drop_times.append(time)
                 i += 1
                 continue
@@ -174,25 +179,31 @@ class Timeseries:
 
     def plot(self,options,figure="total",last='not-defined'):
         # define the figure
-    
+
+        ts = [datetime.datetime.fromtimestamp(p) for p in self.times]      
+        
         plt.figure(options.name+'_'+figure)
+        fig = plt.gcf()
+        fig.set_size_inches(7,6)
     
         if   figure == "total":
-            plt.plot(self.times,self.get_totals(),marker="",ls='dashed',linewidth=1,label='total')
-            plt.plot(self.times,self.get_dones(),marker="o",ls='solid',linewidth=2,label='done')
-            plt.plot(self.times,self.get_nocatalogs(),marker="o",ls='solid',linewidth=1,label='no catalog')
-            plt.plot(self.times,self.get_batches(),marker="o",ls='solid',linewidth=1,label='in batch')
+            plt.plot(ts,self.get_totals(),marker="",ls='dashed',linewidth=1,label='total')
+            plt.plot(ts,self.get_dones(),marker=".",ls='solid',linewidth=2,label='done')
+            plt.plot(ts,self.get_nocatalogs(),marker="o",ls='solid',linewidth=1,label='no catalog')
+            plt.plot(ts,self.get_batches(),marker="s",ls='solid',linewidth=1,label='in batch')
         elif figure == "batch":    
             plt.figure(options.name+'_'+figure)
-            plt.plot(self.times,self.get_nocatalogs(),marker="o",ls='dashed',linewidth=1,label='no catalog')
-            plt.plot(self.times,self.get_batches(),marker="o",ls='solid',linewidth=1,label='in batch')
-            plt.plot(self.times,self.get_idles(),marker="o",ls='solid',linewidth=1,label='idle')
-            plt.plot(self.times,self.get_runnings(),marker="o",ls='solid',linewidth=1,label='running')
-            plt.plot(self.times,self.get_helds(),marker="o",ls='solid',linewidth=1,label='held')
+            plt.plot(ts,self.get_nocatalogs(),marker=".",ls='dashed',linewidth=1,label='no catalog')
+            plt.plot(ts,self.get_batches(),marker="o",ls='solid',linewidth=1,label='in batch')
+            plt.plot(ts,self.get_idles(),marker="s",ls='solid',linewidth=1,label='idle')
+            plt.plot(ts,self.get_runnings(),marker="^",ls='solid',linewidth=1,label='running')
+            plt.plot(ts,self.get_helds(),marker="v",ls='solid',linewidth=1,label='held')
         
-        plt.legend(frameon=False)
-        plt.legend(title='ends: '+last)
+        plt.legend(title='ends: '+last, frameon=False, fontsize="14")
         
+        plt.xticks(rotation=20, ha='right')
+        plt.gca().xaxis.set_major_formatter(mlp.dates.DateFormatter('%m/%d %H:%M'))
+        #plt.rcParams.update({'font.size': 18})
         ax = plt.gca()
         ax.annotate(NOW, xy=(-0.13,0),xycoords=('axes fraction','figure fraction'),
                     size=10, ha='left', va='bottom')
@@ -208,7 +219,8 @@ class Timeseries:
         plt.yticks(fontsize=14)
         
         # make sure to noe have too much white space around the plot
-        plt.subplots_adjust(top=0.99, right=0.99, bottom=0.13, left=0.12)
+        plt.subplots_adjust(top=0.99, right=0.99, bottom=0.18, left=0.18)
+        #plt.subplots_adjust(top=0.99, right=0.99, bottom=0.13, left=0.12)
         
         # save plot for later viewing
         plt.savefig(options.name+'_'+figure+".png",bbox_inches='tight',dpi=400)

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 #===================================================================================================
 # Add a new dataset into the Bambu database.
 #
