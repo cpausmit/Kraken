@@ -123,7 +123,10 @@ class Task:
         cmd = "mkdir -p " + self.logs + " " + self.outputData
         if not self.scheduler.isLocal():
             cmd = 'ssh -x ' + self.scheduler.user + '@' + self.scheduler.host + ' ' + cmd
-        os.system(cmd)
+        rc = os.system(cmd)
+        if rc != 0:
+            print(" ERROR - creation of work directory failed. Cannot submit request!")
+            return False
 
         # remember the remote data directories are created when copying started
 

@@ -8,9 +8,15 @@ mkdir -p ~/tmp
 cd ~/tmp
 
 export CONFIG=nanoao
-export VERSION=529
+export VERSION=531
 export PY=nano
-export DSET=DstarToD0Pi_D0ToKPi_KPiToMuMu_KPiLifetime0p1_SoftQCDnonD_TuneCP5_13p6TeV_pythia8-evtgen+Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v2+MINIAODSIM
+export DSET=K0sToMuMu_K0sFilter_TuneCP5_13p6TeV_pythia8-evtgen+Run3Summer22EEMiniAODv3-124X_mcRun3_2022_realistic_postEE_v1-v1+MINIAODSIM
+export FILE=049287b2-8285-4558-b396-7c7d45cf94ee
+
+#K0sToMuMu_K0sFilter_TuneCP5_13p6TeV_pythia8-evtgen+Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15_ext1-v2+MINIAODSIM
+#JpsiTo2Mu_JpsiPt8_TuneCP5_13p6TeV_pythia8+Run3Summer22MiniAODv4-MUO_POG_130X_mcRun3_2022_realistic_v5-v2+MINIAODSIM
+
+#export DSET=DoubleMuon+Run2022C-22Sep2023-v1+MINIAOD
 #ZeroBias+Run2022C-PromptReco-v1+MINIAOD
 #export FILE=5804156f-e3b8-45a1-bac7-542b1536ec75
 #c3684755-30f3-4089-b8c2-97157f933cfa
@@ -31,8 +37,12 @@ cd ~/tmp/$CONFIG/$VERSION
 if [ -z $FILE ]
 then
   FILE=`head -9  $DSET.lfns | tail -1 | cut -d ' ' -f2`
+  echo $FILE
 fi
 GPACK=`basename $FILE | sed 's/.root//'`
+
+
+echo " ==== ANALYZING FILE ==== $FILE"
 
 source ./commonKraken.sh
 conditions $DSET

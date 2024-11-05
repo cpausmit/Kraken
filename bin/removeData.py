@@ -10,6 +10,12 @@ from scheduler import Scheduler
 import MySQLdb
 
 BASE = os.getenv('KRAKEN_SE_BASE')
+BASE_LOGS = os.getenv('KRAKEN_AGENTS_LOG')
+BASE_WEBP = os.getenv('KRAKEN_AGENTS_WWW')
+if BASE == "" or BASE_LOGS == "" or BASE_WEBP == "":
+    print(" ERROR - KRAKEN not fully initialized?")
+    sys.exit(1)
+
 
 def db():
     # Get our access to the database
@@ -43,7 +49,7 @@ def findFiles(requestId,fileName,cursor,debug):
 
     # found the request Id
     for row in results:
-        if debug>0:
+        if debug>1:
             print(' FileName: %s  NEvents: %d'%(row[0],int(row[1])))
         files.append(row[0])
 
@@ -81,12 +87,13 @@ def getDatasetId(process,setup,tier,cursor,debug):
 
     return datasetId
 
-def getRequestId(datasetId,config,version,py,cursor,debug):
+def getRequestIds(datasetId,config,version,cursor,debug):
     # extract the unique request id for this piece of data
 
-    requestId = -1
-    sql = "select RequestId from Requests where DatasetId=%d"%(datasetId) \
-        + " and RequestConfig='%s' and RequestVersion='%s' and RequestPy='%s'"%(config,version,py)
+    requestIds = []
+    pys = []
+    sql = "select RequestId, RequestPy from Requests where DatasetId=%d"%(datasetId) \
+        + " and RequestConfig='%s' and RequestVersion='%s'"%(config,version)
     if debug>0:
         print(' select: ' + sql)
 
@@ -100,11 +107,12 @@ def getRequestId(datasetId,config,version,py,cursor,debug):
 
     # found the request Id
     for row in results:
-        requestId = int(row[0])
+        requestIds.append(int(row[0]))
+        pys.append(str(row[1]))
+        
+    return requestIds,pys
 
-    return requestId
-
-def remove(dataset,config,version,dbs,py,exe):
+def remove(dataset,config,version,dbs,exe):
     # remove the full dataset and database info
 
     print(f" Dataset: {dataset}")
@@ -120,66 +128,94 @@ def remove(dataset,config,version,dbs,py,exe):
     process = f[1]
     setup   = f[2]
     tier    = f[3]
-    
-    # Find all running jobs
-    clusterIds = ""
-    if exe == True:
-        cmd = 'condor_q -format "%d" ClusterId -format " %s\n" Args| cut -d " " -f 1,6 |sort -u'
-        scheduler = Scheduler()
-        (rc,out,err) = scheduler.executeCondorCmd(cmd,False)
-        ds = process+'+'+setup+'+'+tier
-        for line in out.split('\n'):
-            if ds in line and version in line and config in line:
-                clusterIds = clusterIds + " " + line.split(' ')[0]
-        if clusterIds != "":
-            print(" Running jobs: " + clusterIds)
-        else:
-            print(" No running jobs found.")
 
     # Find the dataset id and request id
     datasetId = getDatasetId(process,setup,tier,cursor,debug)
-    requestId = getRequestId(datasetId,config,version,py,cursor,debug)
-    print(' Ids: dataset=%d  request=%d'%(datasetId,requestId))
-    if requestId < 0:
-        print(' ERROR - no request id was found to match request. (Python config correct?)')
-        sys.exit(1)
+    requestIds, pys = getRequestIds(datasetId,config,version,cursor,debug)
+
+    # notify about several pys found
+    if len(requestIds)>1:
+        print(" ERROR -- multiple request ids with different pys found")
+        for reqId,py in zip(requestIds, pys):
+            print(f" ReqId: {reqId}; Py: {py};")
+        sys.exit(-1)
     
-    # Is this a complete dataset?
-    if fileName == '':
-        print(' Deletion of a complete dataset requested.')
-    
-    # Show all files to remove
-    fileList = findFiles(requestId,fileName,cursor,debug)
-    
-    if exe == True:
-    
+    # Loop through the request Ids
+    for reqId,py in zip(requestIds, pys):
+        print(' Ids: dataset=%d  request=%d;  Py=%s;'%(datasetId,reqId,py))
+        if reqId < 0:
+            print(' ERROR - no request id was found to match request. (Python config correct?)')
+            sys.exit(1)
+        
+        # Is this a complete dataset?
+        if fileName == '':
+            print(' Deletion of a complete dataset requested.')
+        
+        # Show all files to remove
+        fileList = findFiles(reqId,fileName,cursor,debug)
+        
         # Remove all running jobs
-        if clusterIds != "":
-            scheduler.executeCondorCmd('condor_rm ' + clusterIds,True)
+        removeCondorJobs(config,version,process,setup,tier,exe,debug)
 
         # Remove the files and all records of them
         if fileName == '':
-            
-            removeDataset(process,setup,tier,datasetId,requestId,config,version)
-
-            # Remove the request from the request table
-            cmd = 'addRequest.py --delete=1 --config=%s --version=%s --py=%s --dataset=%s'%\
-                (config,version,py,dataset)
-            print(' drq: %s'%(cmd))
-            os.system(cmd)
-
+            removeDataset(process,setup,tier,datasetId,reqId,config,version,py,exe)
         else:
-            removeFiles(fileList,process,setup,tier,datasetId,requestId,config,version)
+            removeFiles(fileList,process,setup,tier,datasetId,reqId,config,version,exe)
     
         # Re-generate the catalog after the deletion
         cmd = 'generateCatalogs.py %s/%s %s'%(config,version,dataset)
         print(' ctg: %s'%(cmd))
-        os.system(cmd)
-        
-    else:
-        print(' To execute please add --exec option\n')
+        if exe:
+            os.system(cmd)
     
-def removeFiles(fileList,process,setup,tier,datasetId,requestId,config,version):
+def removeCondorJobs(config,version,process,setup,tier,exe,debug):
+    # Remove the condor jobns related with this dataset
+
+    # Find all running jobs
+    clusterIds = ""
+    cmd = 'condor_q -format "%d" ClusterId -format " %s\n" Args| cut -d " " -f 1,6 |sort -u'
+    scheduler = Scheduler()
+    (rc,out,err) = scheduler.executeCondorCmd(cmd,False)
+    ds = process+'+'+setup+'+'+tier
+    for line in out.split('\n'):
+        if ds in line and version in line and config in line:
+            clusterIds = clusterIds + " " + line.split(' ')[0]
+    if clusterIds != "":
+        print(" Running jobs: " + clusterIds)
+        if exe == True:
+            print(" Removing condor jobs")        
+            scheduler.executeCondorCmd('condor_rm ' + clusterIds,True)
+    else:
+        print(" No running jobs found.")
+    return
+    
+def removeVersionIfEmpty(config,version,exe,debug):
+    # Show all files related with the given request id
+    cmd = f"list {BASE}/{config}/{version} 2> /dev/null"
+    if debug>0:
+        print(' Listing directory: ' + cmd)
+    dataset = ""
+    for line in os.popen(cmd).readlines():  # run command
+        dataset = line[:-1].split('/')[-1]
+        if debug>0:
+            print(f" Found dataset: {dataset}")
+
+    if dataset == "":
+        print(f" Empty directory identified for deletion: {BASE}/{config}/{version}")
+        if exe:
+            cmd = f"removedir {BASE}/{config}/{version}"
+            print(' Removing empty directory: ' + cmd)        
+            os.system(cmd)
+            cmd = f"rm -r {BASE_LOGS}/reviewd/{config}/{version} {BASE_WEBP}/reviewd/{config}/{version}"
+            print(' Removing obsolete version: ' + cmd)        
+            os.system(cmd)
+    else:
+        print(f" Directory not empty: NO DELETION ({config}/{version})")
+        
+    return
+    
+def removeFiles(fileList,process,setup,tier,datasetId,requestId,config,version,exe):
     # Delete thoroughly the given list of files from the disks (T2/3 and the database)
 
     dataset = process + '+' + setup + '+' + tier
@@ -191,67 +227,84 @@ def removeFiles(fileList,process,setup,tier,datasetId,requestId,config,version):
         # delete from T2
         cmd = 't2tools.py --action=rm --source=%s'%(fullFile)
         print(' t2t: %s'%(cmd))
-        os.system(cmd)
+        if exe:
+            os.system(cmd)
         
-        # delete from T3
-        cmd = 'ssh t3btch090.mit.edu hdfs dfs -rm %s'%(fullFile)
-        print(' loc: %s'%(cmd))
-        os.system(cmd)
+        ## delete from T3
+        #cmd = 'ssh t3btch090.mit.edu hdfs dfs -rm %s'%(fullFile)
+        #print(' loc: %s'%(cmd))
+        # if exe:
+        #    os.system(cmd)
 
         # delete from the database (for catalogs)
         sql  = "delete from Files where RequestId=%d and fileName='%s'"%(requestId,file)
         print(' sql: %s'%(sql))
-        try:
-            # execute the SQL command
-            cursor.execute(sql)
-        except:
-            print(" Error (%s): unable to delete data."%(sql))
+        if exe:
+            try:
+                # execute the SQL command
+                cursor.execute(sql)
+            except:
+                print(" Error (%s): unable to delete data."%(sql))
+
+        return
 
 
-def removeDataset(process,setup,tier,datasetId,requestId,config,version):
+def removeDataset(process,setup,tier,datasetId,requestId,config,version,py,exe):
     # Delete the given dataset from the disks (T2/3 and the database)
 
     dataset = process + '+' + setup + '+' + tier
     catalog = os.getenv('KRAKEN_CATALOG_OUTPUT')
     fullFile = '%s/%s/%s/%s'%(BASE,config,version,dataset)
-    logs = '/local/cmsprod/Kraken/agents/reviewd/%s/%s/%s'%(config,version,dataset)
+    logs = f"{BASE_LOGS}/reviewd/{config}/{version}/{dataset}"
+    webp = f"{BASE_WEBP}/reviewd/{config}/{version}/{dataset}"
 
     # delete from T2
     cmd = 'ssh paus@t2srv0017.cmsaf.mit.edu hdfs dfs -rm -r %s'%(fullFile)
     print(' t2t: %s'%(cmd))
-    os.system(cmd)
+    if exe:
+        os.system(cmd)
         
-    # delete from T3
-    cmd = 'ssh t3btch090.mit.edu hdfs dfs -rm -r %s'%(fullFile)
-    print(' loc: %s'%(cmd))
-    os.system(cmd)
+    ## delete from T3
+    #cmd = 'ssh t3btch090.mit.edu hdfs dfs -rm -r %s'%(fullFile)
+    #print(' loc: %s'%(cmd))
+    #if exe:
+    #    os.system(cmd)
 
     # delete from the database (for catalogs)
     sql  = "delete from Files where RequestId=%d"%(requestId)
     print(' sql: %s'%(sql))
-    try:
-        # Execute the SQL command
-        cursor.execute(sql)
-    except:
-        print(" Error (%s): unable to delete data."%(sql))
+    if exe:
+        try:
+            # Execute the SQL command
+                cursor.execute(sql)
+        except:
+            print(" Error (%s): unable to delete data."%(sql))
 
     cmd = 'rm -rf %s/%s/%s/%s'%(catalog,config,version,dataset)
     print(' ctg: %s'%(cmd))
-    os.system(cmd)
+    if exe:
+        os.system(cmd)
 
-    # delete all logs
-    cmd = 'rm -rf %s'%(logs)
-    print(' logs: %s'%(cmd))
-    os.system(cmd)
+    # delete all logs and webpages
+    cmd = f"rm -rf {logs} {webp}"
+    print(' log: %s'%(cmd))
+    if exe:
+        os.system(cmd)
 
-def testLocalSetup(dataset,config,version,dbs,py,delete,debug=0):
+    
+    # Remove the request from the request table
+    cmd = 'addRequest.py --delete=1 --config=%s --version=%s --py=%s --dataset=%s'%\
+        (config,version,py,dataset)
+    print(' drq: %s'%(cmd))
+    if exe:
+        os.system(cmd)
+    
+    return
+
+def testLocalSetup(config,version,dbs,delete,debug=0):
     # test all relevant components and exit is something is off
 
     # check the input parameters
-    if dataset == '':
-        print(' Error - no dataset specified. EXIT!\n')
-        print(usage)
-        sys.exit(1)
     if config == '':
         print(' Error - no config specified. EXIT!\n')
         print(usage)
@@ -260,27 +313,22 @@ def testLocalSetup(dataset,config,version,dbs,py,delete,debug=0):
         print(' Error - no version specified. EXIT!\n')
         print(usage)
         sys.exit(1)
-    if py == '':
-        print(' Error - no py specified. EXIT!\n')
-        print(usage)
-        sys.exit(1)
 
 #===================================================================================================
 # Main starts here
 #===================================================================================================
 # Define string to explain usage of the script
 usage  = "\n"
-usage += " Usage: removeData.py  --pattern=<name>\n"
-usage += "                       --config=<name>\n"
+usage += " Usage: removeData.py  --config=<name>\n"
 usage += "                       --version=<name>\n"
-usage += "                       --py=<name>\n"
+usage += "                     [ --pattern='']\n"
 usage += "                     [ --fileName='' ]\n"
 usage += "                     [ --debug=0 ]\n"
 usage += "                     [ --exec (False) ]\n"
 usage += "                     [ --help ]\n\n"
 
 # Define the valid options which can be specified and check out the command line
-valid = ['fileName=','pattern=','config=','version=','py=','debug=','exec','help']
+valid = ['fileName=','pattern=','config=','version=','debug=','exec','help']
 try:
     opts, args = getopt.getopt(sys.argv[1:], "", valid)
 except getopt.GetoptError as ex:
@@ -300,7 +348,6 @@ pattern = ''
 config = ''
 version = ''
 dbs = 'prod/global'
-py = 'mc'
 
 # Read new values from the command line
 for opt, arg in opts:
@@ -315,15 +362,13 @@ for opt, arg in opts:
         config = arg
     if opt == "--version":
         version = arg
-    if opt == "--py":
-        py = arg
     if opt == "--exec":
         exe = True
     if opt == "--debug":
         debug = int(arg)
 
 # make sure the request makes sense
-testLocalSetup(pattern,config,version,dbs,py,delete,debug)
+testLocalSetup(config,version,dbs,delete,debug)
 
 # get access to the database
 (db,cursor) = db()
@@ -332,7 +377,11 @@ datasets = []
 cmd = 'list ' + BASE + '/' + config + '/' + version + ' 2> /dev/null'
 print(' Listing: ' + cmd)
 for line in os.popen(cmd).readlines():  # run command
-    dataset = line[:-1].split('/')[-1]
+    f = line[:-1].split('/')
+    if len(f)<2:
+        print(f" No valid dataset found (line: {line[:-1]}).")
+        sys.exit(2)
+    dataset = f[-1]
     if debug>1:
         print(' Sample(%s): '%(pattern) + dataset)
     if pattern in dataset:
@@ -352,6 +401,8 @@ for dataset in datasets:
         print(' -o-o-o-o- Deleting -o-o-o-o-  ' + dataset)
 
     # remove the specific dataset
-    remove(dataset,config,version,dbs,py,exe)
+    remove(dataset,config,version,dbs,exe)
 
+removeVersionIfEmpty(config,version,exe,debug)
+    
 db.close()

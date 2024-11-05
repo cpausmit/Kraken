@@ -68,6 +68,10 @@ function customise {
   then
       echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeDileptonPlusX --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeV0ForMuonFake --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBmmMuonId --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_keepLowPtMuons \
             --customise_commands=\"process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))\""
+  elif [ "$version" == "531" ]
+  then
+      echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeDileptonPlusX --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeV0ForMuonFake --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBmmMuonId \
+            --customise_commands=\"process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))\""
   elif [ "$version" == "A00" ] || [ "$version" == "A01" ] || [ "$version" == "A02" ]
   then
     echo "PhysicsTools/SUEPNano/nano_suep_cff.SUEPNano_customize \
@@ -75,6 +79,10 @@ function customise {
   elif [ "$version" == "D00" ] || [ "$version" == "D01" ] || [ "$version" == "D02" ] || [ "$version" == "D03" ] || [ "$version" == "D04" ]
   then
     echo "Hrare/NanoAOD/nano_cff.nanoAOD_customizeMesons \
+            --customise_commands=\"process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))\""
+  elif  [ "$version" == "D05" ]
+  then
+    echo "Hrare/NanoAOD/nano_cff.nanoAOD_customizeMesons_Run3 \
             --customise_commands=\"process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))\""
   else
     echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBxToMuMu --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeV0ForMuonFake --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBmmMuonId \
@@ -89,13 +97,20 @@ function era {
   dataset=`echo $1 |sed -e 's#^/##' -e 's#/#+#'`
   cmssw="$2"
 
-  #if [  "`echo $cmssw | grep ^12_`" != "" ]
-  #then
-  #  echo NOT USED
-  #  return
-  #fi
+  if [ "`echo $dataset | grep SIM$`" != "" ]   # this dataset is MC
+  then
+      era_mc $dataset $cmssw
+  else                                         # this dataset is data
+      era_data $dataset $cmssw
+  fi
+}
   
-  ## -DATA- STARTS HERE
+function era_data {
+  # provide string for the era given a dataset to process
+
+  # read command line parameters
+  dataset=`echo $1 |sed -e 's#^/##' -e 's#/#+#'`
+  cmssw="$2"
 
   if   [ "`echo $dataset | grep +Run2016`" != "" ]
   then
@@ -140,10 +155,25 @@ function era {
   then
     echo Run3
     return
+  elif [ "`echo $dataset | grep +Run2024`" != "" ]
+  then
+    echo Run3
+    return
+  else
+    echo UNKNOWN
+    return
+  fi
+}
+  
+function era_mc {
+  # provide string for the era given a dataset to process
 
-  ## --MC-- STARTS HERE
+  # read command line parameters
+  dataset=`echo $1 |sed -e 's#^/##' -e 's#/#+#'`
+  cmssw="$2"
+
   #  GJets_HT-600ToInf_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1+NANOAODSIM
-  elif [ "`echo $dataset | grep +RunIISummer..UL16....AODv2`" != "" ]
+  if   [ "`echo $dataset | grep +RunIISummer..UL16....AODv2`" != "" ]
   then
     echo Run2_2016,run2_nanoAOD_106Xv2
     return
@@ -206,6 +236,9 @@ function era {
   elif [ "`echo $dataset | grep +Run3Summer23MiniAODv4`" != "" ]
   then
     echo Run3_2023
+  elif [ "`echo $dataset | grep +Run3Summer23`" != "" ]
+  then
+    echo Run3_2023
   else
     echo UNKNOWN
     return
@@ -214,20 +247,34 @@ function era {
 
 function conditions {
   # provide string for the conditions given a dataset to process
+  dataset=`echo $1 |sed -e 's#^/##' -e 's#/#+#'`
+  cmssw="$2"
 
-  # read command line parameters
+  if [ "`echo $dataset | grep SIM$`" != "" ]   # this dataset is MC
+  then
+      conditions_mc $dataset $cmssw
+  else                                         # this dataset is data
+      conditions_data $dataset $cmssw
+  fi
+}
+
+function conditions_data {
+  # provide string for the conditions given a dataset to process
   dataset=`echo $1 |sed -e 's#^/##' -e 's#/#+#'`
   cmssw="$2"
   
-  if [  "`echo $cmssw | grep ^12_`" != "" ]
+  if [  "`echo $cmssw | grep ^14_`" != "" ]
+  then
+    if   [ "`echo $dataset | grep +Run202[234]`" != "" ] 
+    then
+      echo 140X_dataRun3_Prompt_v4
+      return
+    fi
+  elif [  "`echo $cmssw | grep ^12_`" != "" ]
   then
     if   [ "`echo $dataset | grep +Run2016`" != "" ] || [ "`echo $dataset | grep +Run2017`" != "" ] || [ "`echo $dataset | grep +Run2018`" != "" ] 
     then
       echo auto:run2_data
-      return
-    elif [ "`echo $dataset | grep +RunIISummer..UL18....AOD`" != "" ]
-    then
-      echo auto:phase1_2018_realistic
       return
     fi
   else
@@ -248,7 +295,6 @@ function conditions {
     fi
   fi
   
-  ## -DATA- STARTS HERE
   if   [ "`echo $dataset | grep +Run2016`" != "" ]
   then
     if [ "`echo $dataset | grep UL2016`" != "" ]
@@ -299,21 +345,80 @@ function conditions {
     then
       echo 124X_dataRun3_Prompt_v4
       return
+    elif  [ "`echo $dataset | grep +Run2022[CDE]`" != "" ]
+    then
+      echo 130X_dataRun3_Prompt_v3
+      return
+    elif  [ "`echo $dataset | grep +Run2022[FG]`" != "" ]
+    then
+      echo 130X_dataRun3_PromptAnalysis_v1
+      return
     else	
       echo 130X_dataRun3_v2
       return
     fi
-  elif  [ "`echo $dataset | grep +Run2023`" != "" ]
+  elif  [ "`echo $dataset | grep +Run2023[ABCD]`" != "" ]
   then
     echo 130X_dataRun3_PromptAnalysis_v1
     return
-  elif  [ "`echo $dataset | grep +Run2023`" != "" ]
-  then
-    echo 130X_dataRun3_PromptAnalysis_v1
+  else
+    echo UNKNOWN
     return
+  fi
+}
+
+function conditions_mc {
+  # provide string for the conditions given a dataset to process
+  dataset=`echo $1 |sed -e 's#^/##' -e 's#/#+#'`
+  cmssw="$2"
   
-  # --MC-- STARTS HERE
-  elif [ "`echo $dataset | grep +RunIISummer..UL16....AODAPV`" != "" ]
+  if   [  "`echo $cmssw | grep ^14_`" != "" ]
+  then
+    if   [ "`echo $dataset | grep +Run3Summer23BPixMiniAODv4`" != "" ]
+    then
+      echo auto:phase1_2023_realistic_postBPix
+      return
+    elif [ "`echo $dataset | grep +Run3Summer23MiniAODv4`" != "" ]
+    then
+      echo auto:phase1_2023_realistic
+      return
+    elif [ "`echo $dataset | grep +Run3Summer22EEMiniAODv4`" != "" ]
+    then
+      echo auto:phase1_2022_realistic_postEE
+      return
+    elif [ "`echo $dataset | grep +Run3Summer22MiniAODv4`" != "" ]
+    then
+      echo auto:phase1_2022_realistic
+      return
+    elif [ "`echo $dataset | grep +Run3Summer22EEMiniAODv3`" != "" ]
+    then
+      echo auto:phase1_2022_realistic_postEE
+      return
+    elif [ "`echo $dataset | grep +Run3Summer22MiniAODv3`" != "" ]
+    then
+      echo auto:phase1_2022_realistic
+      return
+    elif [ "`echo $dataset | grep +RunIISummer20UL18MiniAODv2`" != "" ]
+    then
+      echo auto:phase1_2018_realistic
+      return
+    fi
+  elif [  "`echo $cmssw | grep ^12_`" != "" ]
+  then
+    if [ "`echo $dataset | grep +RunIISummer..UL18....AOD`" != "" ]
+    then
+      echo auto:phase1_2018_realistic
+      return
+    fi
+  else
+    if   [ "`echo $dataset | grep MiniAODv2XXXXXX`" != "" ] ## ?? this was weird ?
+    then
+      echo auto:phase1_2018_realistic
+      return
+    fi
+  fi
+
+  if   [ "`echo $dataset | grep +RunIISummer..UL16....AODAPV`" != "" ]
   then
     echo 106X_mcRun2_asymptotic_preVFP_v11
     return
@@ -350,14 +455,21 @@ function conditions {
   then
     echo 102X_upgrade2018_realistic_v20
     return
+  elif  [ "`echo $dataset | grep +Run3Summer22EE`" != "" ]
+  then
+    echo 130X_mcRun3_2022_realistic_postEE_v6
+    return
   elif  [ "`echo $dataset | grep +Run3Summer22`" != "" ]
   then
-    echo 124X_mcRun3_2022_realistic_postEE_v1
+    echo 130X_mcRun3_2022_realistic_v5
     return
   elif [ "`echo $dataset | grep +Run3Summer23BPixMiniAODv4`" != "" ]
   then
     echo 130X_mcRun3_2023_realistic_postBPix_v2
   elif [ "`echo $dataset | grep +Run3Summer23MiniAODv4`" != "" ]
+  then
+    echo 130X_mcRun3_2023_realistic_v14
+  elif [ "`echo $dataset | grep +Run3Summer23`" != "" ]
   then
     echo 130X_mcRun3_2023_realistic_v14
   else

@@ -90,6 +90,27 @@ def jobStatus(string):
     elif string == "H":
         jobstatus = 5
     return jobstatus
+
+def showJobSummaries(jobsummaries,active=True):
+    # first only requests that are active
+    first = True
+    for key, value in sorted(jobsummaries.items()):
+        if value.is_active() == active:
+            if first:
+                if active:
+                    print("\n ---- Active requests")
+                else:
+                    print("\n ---- Non-active requests")
+            value.show(key,first)
+            first = False
+        
+            storeStatus(EPOCH,key,value)
+            if not options.fast:
+                cmd = f"progress.py -w -q -n {key} -x 'epoch time [sec]' -y 'files processing'"
+                if options.debug < 1:
+                    cmd += " >& /dev/null"
+                #print(f"js - CMD: {cmd}")
+                os.system(cmd)
         
 
 #===================================================================================================
@@ -99,9 +120,11 @@ def jobStatus(string):
 parser = OptionParser()
 parser.add_option("-c", "--config",dest="config",default='',help="configuration")
 parser.add_option("-v", "--version",dest="version",default='',help="version")
+parser.add_option("-f", "--fast",action="store_true",dest="fast",default=False,help="write plots")
 parser.add_option("-d", "--debug",dest="debug",default=0,help="debugging level")
 (options, args) = parser.parse_args()
 
+# basic parameters needed
 BASE = os.getenv('KRAKEN_SE_BASE')
 CATALOG = os.getenv('KRAKEN_CATALOG_OUTPUT')
 JOBS = os.getenv('KRAKEN_WORK') + '/jobs'
@@ -110,16 +133,17 @@ EPOCH = int(time.time())
 
 # date it
 os.system("date")
-print("===============================")
+print("============================")
 
 jobsummaries = {}
 
 cycle = os.environ.get('KRAKEN_REVIEW_CYCLE','')
-(campaigns,requests) = harvestAllCampaigns(cycle)
+(campaigns,requests) = harvestAllCampaigns(cycle) # all existing 'config:version' and 'datasets'
 
 # the nocatalog file is done once
 data = findNoCatalog(BASE)
 
+# create a unique key for each request: 'config-version-dataset' and add it to the job summaries
 for request in requests:
     config,version,dataset = request.split(":")
     
@@ -152,10 +176,8 @@ for request in requests:
     jobsummaries[key] = jsum.Jsum()
     jobsummaries[key].set_totals(n_total,n_done,n_nocatalog)
 
-# find files and cataloged entries
-jobs = findAllJobs(options.config,options.version)
-
-for job in jobs:
+# find all jobs in the queue (ex. condor) and add th em to the job summaries
+for job in findAllJobs(options.config,options.version):
     f = job.split(" ")
     if len(f)<5 or 'Schedd' in job:
         continue
@@ -166,24 +188,18 @@ for job in jobs:
         print(" WARNING - jobsummary will not be stored and jobs in batch are not monitored!")
     else:
         jobsummaries[key].add_job(jobStatus(f[5]),runningTime(f[4]))
-    
-first = True
-for key, value in sorted(jobsummaries.items()):
-    value.show(key,first)
-    first = False
 
-    storeStatus(EPOCH,key,value)
-    cmd = "progress.py -w -q -n %s -x 'epoch time [sec]' -y 'files processing'"%(key)
-    if options.debug < 1:
-        cmd += " >& /dev/null"
-    os.system(cmd)
+showJobSummaries(jobsummaries,active=True)
+showJobSummaries(jobsummaries,active=False)
 
-for campaign in campaigns:
-    if (options.config in campaign or options.config == '') and (options.version in campaign or options.version == ''):
-        print(" PROCESS - %s"%(campaign))
-        cmd = "progress.py -w -q -n %s -x 'epoch time [sec]' -y 'files processing'"%(campaign)
-        if options.debug < 1:
-            cmd += " >& /dev/null"
-        os.system(cmd)
+if not options.fast:
+    for campaign in campaigns:
+        if (options.config in campaign or options.config == '') and (options.version in campaign or options.version == ''):
+            print(" PROCESS - %s"%(campaign))
+            cmd = f"progress.py -w -q -n {campaign} -x 'epoch time [sec]' -y 'files processing'"
+            if options.debug < 1:
+                cmd += " >& /dev/null"
+            #print(f"ca - CMD: {cmd}")
+            os.system(cmd)
     
 sys.exit(0)

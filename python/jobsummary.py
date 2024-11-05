@@ -40,6 +40,9 @@ class Jobsummary:
            
         return
 
+    def is_active(self):
+        return (self.n_nocatalog+self.n_batch+self.n_idle+self.n_running+self.n_held>0)
+    
     def show(self,first):
         if first:
             print("TOTAL  DONE NOCAT BATCH  IDLE  RUN HELD  RT[hr] -- Request")
