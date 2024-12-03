@@ -1,4 +1,52 @@
 <?php
+// Directory to scan
+$directory = "./";
+
+// Check if the directory exists
+$i = 0;
+if (is_dir($directory)) {
+    // Scan the directory for files
+    $files = scandir($directory);
+    
+    // Filter out . and .. and non-file entries
+    $files = array_filter($files, function($file) use ($directory) {
+        return is_file("$directory/$file");
+    });
+
+    // Initialize arrays for .out and .err files
+    $outFiles = [];
+    $errFiles = [];
+
+    // Separate files based on extensions
+    foreach ($files as $file) {
+        $extension = pathinfo($file, PATHINFO_EXTENSION);
+        if ($extension === 'out') {
+            $outFiles[] = $file;
+        } elseif ($extension === 'err') {
+            $errFiles[] = $file;
+        }
+    }
+
+    // Create pairs of .out and .err files
+    $pairs = [];
+    foreach ($outFiles as $outFile) {
+        $baseName = pathinfo($outFile, PATHINFO_FILENAME);
+        $errFile = $baseName . '.err';
+
+        if (in_array($errFile, $errFiles)) {
+            $pairs[] = [
+	    	'base' => $baseName,
+                'out' => $outFile,
+                'err' => $errFile,
+                'out_info' => stat("$directory/$outFile"),
+                'err_info' => stat("$directory/$errFile"),
+            ];
+        }
+    }
+} else {
+    die("Directory does not exist.");
+}
+
 print '<!DOCTYPE html>';
 print '<html>';
 print '<head><link rel="shortcut icon" type="image/x-icon" href="../../kraken.png" />';
@@ -58,36 +106,35 @@ if (sizeof($f) > 1) {
   print '</code>';
 }
 
-// list the log files and provide link access
-$output = shell_exec('ls -lt ????????-????-????-????-????????????.??? | tr -s " "');
-$f = explode("\n",$output);
-if (sizeof($f) > 1) {
-  print 'Most recent up top<pre>';
-  $i=0;
-  foreach ($f as &$file) {
-    $search = array(".err");
-    $replace1 = array(".out");
-    $replace2 = array("");
-    if ($file != "") {
-      $g = explode(" ",$file);
-      $filename = array_pop($g);
-      array_shift($g);
-      array_shift($g);
-      array_shift($g);
-      array_shift($g);
-      $size = (int) array_shift($g);
-      $date = implode(" ", $g); 
-      //$rest = implode(" ", $g); 
-      $stub = str_replace($search,$replace2,$filename);
-      // print '<li> ['.$i.'] '. $rest . ' --> ' . ' <a href="' . $filename . '">'.$filename.'</a>';
-      printf("[%06d] <a href=\"%s\">%s</a> -- %s (Size: %d kB)\n",$i,$filename,$filename,$date,$size/1000);
-      $i=$i+1;
-    }
-  }
-  print '</pre>';
-}
 ?>
 
+
+Most recent up top
+<pre>
+<table>
+  <tr>
+    <th>Index</th>
+    <th>Base</th>
+    <th>out [kB] LMod</th>
+    <th>err [kB] LMod</th>
+  </tr>
+  <?php if (!empty($pairs)): ?>
+  <?php foreach ($pairs as $pair): ?>
+  <tr>
+    <td><?php $i=$i+1; printf('[%06d]',$i); ?></td>
+    <td><?php echo $pair['base']." :"; ?></td>
+    <td><?php echo "<a href="; echo $pair['out']; echo ">"; printf('%6d',$pair['out_info']['size']/1000); echo " "; echo date("y/m/d H:i", $pair['out_info']['mtime']); echo "</a>"; echo "    "; ?></td>
+    <td><?php echo "<a href="; echo $pair['err']; echo ">"; printf('%6d',$pair['out_info']['size']/1000); echo " "; echo date("y/m/d H:i", $pair['err_info']['mtime']); echo "</a>"; echo "    "; ?></td>
+
+  </tr>
+  <?php endforeach; ?>
+  <?php else: ?>
+  <tr>
+    <td colspan="4" style="text-align:center;">No matching file pairs found</td>
+  </tr>
+  <?php endif; ?>
+</table>
+</pre>
 <hr>
 <p style="font-family: arial;font-size: 10px;font-weight: bold;color:#405050;">
 <!-- hhmts start -->
