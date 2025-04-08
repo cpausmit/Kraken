@@ -91,7 +91,7 @@ if __name__ == '__main__':
     fileSizes = findFileSizes(args.config,args.version,args.dataset)
 
     # make connection with database
-    conn = MySQLdb.connect(read_default_file="/etc/my.cnf",read_default_group="mysql",db="Bambu")
+    conn = MySQLdb.connect(read_default_file="/home/tier3/cmsprod/.my.cnf",read_default_group="mysql",db="Bambu")
     cursor = conn.cursor()
     (requestId, datasetId) = getRequestId(cursor,args.config,args.version,args.dataset)
 

@@ -80,7 +80,7 @@ if __name__ == '__main__':
     sys.argv = []
 
     # make connection with database
-    conn = MySQLdb.connect(read_default_file="/etc/my.cnf",read_default_group="mysql",db="Bambu")
+    conn = MySQLdb.connect(read_default_file="/home/tier3/cmsprod/.my.cnf",read_default_group="mysql",db="Bambu")
     cursor = conn.cursor()
 
     # decode the dataset name

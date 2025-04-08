@@ -16,6 +16,6 @@ notification            = never
 
 # CMS requirements
 use_x509userproxy       = True
-x509userproxy           = /tmp/x509up_u5410
+x509userproxy           = /home/submit/paus/tmp/x509up_u5410
 +AcctGroup              = "analysis"
 +AccountingGroup        = "analysis.paus"

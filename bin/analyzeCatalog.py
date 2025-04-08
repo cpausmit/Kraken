@@ -13,8 +13,9 @@ import matplotlib.pyplot as plt
 import matplotlib as mlp
 
 from optparse import OptionParser
-
-PATTERN = '%a %b %d %I:%M:%S %p %Z %Y'
+#         "2025-02-27 07:22:11.329155"
+PATTERN = '%Y-%m-%d %H:%M:%S.%f'
+#PATTERN = '%a %b %d %I:%M:%S %p %Z %Y'
 PATTERN_B = '%a %b %d %H:%M:%S %Z %Y'
 
 RECORD = {}
@@ -30,7 +31,7 @@ def appendRecord(record):
 
 def findAllJobStubs(dir,debug=0):
     # find all job file stubs (without .err/.out extensions) to analyze
-    cmd = "cd %s; ls -1t"%(dir)
+    cmd = "cd %s; ls -1t | grep -v checkFileActivity.db | sed -e 's/.out//' -e 's/.err//' | sort -u"%(dir)
     if debug > 0:
         print(" CMD: " + cmd)
     
@@ -45,8 +46,8 @@ def findAllJobStubs(dir,debug=0):
         
     stubs = []
     for line in out.decode().split('\n'):
-        if '.err' in line:
-            stubs.append(line.replace('.err',''))
+        if line.strip():
+            stubs.append(line)
 
     print(' Number of all jobs found: %d'%(len(stubs)))
 
@@ -54,11 +55,20 @@ def findAllJobStubs(dir,debug=0):
 
 def reviewStub(record,options,stub):
     
-    print(" next(%d/%d (all: %d)) --> %s"%(n+1,options.nprocess,len(stubs),stub))
-    with open('%s/%s.out'%(options.base,stub),"r") as f:
-        data_out = f.read()
-    with open('%s/%s.err'%(options.base,stub),"r") as f:
-        data_err = f.read()
+    if options.debug > 0:
+        print(" next(%d/%d (all: %d)) --> %s"%(n+1,options.nprocess,len(stubs),stub))
+
+    try:
+        with open('%s/%s.out'%(options.base,stub),"r") as f:
+            data_out = f.read()
+        with open('%s/%s.err'%(options.base,stub),"r") as f:
+            data_err = f.read() 
+        print(" read(%d/%d) --> %s"%(n+1,len(stubs),stub))
+        
+    except:
+        print(" record not complete for: %s removing it"%(stub))
+        removeFiles(options.base,stub,int(options.debug))
+        return
 
     # analyze the logs
     a = atom.Atom()
@@ -68,6 +78,7 @@ def reviewStub(record,options,stub):
     dataset = ''
     file = ''
     status = -1                                    # did not find a proper ending or a known error
+    stime = 0
     etime = 0
     n_lfn = -1
     n_output = -1
@@ -97,15 +108,25 @@ def reviewStub(record,options,stub):
             if options.debug > 1:
                 print(" STRING: %s"%(string))
             try:
+                stime = int(time.mktime(time.strptime(string,PATTERN)))
+            except:
+                stime = int(time.mktime(time.strptime(string,PATTERN_B)))
+        elif ' end   time    : ' in line:
+            string = line.replace(' end   time    : ','')
+            if options.debug > 1:
+                print(" STRING: %s"%(string))
+            try:
                 etime = int(time.mktime(time.strptime(string,PATTERN)))
             except:
                 etime = int(time.mktime(time.strptime(string,PATTERN_B)))
 
     # filter out unidentified files
     if config == "":
+        print(" could not find configuration remove stub and move to next")
+        removeFiles(options.base,stub,int(options.debug))
         return
 
-    a.update(config,version,dataset,file,status,etime)
+    a.update(config,version,dataset,file,status,stime,etime)
     key,value = a.summary()
     if key in record:
         print(" ERROR - tried to catalog this file twice.")
@@ -127,9 +148,13 @@ def reviewStub(record,options,stub):
                 a.show()
 
     # make sure not to process again
-    moveFiles(options.base,stub,int(options.debug))
+    if options.debug > 0:
+        moveFiles(options.base,stub,int(options.debug))
+    else:
+        removeFiles(options.base,stub,int(options.debug))
 
     return
+
 def makeCompleteDir(dir):
     # make directory were files are moved once processed
     os.system("mkdir -p %s-done"%(dir))
@@ -168,12 +193,12 @@ def plot(record,min_t,max_t,opt='ALL',name='tmp'):
         for key in record:
             f = record[key].split(':')
             status = f[0]
-            etime = int(f[1])
+            stime = int(f[1])
             if opt == 'ALL' or opt == status:
-                if etime >= min_t and etime <= max_t:
-                    times.append(etime)
-        if options.debug>1:
-            print(" Total entries: ")
+                if stime >= min_t and stime <= max_t:
+                    times.append(stime)
+        if options.debug>0:
+            print(f" Total entries: {len(times)} in ({min_t}:{max_t})")
 
         npts = np.array(times)
         datetimes = [datetime.datetime.fromtimestamp(npt) for npt in npts]
@@ -269,8 +294,7 @@ def plotRecord(record):
     plot(RECORD,min_t,max_t,'-2')
     plot(RECORD,min_t,max_t,'-3')
     plot(RECORD,min_t,max_t,'save','month')
-    #plot(RECORD,min_t,max_t,'show','month')
-
+    
 def readRecord():
     # write the record efficicently to file
 
@@ -292,6 +316,14 @@ def readRecord():
         record[key] = value
     print(" record read (%d)."%(len(record)))
     return record
+
+def removeFiles(dir,stub,debug):
+    # remove successfully completed files
+    cmd = "rm %s/%s.???"%(dir,stub)
+    if debug > -1:
+        print(" Removing: %s"%(cmd))
+    os.system(cmd)
+    return
 
 def saveFiles(dir,stub,debug):
     # make directory were files are moved once processed
@@ -333,11 +365,15 @@ plotRecord(RECORD)
 
 # get the job file stubs to analyze
 stubs = findAllJobStubs(options.base,int(options.debug))
+#print(stubs)
 
 # loop through the job stubs
 n = 0
 for stub in stubs:
 
+    # stub
+    print(f" Stub: {stub}")
+    
     # review the record
     reviewStub(RECORD,options,stub)
 

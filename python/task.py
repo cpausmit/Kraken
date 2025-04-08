@@ -197,7 +197,8 @@ class Task:
                 + swBase + "/kraken_" + self.swVersion + ".tgz")
 
             cmd = "cd " + swBase \
-                + "; tar fch kraken_" + self.swVersion + ".tar "
+                + "; tar fc kraken_" + self.swVersion + ".tar "
+#                + "; tar fch kraken_" + self.swVersion + ".tar "
             
             tmpcmd = "find %s -type d -name .git"%(swBase)
             myRex = rex.Rex()

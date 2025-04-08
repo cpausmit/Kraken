@@ -9,7 +9,7 @@ import rex
 
 usage = "   usage:  checkDirectory.py  <directory> \n"
 
-Db = MySQLdb.connect(read_default_file="/etc/my.cnf",read_default_group="mysql",db="Bambu")
+Db = MySQLdb.connect(read_default_file="/home/tier3/cmsprod/.my.cnf",read_default_group="mysql",db="Bambu")
 Cursor = Db.cursor()
 
 #===================================================================================================

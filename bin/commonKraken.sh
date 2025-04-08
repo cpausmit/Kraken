@@ -68,7 +68,7 @@ function customise {
   then
       echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeDileptonPlusX --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeV0ForMuonFake --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBmmMuonId --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_keepLowPtMuons \
             --customise_commands=\"process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))\""
-  elif [ "$version" == "531" ]
+  elif [ "$version" == "531" ] || [ "$version" == "532" ]
   then
       echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeDileptonPlusX --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeV0ForMuonFake --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBmmMuonId \
             --customise_commands=\"process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))\""
@@ -76,11 +76,11 @@ function customise {
   then
     echo "PhysicsTools/SUEPNano/nano_suep_cff.SUEPNano_customize \
             --customise_commands=\"process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))\""
-  elif [ "$version" == "D00" ] || [ "$version" == "D01" ] || [ "$version" == "D02" ] || [ "$version" == "D03" ] || [ "$version" == "D04" ]
+  elif [ "$version" == "D00" ] || [ "$version" == "D01" ] || [ "$version" == "D02" ] || [ "$version" == "D03" ] || [ "$version" == "D04" ] || [ "$version" == "D06" ]
   then
     echo "Hrare/NanoAOD/nano_cff.nanoAOD_customizeMesons \
             --customise_commands=\"process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))\""
-  elif  [ "$version" == "D05" ]
+  elif [ "$version" == "D05" ]
   then
     echo "Hrare/NanoAOD/nano_cff.nanoAOD_customizeMesons_Run3 \
             --customise_commands=\"process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))\""
@@ -239,6 +239,9 @@ function era_mc {
   elif [ "`echo $dataset | grep +Run3Summer23`" != "" ]
   then
     echo Run3_2023
+  elif [ "`echo $dataset | grep +RunIII2024Summer`" != "" ]
+  then
+    echo Run3_2024
   else
     echo UNKNOWN
     return
@@ -472,6 +475,9 @@ function conditions_mc {
   elif [ "`echo $dataset | grep +Run3Summer23`" != "" ]
   then
     echo 130X_mcRun3_2023_realistic_v14
+  elif [ "`echo $dataset | grep +RunIII2024Summer`" != "" ]
+  then
+    echo auto:phase1_2024_realistic
   else
     echo UNKNOWN
     return

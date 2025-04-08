@@ -10,7 +10,7 @@ import rex
 
 import dynamo_inject
 
-Db = MySQLdb.connect(read_default_file="/etc/my.cnf",read_default_group="mysql",db="Bambu")
+Ddb = MySQLdb.connect(read_default_file="/home/tier3/cmsprod/.my.cnf",read_default_group="mysql",db="Bambu")
 Cursor = Db.cursor()
 DYNAMO_HOST = 't3serv009.mit.edu'
 CERT = '/tmp/x509up_u%d' % os.getuid()

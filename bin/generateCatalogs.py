@@ -10,7 +10,7 @@ DATA = os.environ.get('KRAKEN_SE_BASE','/cms/store/user/paus')
 CATALOG = os.environ.get('KRAKEN_CATALOG_OUTPUT','/home/cmsprod/catalog/t2mit')
 XRDSE = 'root://xrootd.cmsaf.mit.edu/'
 
-Db = MySQLdb.connect(read_default_file="/etc/my.cnf",read_default_group="mysql",db="Bambu")
+Db = MySQLdb.connect(read_default_file="/home/tier3/cmsprod/.my.cnf",read_default_group="mysql",db="Bambu")
 Cursor = Db.cursor()
 
 usage = "\n   usage:  generateCatalogs.py  <book>  <pattern>  [ <nFilePerSet> ]\n"

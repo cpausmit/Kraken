@@ -5,7 +5,7 @@ class Kdb:
     
     def __init__(self,debug=0):
         # Access the database to determine all requests
-        self.db = MySQLdb.connect(read_default_file="/etc/my.cnf",read_default_group="mysql",db="Bambu")
+        self.db = MySQLdb.connect(read_default_file="/home/tier3/cmsprod/.my.cnf",read_default_group="mysql",db="Bambu")
         self.cursor = self.db.cursor()
         self.debug = debug
 

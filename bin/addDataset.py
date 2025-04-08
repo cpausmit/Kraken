@@ -560,7 +560,7 @@ for opt, arg in opts:
 (dataset,dbsInst) = testLocalSetup(dataset,dbsInst,debug)
 
 # Open database connection
-db = MySQLdb.connect(read_default_file="/etc/my.cnf",read_default_group="mysql",db="Bambu")
+db = MySQLdb.connect(read_default_file="/home/tier3/cmsprod/.my.cnf",read_default_group="mysql",db="Bambu")
 # Prepare a cursor object using cursor() method
 cursor = db.cursor()
 

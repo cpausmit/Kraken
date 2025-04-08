@@ -236,7 +236,7 @@ testLocalSetup(book)
 allDatasets = findAllDatasets(book,pattern)
 
 # Open database connection
-db = MySQLdb.connect(read_default_file="/etc/my.cnf",read_default_group="mysql",db="Bambu")
+db = MySQLdb.connect(read_default_file="/home/tier3/cmsprod/.my.cnf",read_default_group="mysql",db="Bambu")
 cursor = db.cursor()
 
 # Loop over all matched datasets

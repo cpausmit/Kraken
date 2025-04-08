@@ -156,7 +156,7 @@ def findFilesInDb(requestId,debug=0):
     files = []
 
     # Access the database to determine all requests
-    db = MySQLdb.connect(read_default_file="/etc/my.cnf",read_default_group="mysql",db="Bambu")
+    db = MySQLdb.connect(read_default_file="/home/tier3/cmsprod/.my.cnf",read_default_group="mysql",db="Bambu")
     cursor = db.cursor()
     sql = "select FileName from Files where RequestId=%d"%(requestId)
     if debug:
@@ -265,7 +265,7 @@ def getAllRequests(config,version,py):
     results = []
 
     # Access the database to determine all requests
-    db = MySQLdb.connect(read_default_file="/etc/my.cnf",read_default_group="mysql",db="Bambu")
+    db = MySQLdb.connect(read_default_file="/home/tier3/cmsprod/.my.cnf",read_default_group="mysql",db="Bambu")
     cursor = db.cursor()
     sql = 'select ' + \
         'Datasets.DatasetProcess,Datasets.DatasetSetup,Datasets.DatasetTier,'+\
@@ -322,7 +322,7 @@ def removeMissingFileFromDb(requestId,file,debug=0):
     # remove a missing file from the database
 
     # Access the database to determine all requests
-    db = MySQLdb.connect(read_default_file="/etc/my.cnf",read_default_group="mysql",db="Bambu")
+    db = MySQLdb.connect(read_default_file="/home/tier3/cmsprod/.my.cnf",read_default_group="mysql",db="Bambu")
     cursor = db.cursor()
     sql = "delete from Files where RequestId=%d and fileName='%s'"%(requestId,file)
 
@@ -409,24 +409,36 @@ def testEnvironment(config,version,py):
         print('\n INFO -- Tier-2 disks are available, start review process.\n')
 
     # Make sure we have a valid ticket, because now we will need it
-    cmd = "voms-proxy-init --valid 168:00 -voms cms >& /dev/null"
+    cmd = "voms-proxy-init --valid 168:00 -voms cms >& /dev/null; scp -q `voms-proxy-info -p` paus@localhost:tmp/"
     os.system(cmd)
     os.system("voms-proxy-info -timeleft| awk '{print \" certificate valid for \" $1/3600 \" hrs\"}'")
+    print(f" copied to submit at: paus@localhost:tmp/")
         
 def testTier2Disk(debug=0):
     # make sure we can see the Tier-2 disks: returns -1 on failure
 
+    rc_total = 0
+
     cmd = "list /cms/store/user/paus 2> /dev/null"
     if debug > 0:
         print(" CMD: %s"%(cmd))
-
     myRx = rex.Rex()
     (rc,out,err) = myRx.executeLocalAction("list /cms/store/user/paus 2> /dev/null")
-
     if debug > 0:
         print(" RC: %d\n OUT:\n%s\n ERR:\n%s\n"%(rc,out,err))
+    rc_total += rc
 
-    return rc
+        
+    cmd = "echo 'testing writing to Tier-2' > test.bak; remove /cms/store/user/paus/test.bak 2> /dev/null; upload test.bak /cms/store/user/paus/test.bak"
+    if debug > 0:
+        print(" CMD: %s"%(cmd))
+    myRx = rex.Rex()
+    (rc,out,err) = myRx.executeLocalAction("list /cms/store/user/paus 2> /dev/null")
+    if debug > 0:
+        print(" RC: %d\n OUT:\n%s\n ERR:\n%s\n"%(rc,out,err))
+    rc_total += rc
+
+    return rc_total
 
 #---------------------------------------------------------------------------------------------------
 # M A I N

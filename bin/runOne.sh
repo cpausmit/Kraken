@@ -1,6 +1,8 @@
-# source /cvmfs/cms.cern.ch/cmsset_default.sh
-# cmssw-cc7
-# export PS1="[\[\033[1;31m\]\$(date +%H:%M)-CS7-\[\033[1;30m\]\u@\h:\[\033[1;32m\]\w\[\033[0m\]] "
+echo "
+ source /cvmfs/cms.cern.ch/cmsset_default.sh
+ cmssw-cc7
+ export PS1=\"[\[\033[1;31m\]\$(date +%H:%M)-CS7-\[\033[1;30m\]\u@\h:\[\033[1;32m\]\w\[\033[0m\]] \"
+"
 
 # make sure to be in centos 7
 
@@ -8,10 +10,13 @@ mkdir -p ~/tmp
 cd ~/tmp
 
 export CONFIG=nanoao
-export VERSION=531
+export VERSION=532
 export PY=nano
-export DSET=K0sToMuMu_K0sFilter_TuneCP5_13p6TeV_pythia8-evtgen+Run3Summer22EEMiniAODv3-124X_mcRun3_2022_realistic_postEE_v1-v1+MINIAODSIM
-export FILE=049287b2-8285-4558-b396-7c7d45cf94ee
+export DSET=Charmonium+Run2018A-UL2018_MiniAODv2-v1+MINIAOD
+#export FILE=
+
+## 106X_dataRun2_v35 	Run2_2018,run2_nanoAOD_106Xv2
+## 106X_dataRun2_v35 	Run2_2016,run2_nanoAOD_106Xv2
 
 #K0sToMuMu_K0sFilter_TuneCP5_13p6TeV_pythia8-evtgen+Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15_ext1-v2+MINIAODSIM
 #JpsiTo2Mu_JpsiPt8_TuneCP5_13p6TeV_pythia8+Run3Summer22MiniAODv4-MUO_POG_130X_mcRun3_2022_realistic_v5-v2+MINIAODSIM

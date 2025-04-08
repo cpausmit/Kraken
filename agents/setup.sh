@@ -8,7 +8,7 @@
 
 # general agents info
 
-export KRAKEN_CONDOR_SCHEDD='submit06.mit.edu'
+export KRAKEN_CONDOR_SCHEDD='submit04.mit.edu'
 export KRAKEN_AGENTS_BASE=/usr/local/Kraken/agents
 export KRAKEN_AGENTS_LOG="/local/$KRAKEN_USER/Kraken/agents"
 export KRAKEN_AGENTS_WORK="/home/tier3/$KRAKEN_USER/cms/jobs"
