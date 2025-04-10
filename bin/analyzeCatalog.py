@@ -168,7 +168,7 @@ def moveFiles(dir,stub,debug):
         print(" Moving: %s"%(cmd))
     os.system(cmd)
     return
-
+    
 def plot(record,min_t,max_t,opt='ALL',name='tmp'):
 
     nbins = 100
@@ -186,6 +186,21 @@ def plot(record,min_t,max_t,opt='ALL',name='tmp'):
     elif opt == "show":
         # show the plot for interactive use
         #plt.text(0.01,0.99,name,ha='right',va='top')
+        plt.legend(loc='upper left')
+        plt.show()
+    elif opt == "duration":
+        # show the duration plot for interactive use
+        delta_ts = []
+        for key in record:
+            f = record[key].split(':')
+            status = f[0]
+            stime = int(f[1])
+            delta_t = int(f[2])-int(f[1])
+            if stime >= min_t and stime <= max_t:
+                delta_ts.append(delta_t)
+        if options.debug>0:
+            print(f" Total entries: {len(delta_ts)} in ({min_t}:{max_t})")
+        plt.hist(delta_ts, nbins, histtype='step',linewidth=1.0)
         plt.legend(loc='upper left')
         plt.show()
     else:
@@ -285,6 +300,7 @@ def plotRecord(record):
     plot(RECORD,min_t,max_t,'-3')
     plot(RECORD,min_t,max_t,'save','week')
     #plot(RECORD,min_t,max_t,'show')
+    #plot(RECORD,min_t,max_t,'duration')
         
     # last month
     min_t = max_t - (30 * 24 * 3600)
@@ -365,7 +381,6 @@ plotRecord(RECORD)
 
 # get the job file stubs to analyze
 stubs = findAllJobStubs(options.base,int(options.debug))
-#print(stubs)
 
 # loop through the job stubs
 n = 0
@@ -389,7 +404,7 @@ for stub in stubs:
         plotRecord(RECORD)
 
 # Create most up to data record with plots
-        
+
 # write the results into the existing file
 writeRecord(RECORD)
 

@@ -68,13 +68,16 @@ class Task:
 
         gpack = file.replace('.root','')
 
-        fileH.write("Arguments = " + os.getenv('KRAKEN_EXE') + ' ' + self.request.config + ' ' \
-                        + self.request.version + ' ' + ' ' + self.request.py + ' ' \
-                        + self.sample.dataset + ' ' + gpack + ' ' + job + ' ' + self.tag + '\n')
-        fileH.write("Output = " + self.logs + '/' + gpack + '.out' + '\n')
-        fileH.write("Error = " + self.logs + '/' + gpack + '.err' + '\n')
-        fileH.write("transfer_output_files = " + gpack + '.empty' + '\n')
-        fileH.write("Queue" + '\n')
+        #fileH.write("Arguments = " + os.getenv('KRAKEN_EXE') + ' ' + self.request.config + ' ' \
+        #                + self.request.version + ' ' + ' ' + self.request.py + ' ' \
+        #                + self.sample.dataset + ' ' + gpack + ' ' + job + ' ' + self.tag + '\n')
+        #fileH.write("Output = " + self.logs + '/' + gpack + '.out' + '\n')
+        #fileH.write("Error = " + self.logs + '/' + gpack + '.err' + '\n')
+        #fileH.write("transfer_output_files = " + gpack + '.empty' + '\n')
+        #fileH.write("Queue" + '\n')
+
+        # new style
+        fileH.write(f'    {gpack},{job}\n')
 
     #-----------------------------------------------------------------------------------------------
     # remove remainders from submission
@@ -317,27 +320,44 @@ class Task:
             reqFile = '%s/condor/%s'%(os.getenv('KRAKEN_BASE'),os.getenv('KRAKEN_CONDOR_REQ'))
             print(" Hardwired condor requirements: %s"%(reqFile))
         if not os.path.exists(reqFile):
-            print(" ERROR - condor requirement file is missing. EXIT!")
+            print(f" ERROR - condor requirement file is missing ({reqFile}). EXIT!")
             sys.exit(0)
         else:
-            print(" INFO - Found condor requirements file!")
-                
+            print(f" INFO - Found condor requirements file ({reqFile})!")
 
         # start with the requirement and base submit scripts
         cmd = 'cat %s %s | sed "s#XX-NCPUS-XX#%s#" > %s'%(reqFile,baseFile,os.getenv('KRAKEN_CONDOR_NCPUS'),fileName)
         os.system(cmd)
 
         # attach the additional processing lines defining the specifc JOB productions
-        with open(fileName,'a') as fileH:
-            #fileH.write("Environment = \"HOSTNAME=" + os.getenv('HOSTNAME') + \
-            #                "; KRAKEN_EXE=" + os.getenv('KRAKEN_EXE') + "\"" + '\n')
-            # hardwired the hostname NOT GOOD NEEDS FIX
-            fileH.write("Environment = \"SUBMIT_HOSTNAME=t3serv019.mit.edu; KRAKEN_EXE=%s; KRAKEN_CONDOR_NCPUS=%s\"\n"%(os.getenv('KRAKEN_EXE'),os.getenv('KRAKEN_CONDOR_NCPUS')))
-            fileH.write("Initialdir = " + self.outputData + '\n')
-            fileH.write("Executable = " + self.executable + '\n')
-            fileH.write("Log = %s/%s_%d.log\n"%(self.logs,self.sample.dataset,i))
-            fileH.write("transfer_input_files = %s,%s,%s\n"%(self.common,self.tarBall,self.lfnFile))
-            #fileH.write("transfer_input_files = %s,%s,%s/%s\n"%(self.tarBall,self.lfnFile,self.logs,self.x509Proxy))
+        fileH = open(fileName,'a')
+        #fileH.write("Environment = \"HOSTNAME=" + os.getenv('HOSTNAME') + \
+        #                "; KRAKEN_EXE=" + os.getenv('KRAKEN_EXE') + "\"" + '\n')
+        # hardwired the hostname NOT GOOD NEEDS FIX
+        fileH.write("Environment = \"SUBMIT_HOSTNAME=t3serv019.mit.edu; KRAKEN_EXE=%s; KRAKEN_CONDOR_NCPUS=%s\"\n"%(os.getenv('KRAKEN_EXE'),os.getenv('KRAKEN_CONDOR_NCPUS')))
+        fileH.write("Initialdir = " + self.outputData + '\n')
+        fileH.write("Executable = " + self.executable + '\n')
+        fileH.write("Log = %s/%s_%d.log\n"%(self.logs,self.sample.dataset,i))
+        fileH.write("transfer_input_files = %s,%s,%s\n"%(self.common,self.tarBall,self.lfnFile))
+        #fileH.write("transfer_input_files = %s,%s,%s/%s\n"%(self.tarBall,self.lfnFile,self.logs,self.x509Proxy))
+        
+        # new style basics
+        fileH.write("Arguments = " + os.getenv('KRAKEN_EXE') + ' ' + self.request.config + ' ' \
+                        + self.request.version + ' ' + ' ' + self.request.py + ' ' \
+                        + self.sample.dataset + ' $(GPACK) $(FILE) ' + self.tag + '\n')
+        fileH.write("Output = " + self.logs + '/$(GPACK).out' + '\n')
+        fileH.write("Error = " + self.logs + '/$(GPACK).err' + '\n')
+        fileH.write("transfer_output_files = $(GPACK).empty" + '\n')
+        fileH.write("QUEUE GPACK,FILE from (" + '\n')
+
+        return fileH
+    
+    def writeCondorFooter(self,fileH):
+
+        # new style: attach the additional processing lines at the end to close opened stuff
+        fileH.write(')\n')
+        
+        return
         
     #-----------------------------------------------------------------------------------------------
     # write condor submission configuration
@@ -363,8 +383,7 @@ class Task:
             if iPack == 0:
                 self.nPacks += 1
                 fileName = "%s_%d"%(self.submitCmd,self.nPacks)
-                self.writeCondorHeader(fileName,self.nPacks)
-                fileH = open("%s_%d"%(self.submitCmd,self.nPacks),"a")
+                fileH = self.writeCondorHeader(fileName,self.nPacks)
                 
             print(' Adding(nF:%d): %s %s'%(n,file,job))
             iPack += 1
@@ -374,9 +393,11 @@ class Task:
             if iPack == packMax:
                 iPack = 0
                 if fileH:
+                    self.writeCondorFooter(fileH)
                     fileH.close()
             
         if fileH:
+            self.writeCondorFooter(fileH)
             fileH.close()
        
         # make sure submit script is in the right place
