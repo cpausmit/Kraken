@@ -392,14 +392,20 @@ class Task:
 
             if iPack == packMax:
                 iPack = 0
-                if fileH:
-                    self.writeCondorFooter(fileH)
-                    fileH.close()
+                try:
+                    if not fileH.closed:
+                        self.writeCondorFooter(fileH)
+                        fileH.close()
+                except:
+                    pass
             
-        if fileH:
-            self.writeCondorFooter(fileH)
-            fileH.close()
-       
+        try:
+            if fileH and not fileH.closed:
+                self.writeCondorFooter(fileH)
+                fileH.close()
+        except:
+            pass
+            
         # make sure submit script is in the right place
         if not self.scheduler.isLocal() and self.nJobs>0:
             cmd = "scp -q " + self.submitCmd + "_* " \

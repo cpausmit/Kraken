@@ -43,6 +43,8 @@ def addDetails(datasetId,lfns,debug=0):
             print(" LFN -- " + lfn)
             print(" BlockId: %s"%(lfns[lfn].blockName))
         blockId = addBlock(datasetId,lfns[lfn].blockName)
+        if lfns[lfn].fileId.nEvents < 0:
+            print(f" LFN with less then ZERO events: {lfn}")
         addLfn(datasetId,blockId,lfn,lfns[lfn].pathName,lfns[lfn].fileId.nEvents)
     return
 
@@ -522,11 +524,12 @@ def updateDataset(db,process,setup,tier,sizeGb,nFiles,lfns,changed,debug=0):
 usage =  " Usage: addDataset.py  --dataset=<name>\n"
 usage += "                     [ --dbs='prod/global' ]\n"
 usage += "                     [ --debug=0 ]\n"
+usage += "                     [ --force ]\n"
 usage += "                     [ --exec ]\n"
 usage += "                     [ --help ]\n\n"
 
 # Define the valid options which can be specified and check out the command line
-valid = ['dataset=','dbs=','debug=','exec','help']
+valid = ['dataset=','dbs=','debug=','force','exec','help']
 try:
     opts, args = getopt.getopt(sys.argv[1:], "", valid)
 except getopt.GetoptError as ex:
@@ -541,6 +544,7 @@ except getopt.GetoptError as ex:
 debug = 0
 dataset  = ''
 dbsInst = 'prod/global'
+force = False
 exe = False
 
 # Read new values from the command line
@@ -554,6 +558,8 @@ for opt, arg in opts:
         dbsInst = arg
     if opt == "--debug":
         debug = int(arg)
+    if opt == "--force":
+        force = True
     if opt == "--exec":
         exe = True
 
@@ -615,7 +621,7 @@ if len(results) == 1:
         dbNFiles = int(row[6])
     # check whether information correct and adjust if needed
     changed = ((dbSizeGb-sizeGb)>0.0001 or dbNFiles != nFiles)
-    if changed:
+    if changed or force:
         print(" Update!  Size: %.3f -> %.3f  nFiles: %d -> %d"%(dbSizeGb,sizeGb,dbNFiles,nFiles))
         print(" Update!  Size: %f -> %f  nFiles: %d -> %d"%(dbSizeGb,sizeGb,dbNFiles,nFiles))
         rc = 0

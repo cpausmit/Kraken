@@ -7,12 +7,12 @@
 if [ "." == ".$*" ]
 then
   echo " No work to do. EXIT"
-  return
+  exit -1
 fi
 
 # load our tools
 echo " Load Kraken functions."
-ls -l
+
 if [ -f "./commonKraken.sh" ]
 then
   echo " Loading the local commonKraken.sh"

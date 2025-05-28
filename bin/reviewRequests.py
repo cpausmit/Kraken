@@ -28,6 +28,12 @@ def cleanupTask(task,kill=False):
     # cleanup task at hand
 
     # ----------------------------------------------------------------------------------------------
+    # Make sure to re-do failed database entries
+    # ----------------------------------------------------------------------------------------------
+    cmd = f"recover.sh {task.request.config} {task.request.version} {task.request.py} {task.request.sample.dataset} fast"
+    print(f" recover lost DB entires:\n   {cmd}")
+    os.system(cmd)
+    # ----------------------------------------------------------------------------------------------
     # Get all parameters for the production
     # ----------------------------------------------------------------------------------------------
     cleaner = Cleaner(task)
@@ -413,7 +419,9 @@ def testEnvironment(config,version,py):
     os.system(cmd)
     os.system("voms-proxy-info -timeleft| awk '{print \" certificate valid for \" $1/3600 \" hrs\"}'")
     print(f" copied to submit at: paus@localhost:tmp/")
-        
+    
+    return
+    
 def testTier2Disk(debug=0):
     # make sure we can see the Tier-2 disks: returns -1 on failure
 
@@ -528,25 +536,20 @@ filteredRequests = []
 incompleteRequests = []
 
 filterRequests(getAllRequests(config,version,py),displayOnly)
-
-# Basic tests first
 testEnvironment(config,version,py)
-
-# Where is our storage?
-path = findPath(config,version)
-
-# Decide which list to work through
-if cleanup:
+path = findPath(config,version)                          # Where is our storage?
+if cleanup:                                              # Decide which list to work through
     loopRequests = filteredRequests
 else:
     loopRequests = incompleteRequests
 
-#==================
-# M A I N  L O O P
-#==================
 
 # Get our scheduler ready to use
 scheduler = setupScheduler(local,nJobsMax)
+
+#==================
+# M A I N  L O O P
+#==================
 
 # Initial message 
 print('')
@@ -556,7 +559,7 @@ print('                    S T A R T I N G   R E V I E W   C Y L E ')
 print('')
 print(' @-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@-@')
 
-# Take the result from the database and look at it
+# Take result from the database and look at it
 for row in loopRequests:
 
     # decode the request as known by the database
@@ -568,7 +571,7 @@ for row in loopRequests:
     requestId = int(row[8])
     dbNFilesDone = int(row[9])
 
-    # make up the proper mit datset name
+    # make up the proper MIT datset name
     datasetName = process + '+' + setup+ '+' + tier
 
     # check how many files are done

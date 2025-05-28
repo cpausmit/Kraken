@@ -15,11 +15,13 @@ import matplotlib as mlp
 from optparse import OptionParser
 #         "2025-02-27 07:22:11.329155"
 PATTERN = '%Y-%m-%d %H:%M:%S.%f'
-#PATTERN = '%a %b %d %I:%M:%S %p %Z %Y'
+PATTERN_A = '%Y-%m-%d %H:%M:%S'
 PATTERN_B = '%a %b %d %H:%M:%S %Z %Y'
+#PATTERN = '%a %b %d %I:%M:%S %p %Z %Y'
 
 RECORD = {}
 PLOT_FIRST = True
+DATABASE_FILE = "checkFileActivity.db"
 
 def appendRecord(record):
     # append the record to the already existing one
@@ -110,7 +112,11 @@ def reviewStub(record,options,stub):
             try:
                 stime = int(time.mktime(time.strptime(string,PATTERN)))
             except:
-                stime = int(time.mktime(time.strptime(string,PATTERN_B)))
+                try:
+                    stime = int(time.mktime(time.strptime(string,PATTERN_A)))
+                except:
+                    stime = int(time.mktime(time.strptime(string,PATTERN_B)))
+                
         elif ' end   time    : ' in line:
             string = line.replace(' end   time    : ','')
             if options.debug > 1:
@@ -118,7 +124,10 @@ def reviewStub(record,options,stub):
             try:
                 etime = int(time.mktime(time.strptime(string,PATTERN)))
             except:
-                etime = int(time.mktime(time.strptime(string,PATTERN_B)))
+                try:
+                    etime = int(time.mktime(time.strptime(string,PATTERN_A)))
+                except:
+                    etime = int(time.mktime(time.strptime(string,PATTERN_B)))
 
     # filter out unidentified files
     if config == "":

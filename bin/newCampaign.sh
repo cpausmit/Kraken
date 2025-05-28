@@ -1,5 +1,14 @@
 #!/bin/bash
 
+if [ "." == ".$*" ]
+then
+    echo " newCampaign.sh <config> <version> <py>"
+    echo ""
+    echo " No work to do. EXIT"
+    exit -1
+fi
+
+
 export CONFIG=$1
 export VERSION=$2
 export PY=$3
@@ -19,4 +28,4 @@ emacs $KRAKEN_SW/$VERSION/INSTALL \
 cd $KRAKEN_SW/$VERSION
 source /cvmfs/cms.cern.ch/cmsset_default.sh
 cmssw-cc7
-./INSTALL
+# source ./INSTALL

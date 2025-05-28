@@ -1,5 +1,4 @@
-Requirements = ( BOSCOCluster =!= "t3serv008.mit.edu" &&  BOSCOCluster =!= "ce03.cmsaf.mit.edu" && BOSCOCluster =!= "eofe8.mit.edu" ) && \
-               ( GLIDEIN_REQUIRED_OS == "rhel7" || HAS_SINGULARITY == true || Has_CVMFS_cms_cern_ch == true )
+Requirements = ( BOSCOCluster =!= "t3serv008.mit.edu" &&  BOSCOCluster =!= "ce03.cmsaf.mit.edu" && BOSCOCluster =!= "eofe8.mit.edu" )
 
 +SingularityImage = "/cvmfs/singularity.opensciencegrid.org/opensciencegrid/osgvo-el6:latest"
 
