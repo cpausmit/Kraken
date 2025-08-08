@@ -53,7 +53,7 @@ class Task:
         self.lfnFile = self.logs + '/' + self.sample.dataset + '.lfns'
         self.x509Proxy = self.findX509Proxy()
         # make sure the schedd is prep'ed
-        cmd = f"scp -q /tmp/{self.x509Proxy} {self.scheduler.user}@{self.scheduler.host}:/tmp/"
+        cmd = f"scp -q /tmp/{self.x509Proxy} {self.scheduler.user}@{self.scheduler.host}:/tmp/x509up_uCMSPROD"
         os.system(cmd)
 
         # show what we got
@@ -106,6 +106,7 @@ class Task:
             if not self.scheduler.isLocal():
                 cmd = 'ssh -x ' + self.scheduler.user + '@' + self.scheduler.host \
                     + ' \"cd ' + self.logs + '; ' + cmd + '\"'
+            print(f" submitting: {cmd}")
             os.system(cmd)
     
         # make sure to keep track of the updated number of jobs in the system

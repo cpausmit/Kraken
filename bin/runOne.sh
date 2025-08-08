@@ -36,7 +36,8 @@ mkdir -p ~/tmp/$CONFIG/$VERSION
 cp ~/Tools/Kraken/bin/commonKraken.sh ~/tmp/$CONFIG/$VERSION
 cp ~/Tools/Kraken/bin/releaseKraken.sh ~/tmp/$CONFIG/$VERSION
 
-cp /tmp/x509up_u5410 ~/cms/cmssw/$VERSION/CMSSW*/kraken*tgz ~/cms/jobs/lfns/$DSET.lfns ~/tmp/$CONFIG/$VERSION
+cp /tmp/x509up_u5410 ~/tmp/$CONFIG/$VERSION/x509up_uCMSPROD
+cp ~/cms/cmssw/$VERSION/CMSSW*/kraken*tgz ~/cms/jobs/lfns/$DSET.lfns ~/tmp/$CONFIG/$VERSION
 cd ~/tmp/$CONFIG/$VERSION
 
 if [ -z $FILE ]

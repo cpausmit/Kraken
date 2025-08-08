@@ -1,6 +1,7 @@
 #!/usr/bin/python
-#---------------------------------------------------------------------------------------------------
-# Find missing data and orphan data on disk.
+# ---------------------------------------------------------------------------------------------------
+# Test consistency between the data on disk, the data registered in
+# the Kraken database and the data in the catalogs.
 #
 # v1.0                                                                                  Jul 12, 2018
 #---------------------------------------------------------------------------------------------------
@@ -60,34 +61,6 @@ def findCatalogFiles(config,version):
 
     return files
 
-def findAllT3Files(dir):
-
-    print(" INFO - loading all physical files on T3.")
-
-    cmd  = "export T2TOOLS_SERVER=t3serv015.mit.edu; export T2TOOLS_USER=cmsprod;"
-    cmd += "list %s/* "%(dir) + "|grep root"
-    myRx = rex.Rex()  
-    #print(" CMD: " + cmd)
-    (rc,out,err) = myRx.executeLocalAction(cmd)
-
-    with open(".sizes-t3","w") as fH:
-        # find list
-        files = {}
-        for row in out.split("\n"):
-            if len(row) < 2:
-                continue
-
-            fH.write(row+'\n')
-            size = int((row.split(" ")[0]).split(":")[1])
-            filename = "/".join((row.split(" ")[-1]).split('/')[-2:])
-    
-            files[filename] = size
-
-            if size < 10:
-                print(" ERROR - zero size file found: %s/%s"%(dir,filename))
-    
-    return files
-
 def findAllKrakenFiles(config,version):
 
     print(" INFO - loading all files from Kraken database.")
@@ -136,7 +109,6 @@ def findAllKrakenFiles(config,version):
         dataset = row[0]+'+'+row[1]+'+'+row[2]
         file_name = row[3]
         klfn = "%s/%s.root"%(dataset,file_name)
-        #print(" KLFN: %s"%(klfn))
         klfns[klfn] = -1      # for now no size comparison planned
 
     return klfns
@@ -223,10 +195,7 @@ cursor = db.cursor()
 # find files and cataloged entries
 files = findAllFiles("/cms/store/user/paus/%s"%(book))
 cfiles = findCatalogFiles(config,version)
-#filesT3 = findAllT3Files("/cms/store/user/paus/%s"%(book))
 klfns = findAllKrakenFiles(config,version)
-#dlfns = findAllDynamoFiles(config,version)
-#dlfnsT3 = findAllDynamoFiles(config,version,"T3_US_MIT")
 
 # disconnect from server
 db.close()
@@ -274,80 +243,9 @@ with open("%s.kraken-orphan"%EXEC_FILE,"w") as fH:
             continue
         else:
             nOrphan += 1
-            #print(" orphan: %s"%(file))
-            fH.write("checkFile.py /cms/store/user/paus/%s/%s\n"%(book,file))
+            fH.write("/cms/store/user/paus/%s/%s\n"%(book,file))
     print(" orphan total: %d"%(nOrphan))
-
-## CONSISTENCY -- BambuDB versus Dynamo
-#
-#print ""
-#print "   BAMBUDB VERSUS DYNAMO"
-#print " ............................."
-#
-## find missing files
-#with open("%s.dynamo-missing"%EXEC_FILE,"w") as fH:
-#    nMissing = 0
-#    print ' Search for missing files (nD: %d, mB: %d).'%(len(dlfns),len(klfns))
-#    for klfn in klfns:
-#        if klfn in dlfns:
-#            continue
-#        else:
-#            nMissing += 1
-#            #print " missing: %s"%(klfn)
-#            fH.write("dynamo-inject-one-file /cms/store/user/paus/%s/%s\n"%(book,klfn))
-#    print " missing total: %d"%(nMissing)
-#    
-## find orphan files
-#with open("%s.dynamo-orphan"%EXEC_FILE,"w") as fH:
-#    nOrphan = 0
-#    print ' Search for orphan files (nD: %d, mB: %d).'%(len(dlfns),len(klfns))
-#    for dlfn in dlfns:
-#        if dlfn in klfns:
-#            continue
-#        else:
-#            nOrphan += 1
-#            #print " orphan: %s"%(dlfn)
-#            fH.write("dynamo-delete-one-file /cms/store/user/paus/%s/%s\n"%(book,dlfn))
-#    print " orphan total: %d"%(nOrphan)
-#
-## CONSISTENCY -- Tier-3 Files versus DynamoDb
-#
-#print ""
-#print "   PHYSICAL FILE T3 VS DYNAMODB"
-#print " ................................"
-#with open("%s.dynamo-t3-mismatch"%EXEC_FILE,"w") as fHM:
-#    with open("%s.dynamo-t3-missing"%EXEC_FILE,"w") as fH:
-#        nMissing = 0
-#        nMismatch = 0
-#        print ' Search for missing files (nP: %d, mL: %d).'%(len(filesT3),len(dlfnsT3))
-#        for dlfn in dlfnsT3:
-#            if dlfn in filesT3:
-#                sizeT3 = filesT3[dlfn]
-#                sizeD  = dlfnsT3[dlfn]
-#                if sizeD != sizeT3:
-#                    nMismatch += 1
-#                    print '# Size mismatch: D:%d <> P:%d - %s'%(sizeD,sizeT3,dlfn)
-#                    if sizeT3 < sizeD:
-#                        fHM.write("hdfs dfs -rm  /cms/store/user/paus/%s/%s\n"%(book,dlfn))
-#                continue
-#            else:
-#                nMissing += 1
-#                #print " missing: %s"%(klfn)
-#                fH.write("t2tools.py --action=down --source /cms/store/user/paus/%s/%s "%(book,dlfn))
-#                fH.write(" --target /mnt/hadoop/cms/store/user/paus/%s/%s\n"%(book,dlfn))
-#        print " mismtch total: %d"%(nMismatch)
-#        print " missing total: %d"%(nMissing)
-#
-## find orphan files
-#
-#with open("%s.dynamo-t3-orphan"%EXEC_FILE,"w") as fH:
-#    nOrphan = 0
-#    print ' Search for orphan files (nP: %d, mL: %d).'%(len(filesT3),len(dlfnsT3))
-#    for file in filesT3:
-#        if file in dlfnsT3:
-#            continue
-#        else:
-#            nOrphan += 1
-#            #print " orphan: %s"%(file)
-#            fH.write("hdfs dfs -rm /cms/store/user/paus/%s/%s\n"%(book,file))
-#    print " orphan total: %d"%(nOrphan)
+    if nOrphan > 0:
+        cmd=f"cat {EXEC_FILE}.kraken-orphan /home/tier3/cmsprod/cms/work/fibs/checkFile.list | sort -u > tmp.list; mv tmp.list /home/tier3/cmsprod/cms/work/fibs/checkFile.list"
+        print(f"{cmd}")
+        os.system(f"fibsLock.py --config checkFile --cmd=\"{cmd}\"; wc /home/tier3/cmsprod/cms/work/fibs/checkFile.list")

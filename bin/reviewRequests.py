@@ -19,6 +19,10 @@ PREFIX = os.getenv('KRAKEN_TMP_PREFIX')
 CATALOG = os.getenv('KRAKEN_CATALOG_OUTPUT')
 JOBS = os.getenv('KRAKEN_WORK') + '/jobs'
 
+# The filesRecord holds a dictionary where for each dataset the list of all files in it is stored
+# and it is a global variable. Careful, datasets can appear several times and only the last version
+# of files in this particular request are stored.
+
 filesRecord = {}
 
 #---------------------------------------------------------------------------------------------------
@@ -30,8 +34,9 @@ def cleanupTask(task,kill=False):
     # ----------------------------------------------------------------------------------------------
     # Make sure to re-do failed database entries
     # ----------------------------------------------------------------------------------------------
-    cmd = f"recover.sh {task.request.config} {task.request.version} {task.request.py} {task.request.sample.dataset} fast"
-    print(f" recover lost DB entires:\n   {cmd}")
+    cmd = f"recover.py --config {task.request.config} --version {task.request.version} " + \
+        f"--py {task.request.py} --dataset {task.request.sample.dataset} --fast"
+    print(f" recover lost DB entries:\n   {cmd}")
     os.system(cmd)
     # ----------------------------------------------------------------------------------------------
     # Get all parameters for the production
@@ -184,27 +189,6 @@ def findFilesInDb(requestId,debug=0):
 
 def findFilesOnDisk(config,version,dataset,debug=0):
     # find all files on disk for a given request
-    
-#    files = []
-#
-#    myRx = rex.Rex()
-#    cmd = "list /cms/store/user/paus/%s/%s/%s 2> /dev/null|grep .root"%(config,version,dataset)
-#    if debug > 0:
-#        print(" CMD: %s"%(cmd))
-#    (rc,out,err) = myRx.executeLocalAction(cmd)
-#
-#    if debug > 0:
-#        print(" RC: %d\n OUT:\n%s\n ERR:\n%s\n"%(rc,out,err))
-#    
-#    for line in out.decode().split("\n"):
-#        file = line.split("/")[-1]
-#        if file != '':
-#            files.append(file.replace(".root",""))
-#    
-    return filesRecord[dataset]
-    
-def findNumberOfFilesDone(config,version,dataset,debug=0):
-    # Find out how many files have been completed for this dataset so far
 
     if debug > 0:
         print(" Find completed files for dataset: %s"%(dataset))
@@ -225,10 +209,9 @@ def findNumberOfFilesDone(config,version,dataset,debug=0):
             files.append(file.replace(".root",""))
 
     nFilesDone = len(files)
-    #print("Append: %s"%dataset)
     filesRecord[dataset] = files
 
-    return nFilesDone
+    return filesRecord[dataset]
 
 def findPath(config,version):
     # Find the path to where we store our samples
@@ -294,6 +277,10 @@ def getAllRequests(config,version,py):
         sys.exit(0)
         
     return requests
+   
+def numberOfFilesDone(config,version,dataset,debug=0):
+    # Find out how many files have been completed for this dataset so far
+    return len(filesRecord[dataset])
 
 def productionStatus(config,version,dataset,debug=0):
     # give the status of production in terms of all and so far produced files
@@ -574,22 +561,23 @@ for row in loopRequests:
     # make up the proper MIT datset name
     datasetName = process + '+' + setup+ '+' + tier
 
-    # check how many files are done
-    nFilesDone = findNumberOfFilesDone(config,version,datasetName)
-    print(' Number of files completed: %d (last check: %d) -- Dataset: %s' \
-        %(nFilesDone,dbNFilesDone,datasetName))
-
     # find files in DB
     filesInDb = findFilesInDb(requestId)
     
     # find files in disk
     filesOnDisk = findFilesOnDisk(config,version,datasetName)
-    
-    for file in filesInDb:
-        if file not in filesOnDisk:
-            print(" WARNING ---- Missing file found: %s"%(file))
-            removeMissingFileFromDb(requestId,file)
 
+    # check how many files are done
+    nFilesDone = numberOfFilesDone(config,version,datasetName)
+    print(' Number of files completed: %d (last check: %d) -- Dataset: %s' \
+        %(nFilesDone,dbNFilesDone,datasetName))
+
+    # try to fix issues that might have occured (only if some done files == listing worked)
+    if nFilesDone > 0:
+        for file in filesInDb:
+            if file not in filesOnDisk:
+                print(" WARNING ---- Missing file found: %s"%(file))
+                removeMissingFileFromDb(requestId,file)
 
     # what to do when the two numbers disagree
     if dbNFilesDone == -1:

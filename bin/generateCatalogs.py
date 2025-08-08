@@ -7,7 +7,7 @@ DEBUG = int(os.environ.get('T2TOOLS_DEBUG',0))
 #DEBUG = 2
 
 DATA = os.environ.get('KRAKEN_SE_BASE','/cms/store/user/paus')
-CATALOG = os.environ.get('KRAKEN_CATALOG_OUTPUT','/home/cmsprod/catalog/t2mit')
+CATALOG = os.environ.get('KRAKEN_CATALOG_OUTPUT','/home/tier3/cmsprod/catalog/t2mit')
 XRDSE = 'root://xrootd.cmsaf.mit.edu/'
 
 Db = MySQLdb.connect(read_default_file="/home/tier3/cmsprod/.my.cnf",read_default_group="mysql",db="Bambu")
@@ -164,7 +164,7 @@ print(' Number of datasets found: %d'%(len(allDatasets)))
 
 # loop over all matching datasets
 for dataset in allDatasets:
-
+    
     if len(dataset)<4:
         print(" WARNING -- skip wired dataset: %s"%(dataset))
         continue
