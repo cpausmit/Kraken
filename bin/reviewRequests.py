@@ -103,8 +103,9 @@ def filterRequests(requests,displayOnly):
     
         # make up the proper mit dataset name
         datasetName = process + '+' + setup+ '+' + tier
-    
-        if pattern in datasetName:
+
+        #print(f" Matching {datasetName} with {pattern}")
+        if re.match(pattern,datasetName):
             (nDone,nAll) = productionStatus(config,version,datasetName,debug)
             nMissing = nAll-nDone
     
@@ -576,8 +577,8 @@ for row in loopRequests:
     if nFilesDone > 0:
         for file in filesInDb:
             if file not in filesOnDisk:
-                print(" WARNING ---- Missing file found: %s"%(file))
-                removeMissingFileFromDb(requestId,file)
+                print(f" WARNING ---- Missing file found (nDone: {nFilesDone}): {file}")
+                #removeMissingFileFromDb(requestId,file)
 
     # what to do when the two numbers disagree
     if dbNFilesDone == -1:
@@ -626,7 +627,7 @@ for row in loopRequests:
         elif nFilesDone < nFiles:  # second most frequent case: work started but not completed
             print(' files missing, submit the missing ones.\n')
         else:                      # weird, more files found than available               
-            print('\n ERROR more files found than available in dataset. NO ACTION on this dataset')
+            print('\n ERROR -- more files found than available in dataset. NO ACTION on this dataset')
             print('       done: %d   all: %d'%(nFilesDone,nFiles))
             cmd = 'addDataset.py --exec --dataset=' + datasetName
             print('       updating the dataset from dbs: ' + cmd)

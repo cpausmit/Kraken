@@ -103,8 +103,8 @@ class Sample:
         if file not in self.allJobs.keys():
             print(' ERROR -- found queued job not in list of all jobs?! ->' + file + '<-')
         if file in self.noCatalogJobs.keys():
-            print(" ERROR -- noCatalog job appeared twice! Should not happen. EXIT (%s)"%file)
-            sys.exit(1)
+            print(" ERROR -- noCatalog job appeared twice! Should not happen. SKIP FOR NOW (%s)"%file)
+            #sys.exit(1)
         # add this job to the mix
         self.noCatalogJobs[file] = self.allJobs[file]
 

@@ -31,19 +31,30 @@ print(' Config:  %s'%(options.config))
 print(' Version: %s'%(options.version))
 print('')
 
+SW =  os.environ.get('KRAKEN_SW')
 WORK = os.environ.get('KRAKEN_WORK')
 BASE = os.environ.get('KRAKEN_BASE')
 
-cmd = 'mkdir %s/%s/%s'%(WORK,options.config,options.version)
+if options.previous != '':
+    cmd = f'mkdir {SW}/{options.version}; cp {SW}/{options.previous}/INSTALL {SW}/{options.version}'
+else:
+    cmd = f'mkdir {SW}/{options.version}'
+
+print(' CMD: ' + cmd)
+os.system(cmd)
+
+cmd = f'mkdir {WORK}/{options.config}/{options.version}'
 print(' CMD: ' + cmd)
 os.system(cmd)
 
 if options.previous != '':
-    cmd = 'cp -r %s/%s/%s %s/%s/%s'\
-          %(BASE,options.config,options.previous,
-            BASE,options.config,options.version)
+    cmd = f'cp -r  {BASE}/{options.config}/{options.previous} ' \
+        + f'       {BASE}/{options.config}/{options.version}'
 else:
-    cmd = 'mkdir %s/%s/%s'%(BASE,options.config,options.version)
+    cmd = f'mkdir  {BASE}/{options.config}/{options.version}'
 
 print(' CMD: ' + cmd)
 os.system(cmd)
+
+# edit files
+cmd = f"emacs {SW}/{options.version}/INSTALL {BASE}/{options.config}/{options.version}/ {BASE}/bin/commonKraken.sh {BASE}/bin/releaseKraken.sh"
