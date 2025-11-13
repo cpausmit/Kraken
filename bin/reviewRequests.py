@@ -73,15 +73,18 @@ def displayLine(row):
     else:
         print("  %6.2f  %5d= %5d  %s"%(percentage,nDone,nAll,datasetName))
 
-def filterRequests(requests,displayOnly):
+def filterRequests(requests,displayOnly,debug):
     # filter all requests
-    
+
+    if debug:
+        print(" INFO - filtering")
     nDone = 0
     nAll = 0
     nAllTotal = 0
     nDoneTotal = 0
     nMissingTotal = 0
     percentageTotal = 0.0
+
     # initial filter and calculation loop
     for row in requests:
         
@@ -104,14 +107,20 @@ def filterRequests(requests,displayOnly):
         # make up the proper mit dataset name
         datasetName = process + '+' + setup+ '+' + tier
 
-        #print(f" Matching {datasetName} with {pattern}")
-        if re.match(pattern,datasetName):
+        if debug:
+            print(f" Matching {pattern} with {datasetName}")
+
+        #if True or re.match(pattern,datasetName):
+        #if re.match(pattern,datasetName):
+        if pattern in datasetName:
             (nDone,nAll) = productionStatus(config,version,datasetName,debug)
             nMissing = nAll-nDone
     
             # filtered list
             filteredRequests.append(row)
     
+            if debug:
+                print(f" INFO - nAll: {nAll}; nDone: {nDone} --> nMissing: {nMissing};")
             if nMissing > 0 or nAll == 0 or (nAll != 0 and nDone == 0):
                 # incomplete and filtered result
                 incompleteRequests.append(row)
@@ -276,6 +285,11 @@ def getAllRequests(config,version,py):
     except:
         print(" Error (%s): unable to fetch data."%(sql))
         sys.exit(0)
+        
+    if debug:
+        print(' Requests: ')
+        print(requests)
+        #sys.exit(0)
         
     return requests
    
@@ -523,14 +537,19 @@ loopRequests = []
 filteredRequests = []
 incompleteRequests = []
 
-filterRequests(getAllRequests(config,version,py),displayOnly)
+filterRequests(getAllRequests(config,version,py),displayOnly,debug)
 testEnvironment(config,version,py)
 path = findPath(config,version)                          # Where is our storage?
 if cleanup:                                              # Decide which list to work through
     loopRequests = filteredRequests
+    if debug:
+        print(" INFO - looking at filtered requests")
 else:
     loopRequests = incompleteRequests
-
+    if debug:
+        print(" INFO - looking at filtered, incomplete requests only")
+        print(loopRequests)
+        
 
 # Get our scheduler ready to use
 scheduler = setupScheduler(local,nJobsMax)

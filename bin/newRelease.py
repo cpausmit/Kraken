@@ -58,3 +58,5 @@ os.system(cmd)
 
 # edit files
 cmd = f"emacs {SW}/{options.version}/INSTALL {BASE}/{options.config}/{options.version}/ {BASE}/bin/commonKraken.sh {BASE}/bin/releaseKraken.sh"
+print(' CMD: ' + cmd)
+os.system(cmd)

@@ -63,7 +63,7 @@ cmsswVersion=`echo $BASEDIR/kraken_*.tgz | sed -e 's@.*kraken_@@' -e 's@.tgz@@'`
 # Derive essential paramters from command line parameters
 era=`era $TASK $cmsswVersion`
 conditions=`conditions $TASK $cmsswVersion`
-customise=`customise $VERSION $cmsswVersion`
+customise=`customise $VERSION $cmsswVersion $TASK`
 echo ""
 echo " Dataset:    $TASK"
 echo " Era:        $era"
@@ -79,14 +79,6 @@ fi
 host=`hostname`
 book=$CONFIG/$VERSION
 args_hash=`echo $LFN | md5sum |cut -d' ' -f1`
-
-# define base output location
-REMOTE_SERVER="se01.cmsaf.mit.edu"
-REMOTE_BASE="/cms/store"
-REMOTE_USER_DIR="/user/paus/$CONFIG/$VERSION"
-REMOTE_SERVER_XRD="xrootd.cmsaf.mit.edu"
-REMOTE_BASE_XRD="/store"
-
 
 # tell us the initial state
 initialState $*
@@ -254,75 +246,74 @@ cd $WORKDIR
 pwd
 ls -lhrt
 
-sample=`echo $GPACK | sed 's/\(.*\)_nev.*/\1/'`
-
-## TESTING >>
-
-pwd=`pwd`
-for file in `echo ${GPACK}*`
-do
-  # now do the backup copy using xrootd
-  echo " Xrootd pre-trial:\
-  xrdcp file:///$pwd/${file} \
-        root://$REMOTE_SERVER_XRD/${REMOTE_BASE_XRD}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}"
-  xrdcp file:///$pwd/${file} \
-        root://$REMOTE_SERVER_XRD/${REMOTE_BASE_XRD}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}
-  rcCmsCp=$?
-  echo " PreCopying: $file"
-  echo " PreCopy RC: $rcCmsCp"
-done
-
-## TESTING <<
-
-# unset CMS environment
-eval `scram unsetenv -sh`
-
-# setup gfal tools
-GFAL_BASE=/cvmfs/grid.cern.ch/centos7-ui-4.0.3-1_umd4v3/etc/profile.d
-echo " setting up gfal-copy"
-echo "\
-source   $GFAL_BASE/setup-c7-ui-example.sh"
-source   $GFAL_BASE/setup-c7-ui-example.sh
-ls -lhrt $GFAL_BASE
-which gfal-copy
-
-# this is somewhat overkill but works very reliably, I suppose
-pwd=`pwd`
-for file in `echo ${GPACK}*`
-do
-  # always first show the proxy and remove the CMSSW environment
-  voms-proxy-info -all
-  echo " Which gfal-copy are we using? \
-  which gfal-copy"
-  which gfal-copy
-  # now do the copy
-  echo "\
-  gfal-copy -p file:///$pwd/${file} \
-          gsiftp://$REMOTE_SERVER:2811/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}"
-  gfal-copy -p file:///$pwd/${file} \
-          gsiftp://$REMOTE_SERVER:2811/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}
-  rcCmsCp=$?
-  echo " Copying: $file"
-  echo " Copy RC: $rcCmsCp"
-  if [ ".$rcCmsCp" != ".0" ]
-  then
-    # removing remainders
-    echo "Remove file remainders:\
-    gfal-rm gsiftp://$REMOTE_SERVER:2811/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}"
-    gfal-rm gsiftp://$REMOTE_SERVER:2811/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}
-    rcSrmRm=$?
-    echo " Remove RC: $rcSrmRm"
-    # now do the backup copy using xrootd
-    echo " Try again:\
-    xrdcp file:///$pwd/${file} \
-          root://$REMOTE_SERVER_XRD/${REMOTE_BASE_XRD}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}"
-    xrdcp file:///$pwd/${file} \
-          root://$REMOTE_SERVER_XRD/${REMOTE_BASE_XRD}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}
-    rcCmsCp=$?
-    echo " ReCopying: $file"
-    echo " ReCopy RC: $rcCmsCp"
-  fi
-done
+saveOutputFiles $GPACK
+## 
+## ## TESTING >>
+## pwd=`pwd`
+## for file in `echo ${GPACK}*`
+## do
+##   # now do the backup copy using xrootd
+##   echo " Xrootd pre-trial:\
+##   xrdcp file:///$pwd/${file} \
+##         root://$REMOTE_SERVER_XRD/${REMOTE_BASE_XRD}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}"
+##   xrdcp file:///$pwd/${file} \
+##         root://$REMOTE_SERVER_XRD/${REMOTE_BASE_XRD}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}
+##   rcCmsCp=$?
+##   echo " PreCopying: $file"
+##   echo " PreCopy RC: $rcCmsCp"
+## done
+## 
+## ## TESTING <<
+## 
+## # unset CMS environment
+## eval `scram unsetenv -sh`
+## 
+## # setup gfal tools
+## GFAL_BASE=/cvmfs/grid.cern.ch/centos7-ui-4.0.3-1_umd4v3/etc/profile.d
+## echo " setting up gfal-copy"
+## echo "\
+## source   $GFAL_BASE/setup-c7-ui-example.sh"
+## source   $GFAL_BASE/setup-c7-ui-example.sh
+## ls -lhrt $GFAL_BASE
+## which gfal-copy
+## 
+## # this is somewhat overkill but works very reliably, I suppose
+## pwd=`pwd`
+## for file in `echo ${GPACK}*`
+## do
+##   # always first show the proxy and remove the CMSSW environment
+##   voms-proxy-info -all
+##   echo " Which gfal-copy are we using? \
+##   which gfal-copy"
+##   which gfal-copy
+##   # now do the copy
+##   echo "\
+##   gfal-copy -p file:///$pwd/${file} \
+##           gsiftp://$REMOTE_SERVER:2811/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}"
+##   gfal-copy -p file:///$pwd/${file} \
+##           gsiftp://$REMOTE_SERVER:2811/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}
+##   rcCmsCp=$?
+##   echo " Copying: $file"
+##   echo " Copy RC: $rcCmsCp"
+##   if [ ".$rcCmsCp" != ".0" ]
+##   then
+##     # removing remainders
+##     echo "Remove file remainders:\
+##     gfal-rm gsiftp://$REMOTE_SERVER:2811/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}"
+##     gfal-rm gsiftp://$REMOTE_SERVER:2811/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}
+##     rcSrmRm=$?
+##     echo " Remove RC: $rcSrmRm"
+##     # now do the backup copy using xrootd
+##     echo " Try again:\
+##     xrdcp file:///$pwd/${file} \
+##           root://$REMOTE_SERVER_XRD/${REMOTE_BASE_XRD}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}"
+##     xrdcp file:///$pwd/${file} \
+##           root://$REMOTE_SERVER_XRD/${REMOTE_BASE_XRD}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}
+##     rcCmsCp=$?
+##     echo " ReCopying: $file"
+##     echo " ReCopy RC: $rcCmsCp"
+##   fi
+## done
 
 # make condor happy because it also might want some of the files
 executeCmd mv $WORKDIR/*.root $BASEDIR/

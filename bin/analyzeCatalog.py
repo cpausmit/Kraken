@@ -79,6 +79,7 @@ def reviewStub(record,options,stub):
     version = ''
     dataset = ''
     file = ''
+    size = 0
     status = -1                                    # did not find a proper ending or a known error
     stime = 0
     etime = 0
@@ -128,6 +129,10 @@ def reviewStub(record,options,stub):
                     etime = int(time.mktime(time.strptime(string,PATTERN_A)))
                 except:
                     etime = int(time.mktime(time.strptime(string,PATTERN_B)))
+        elif ' size: ' in line:
+            size = int(line.split(' ')[2])
+            if options.debug > 1:
+                print(f" Size: {size}")
 
     # filter out unidentified files
     if config == "":
@@ -135,7 +140,7 @@ def reviewStub(record,options,stub):
         removeFiles(options.base,stub,int(options.debug))
         return
 
-    a.update(config,version,dataset,file,status,stime,etime)
+    a.update(config,version,dataset,file,status,stime,etime,size)
     key,value = a.summary()
     if key in record:
         print(" ERROR - tried to catalog this file twice.")

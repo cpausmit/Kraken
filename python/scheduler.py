@@ -88,6 +88,8 @@ class Scheduler:
     #-----------------------------------------------------------------------------------------------
     def findNumberOfTotalJobs(self):
 
+        script = os.getenv('KRAKEN_SCRIPT')
+        
         if self.condorVersion == 9:
             cmd = 'condor_q -all|grep running|cut -d\' \' -f13|tail -1  2> /dev/null'
         else:
@@ -103,9 +105,9 @@ class Scheduler:
             nJobs = int(line[:-1])
 
         if self.condorVersion > 8:
-            cmd = f'condor_q {self.user}|grep running|grep query|cut -d\' \' -f12 2> /dev/null'
+            cmd = f'condor_q -all -constraint "regexp(\"{script}\", Cmd)"|grep running|grep query|cut -d\' \' -f12 2> /dev/null'
         else:
-            cmd = f'condor_q {self.user} |grep running|cut -d\' \' -f11 2> /dev/null'
+            cmd = f'condor_q -all -constraint "regexp(\"{script}\", Cmd)"|grep running|cut -d\' \' -f11 2> /dev/null'
 
         if not self.isLocal():
             cmd = f'ssh -x {self.user}@{self.host} \" {cmd} \"'

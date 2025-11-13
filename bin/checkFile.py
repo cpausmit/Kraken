@@ -65,7 +65,7 @@ def findFileSize(file):
     print(' LIST: ' + cmd)
     (rc,out,err) = remoteX.executeLocalAction(cmd)
     fileSize = int((out.split(" ")[0]).split(":")[1])
-    print(' SIZE: %ld'%fileSize)
+    print(' size: %ld'%fileSize)
 
     return fileSize
 

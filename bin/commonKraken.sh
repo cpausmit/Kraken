@@ -11,7 +11,7 @@
 #  Run3Summer23MiniAODv4 
 #  era: Run3_2023
 #  conditions: 130X_mcRun3_2023_realistic_v14
-#  ￼
+#
 #----------------------------------------------------------------------------------------------------
 #  U S E F U L   V A R I A B L E S
 #----------------------------------------------------------------------------------------------------
@@ -33,6 +33,8 @@ function customise {
 
   # read command line parameters
   version="$1"
+  cmssw="$2"
+  dataset="$3"
 
   if   [ "$version" == "501" ]
   then
@@ -72,15 +74,27 @@ function customise {
   then
       echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeDileptonPlusX --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeV0ForMuonFake --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBmmMuonId \
             --customise_commands=\"process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))\""
+  elif [ "$version" == "535" ]
+  then
+      if [ "`echo $dataset | grep +Run2022`" != "" ] || [ "`echo $dataset | grep +Run3Summer22MiniAODv3`" != "" ] 
+      then
+	echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeDileptonPlusX --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeV0ForMuonFake --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBmmMuonId --customise=Bmm5/NanoAOD/nano_cff.run3_nanoAOD_124 \
+            --customise_commands=\"process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))\""
+      else
+	echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeDileptonPlusX --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeV0ForMuonFake --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBmmMuonId \
+            --customise_commands=\"process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))\""
+      fi
   elif [ "$version" == "A00" ] || [ "$version" == "A01" ] || [ "$version" == "A02" ]
   then
     echo "PhysicsTools/SUEPNano/nano_suep_cff.SUEPNano_customize \
             --customise_commands=\"process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))\""
+    
   elif [ "$version" == "D00" ] || [ "$version" == "D01" ] || [ "$version" == "D02" ] || [ "$version" == "D03" ] || [ "$version" == "D04" ] || [ "$version" == "D06" ]
   then
     echo "Hrare/NanoAOD/nano_cff.nanoAOD_customizeMesons \
             --customise_commands=\"process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))\""
-  elif [ "$version" == "D05" ]
+    
+  elif [ "$version" == "D05" ] || [ "$version" == "D07" ]
   then
     echo "Hrare/NanoAOD/nano_cff.nanoAOD_customizeMesons_Run3 \
             --customise_commands=\"process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))\""
@@ -112,56 +126,73 @@ function era_data {
   dataset=`echo $1 |sed -e 's#^/##' -e 's#/#+#'`
   cmssw="$2"
 
-  if   [ "`echo $dataset | grep +Run2016`" != "" ]
+  if [  "`echo $cmssw | grep ^15_`" != "" ]
   then
-    if   [ "`echo $dataset | grep _HIPM_UL2016`" != "" ]
+    if   [ "`echo $dataset | grep +Run202[2-4]`" != "" ] 
     then
-      echo Run2_2016_HIPM,run2_nanoAOD_106Xv2
+      echo Run3,run3_nanoAOD_pre142X
       return
-    elif [ "`echo $dataset | grep _UL2016`" != "" ]
+    elif [ "`echo $dataset | grep +Run2025`" != "" ] 
     then
-      echo Run2_2016,run2_nanoAOD_106Xv2
-      return
-    else
-      echo Run2_2016,run2_nanoAOD_94X2016
+      echo Run3
       return
     fi
-  elif [ "`echo $dataset | grep +Run2017`" != "" ]
-  then
-    if [ "`echo $dataset | grep _UL2017`" != "" ]
-    then
-      echo Run2_2017,run2_nanoAOD_106Xv2
-      return
-    else
-      echo Run2_2017,run2_nanoAOD_94XMiniAODv2
-      return
-    fi
-  elif [ "`echo $dataset | grep +Run2018`" != "" ]
-  then
-    if   [ "`echo $dataset | grep UL2017`" != "" ]
-    then
-      echo Run2_2018,run2_nanoAOD_106Xv2
-      return
-    elif [ "`echo $dataset | grep UL2018`" != "" ]
-    then
-      echo Run2_2018,run2_nanoAOD_106Xv2
-      return
-    fi
-  elif  [ "`echo $dataset | grep +Run2022`" != "" ]
-  then
-    echo Run3,run3_nanoAOD_124
-    return
-  elif [ "`echo $dataset | grep +Run2023`" != "" ]
-  then
-    echo Run3
-    return
-  elif [ "`echo $dataset | grep +Run2024`" != "" ]
-  then
-    echo Run3
-    return
   else
-    echo UNKNOWN
-    return
+    if   [ "`echo $dataset | grep +Run2016`" != "" ]
+    then
+      if   [ "`echo $dataset | grep _HIPM_UL2016`" != "" ]
+      then
+        echo Run2_2016_HIPM,run2_nanoAOD_106Xv2
+        return
+      elif [ "`echo $dataset | grep _UL2016`" != "" ]
+      then
+        echo Run2_2016,run2_nanoAOD_106Xv2
+        return
+      else
+        echo Run2_2016,run2_nanoAOD_94X2016
+        return
+      fi
+    elif [ "`echo $dataset | grep +Run2017`" != "" ]
+    then
+      if [ "`echo $dataset | grep _UL2017`" != "" ]
+      then
+        echo Run2_2017,run2_nanoAOD_106Xv2
+        return
+      else
+        echo Run2_2017,run2_nanoAOD_94XMiniAODv2
+        return
+      fi
+    elif [ "`echo $dataset | grep +Run2018`" != "" ]
+    then
+      if   [ "`echo $dataset | grep UL2017`" != "" ]
+      then
+        echo Run2_2018,run2_nanoAOD_106Xv2
+        return
+      elif [ "`echo $dataset | grep UL2018`" != "" ]
+      then
+        echo Run2_2018,run2_nanoAOD_106Xv2
+        return
+      fi
+    elif  [ "`echo $dataset | grep +Run2022`" != "" ]
+    then
+      echo Run3,run3_nanoAOD_124
+      return
+    elif [ "`echo $dataset | grep +Run2023`" != "" ]
+    then
+      echo Run3
+      return
+    elif [ "`echo $dataset | grep +Run2024`" != "" ]
+    then
+      echo Run3
+      return
+    elif [ "`echo $dataset | grep +Run2025`" != "" ]
+    then
+      echo Run3
+      return
+    else
+      echo UNKNOWN
+      return
+    fi
   fi
 }
   
@@ -173,78 +204,119 @@ function era_mc {
   cmssw="$2"
 
   #  GJets_HT-600ToInf_TuneCP5_13TeV-madgraphMLM-pythia8+RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1+NANOAODSIM
-  if   [ "`echo $dataset | grep +RunIISummer..UL16....AODv2`" != "" ]
+
+  if   [  "`echo $cmssw | grep ^15_`" != "" ]
   then
-    echo Run2_2016,run2_nanoAOD_106Xv2
-    return
-  elif [ "`echo $dataset | grep +RunIISummer..UL16....AOD`" != "" ]
-  then
-    echo Run2_2016,run2_nanoAOD_106Xv1
-    return
-  elif [ "`echo $dataset | grep +RunIISummer..UL17....AODv2`" != "" ]
-  then
-    echo Run2_2017,run2_nanoAOD_106Xv2
-    return
-  elif [ "`echo $dataset | grep +RunIISummer..UL17....AOD`" != "" ]
-  then
-    echo Run2_2017,run2_nanoAOD_106Xv1
-    return
-  elif [ "`echo $dataset | grep +RunIISummer..UL18....AODv2`" != "" ]
-  then
-    echo Run2_2018,run2_nanoAOD_106Xv2
-    return
-  elif [ "`echo $dataset | grep +RunIISummer..UL18....AOD`" != "" ]
-  then
-    echo Run2_2018,run2_nanoAOD_106Xv1
-    return
-  
-  elif [ "`echo $dataset | grep +RunIISummer16`" != "" ]
-  then
-    if [ "`echo $dataset | grep MiniAODv2`" != "" ]
+    if   [ "`echo $dataset | grep +RunIII2024Summer24MiniAODv6`" != "" ]
     then
-      echo Run2_2016,run2_miniAOD_80XLegacy
+      echo Run3_2024
+      return
+    elif [ "`echo $dataset | grep +RunIII2024Summer24MiniAOD`" != "" ]
+    then
+      echo Run3_2024,run3_nanoAOD_pre142X
+      return
+    elif [ "`echo $dataset | grep +Run3Summer23BPixMiniAODv4`" != "" ]
+    then
+      echo Run3_2023,run3_nanoAOD_pre142X
+      return
+    elif [ "`echo $dataset | grep +Run3Summer23MiniAODv4`" != "" ]
+    then
+      echo Run3_2023,run3_nanoAOD_pre142X
+      return
+    elif [ "`echo $dataset | grep +Run3Summer22EEMiniAODv4`" != "" ]
+    then
+      echo Run3,run3_nanoAOD_pre142X
+      return
+    elif [ "`echo $dataset | grep +Run3Summer22MiniAODv4`" != "" ]
+    then
+      echo Run3,run3_nanoAOD_pre142X
+      return
+    elif [ "`echo $dataset | grep +Run3Summer22MiniAODv3`" != "" ]
+    then
+      echo Run3,run3_nanoAOD_pre142X
+      return
+    elif [ "`echo $dataset | grep +RunIISummer20UL18MiniAODv2`" != "" ]
+    then
+      echo Run2_2018,run2_nanoAOD_106Xv2
       return
     else
-      echo Run2_2016,run2_nanoAOD_94X2016
+      echo UNKNOWN
       return
     fi
-  elif [ "`echo $dataset | grep +RunIIFall17`" != "" ]
-  then
-    echo Run2_2017,run2_nanoAOD_94XMiniAODv2
-    return
-  elif [ "`echo $dataset | grep +RunIIAutumn18`" != "" ]
-  then
-    echo Run2_2018,run2_nanoAOD_102Xv1
-    return
-  elif [ "`echo $dataset | grep SUEP`" != "" ]
-  then
-    echo Run2_2018,run2_nanoAOD_102Xv1
-    return
-  elif  [ "`echo $dataset | grep +Run3Summer22`" != "" ]
-  then
-    if   [ "`echo $dataset | grep MiniAODv3`" != "" ]
-    then
-      echo Run3,run3_nanoAOD_124
-      return
-    else
-      echo Run3
-      return
-    fi
-  elif [ "`echo $dataset | grep +Run3Summer23BPixMiniAODv4`" != "" ]
-  then
-    echo Run3_2023
-  elif [ "`echo $dataset | grep +Run3Summer23MiniAODv4`" != "" ]
-  then
-    echo Run3_2023
-  elif [ "`echo $dataset | grep +Run3Summer23`" != "" ]
-  then
-    echo Run3_2023
-  elif [ "`echo $dataset | grep +RunIII2024Summer`" != "" ]
-  then
-    echo Run3_2024
   else
-    echo UNKNOWN
-    return
+    if   [ "`echo $dataset | grep +RunIISummer..UL16....AODv2`" != "" ]
+    then
+      echo Run2_2016,run2_nanoAOD_106Xv2
+      return
+    elif [ "`echo $dataset | grep +RunIISummer..UL16....AOD`" != "" ]
+    then
+      echo Run2_2016,run2_nanoAOD_106Xv1
+      return
+    elif [ "`echo $dataset | grep +RunIISummer..UL17....AODv2`" != "" ]
+    then
+      echo Run2_2017,run2_nanoAOD_106Xv2
+      return
+    elif [ "`echo $dataset | grep +RunIISummer..UL17....AOD`" != "" ]
+    then
+      echo Run2_2017,run2_nanoAOD_106Xv1
+      return
+    elif [ "`echo $dataset | grep +RunIISummer..UL18....AODv2`" != "" ]
+    then
+      echo Run2_2018,run2_nanoAOD_106Xv2
+      return
+    elif [ "`echo $dataset | grep +RunIISummer..UL18....AOD`" != "" ]
+    then
+      echo Run2_2018,run2_nanoAOD_106Xv1
+      return
+    
+    elif [ "`echo $dataset | grep +RunIISummer16`" != "" ]
+    then
+      if [ "`echo $dataset | grep MiniAODv2`" != "" ]
+      then
+        echo Run2_2016,run2_miniAOD_80XLegacy
+        return
+      else
+        echo Run2_2016,run2_nanoAOD_94X2016
+        return
+      fi
+    elif [ "`echo $dataset | grep +RunIIFall17`" != "" ]
+    then
+      echo Run2_2017,run2_nanoAOD_94XMiniAODv2
+      return
+    elif [ "`echo $dataset | grep +RunIIAutumn18`" != "" ]
+    then
+      echo Run2_2018,run2_nanoAOD_102Xv1
+      return
+    elif [ "`echo $dataset | grep SUEP`" != "" ]
+    then
+      echo Run2_2018,run2_nanoAOD_102Xv1
+      return
+    elif  [ "`echo $dataset | grep +Run3Summer22`" != "" ]
+    then
+      if   [ "`echo $dataset | grep MiniAODv3`" != "" ]
+      then
+        echo Run3,run3_nanoAOD_124
+        return
+      else
+        echo Run3
+        return
+      fi
+    elif [ "`echo $dataset | grep +Run3Summer23BPixMiniAODv4`" != "" ]
+    then
+      echo Run3_2023
+    elif [ "`echo $dataset | grep +Run3Summer23MiniAODv4`" != "" ]
+    then
+      echo Run3_2023
+    elif [ "`echo $dataset | grep +Run3Summer23`" != "" ]
+    then
+      echo Run3_2023
+    elif [ "`echo $dataset | grep +RunIII2024Summer`" != "" ]
+    then
+      echo Run3_2024
+    else
+      echo UNKNOWN
+      return
+    fi
   fi
 }
 
@@ -266,7 +338,14 @@ function conditions_data {
   dataset=`echo $1 |sed -e 's#^/##' -e 's#/#+#'`
   cmssw="$2"
   
-  if [  "`echo $cmssw | grep ^14_`" != "" ]
+  if [  "`echo $cmssw | grep ^15_`" != "" ]
+  then
+    if   [ "`echo $dataset | grep +Run202[2-5]`" != "" ] 
+    then
+      echo auto:run3_data_prompt
+      return
+    fi
+  elif [  "`echo $cmssw | grep ^14_`" != "" ]
   then
     if   [ "`echo $dataset | grep +Run202[234]`" != "" ] 
     then
@@ -293,6 +372,10 @@ function conditions_data {
       elif  [ "`echo $dataset | grep +Run2023`" != "" ]
       then
         echo 130X_dataRun3_PromptAnalysis_v1
+        return
+      elif  [ "`echo $dataset | grep +Run2024`" != "" ]
+      then
+        echo 150X_dataRun3_v2
         return
       fi
     fi
@@ -375,7 +458,42 @@ function conditions_mc {
   dataset=`echo $1 |sed -e 's#^/##' -e 's#/#+#'`
   cmssw="$2"
   
-  if   [  "`echo $cmssw | grep ^14_`" != "" ]
+  if   [  "`echo $cmssw | grep ^15_`" != "" ]
+  then
+    if   [ "`echo $dataset | grep +RunIII2024Summer24MiniAODv6`" != "" ]
+    then
+      echo auto:phase1_2024_realistic
+      return
+    elif [ "`echo $dataset | grep +RunIII2024Summer24MiniAOD`" != "" ]
+    then
+      echo auto:phase1_2024_realistic
+      return
+    elif [ "`echo $dataset | grep +Run3Summer23BPixMiniAODv4`" != "" ]
+    then
+      echo auto:phase1_2023_realistic_postBPix
+      return
+    elif [ "`echo $dataset | grep +Run3Summer23MiniAODv4`" != "" ]
+    then
+      echo auto:phase1_2023_realistic
+      return
+    elif [ "`echo $dataset | grep +Run3Summer22EEMiniAODv4`" != "" ]
+    then
+      echo auto:phase1_2022_realistic_postEE
+      return
+    elif [ "`echo $dataset | grep +Run3Summer22MiniAODv4`" != "" ]
+    then
+      echo auto:phase1_2022_realistic
+      return
+    elif [ "`echo $dataset | grep +Run3Summer22MiniAODv3`" != "" ]
+    then
+      echo auto:phase1_2022_realistic
+      return
+    elif [ "`echo $dataset | grep +RunIISummer20UL18MiniAODv2`" != "" ]
+    then
+      echo auto:phase1_2018_realistic
+      return
+    fi
+  elif [  "`echo $cmssw | grep ^14_`" != "" ]
   then
     if   [ "`echo $dataset | grep +Run3Summer23BPixMiniAODv4`" != "" ]
     then
@@ -477,7 +595,8 @@ function conditions_mc {
     echo 130X_mcRun3_2023_realistic_v14
   elif [ "`echo $dataset | grep +RunIII2024Summer`" != "" ]
   then
-    echo auto:phase1_2024_realistic
+    echo 150X_mcRun3_2024_realistic_v2
+    #echo 150X_mcRun3_2024_realistic
   else
     echo UNKNOWN
     return
@@ -585,6 +704,91 @@ function configureSite {
   export CMS_PATH=`pwd`
 }
 
+function saveOutputFiles {
+  # find all output files and copy them to the Tier-2
+  gpack="$1"
+  for file in `echo ${gpack}*`
+  do
+    saveOutputFile ${file}
+  done
+}  
+
+function saveOutputFile {
+  # find all output files and copy them to the Tier-2
+  file="$1"
+  pwd=`pwd`
+    
+  # define base output location
+  REMOTE_SERVER="se01.cmsaf.mit.edu"
+  REMOTE_BASE="/cms/store"
+  REMOTE_USER_DIR="/user/paus/$CONFIG/$VERSION"
+  REMOTE_SERVER_XRD="xrootd.cmsaf.mit.edu"
+  REMOTE_BASE_XRD="/store"
+
+  # copy with XRDCP first
+  echo " Xrootd:\
+  xrdcp file:///$pwd/${file} \
+        root://$REMOTE_SERVER_XRD/${REMOTE_BASE_XRD}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}"
+  xrdcp file:///$pwd/${file} \
+        root://$REMOTE_SERVER_XRD/${REMOTE_BASE_XRD}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}
+  rcXrdcp=$?
+  echo " Xrdcp: $file"
+  echo " RC:    $rcXrdcp"
+  if [ ".$rcXrdcp" != ".0" ]
+  then
+    which gfal-copy                                                                                                                                                                      
+    echo " \
+    gfal-copy -p file:///$pwd/${file} \
+      gsiftp://$REMOTE_SERVER:2811/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}"                                                                                  
+    gfal-copy -p file:///$pwd/${file} \
+      gsiftp://$REMOTE_SERVER:2811/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}
+    rcGfalcp=$?
+    echo " Copying: $file"
+    echo " Copy RC: $rcGfalcp"
+    if [ ".$rcGfalcp" != ".0" ]
+    then
+      echo " ERROR - second copy failed."
+    else
+      echo " DONE second try with success."
+    fi      
+  else
+    echo " DONE first try with success."
+  fi
+
+## 
+## # this is somewhat overkill but works very reliably, I suppose
+##  echo " Which gfal-copy are we using? \
+##  which gfal-copy"
+##  which gfal-copy
+##  # now do the copy
+##  echo "\
+##  gfal-copy -p file:///$pwd/${file} \
+##          gsiftp://$REMOTE_SERVER:2811/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}"
+##  gfal-copy -p file:///$pwd/${file} \
+##          gsiftp://$REMOTE_SERVER:2811/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}
+##  rcCmsCp=$?
+##  echo " Copying: $file"
+##  echo " Copy RC: $rcCmsCp"
+##  if [ ".$rcCmsCp" != ".0" ]
+##  then
+##    # removing remainders
+##    echo "Remove file remainders:\
+##    gfal-rm gsiftp://$REMOTE_SERVER:2811/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}"
+##    gfal-rm gsiftp://$REMOTE_SERVER:2811/${REMOTE_BASE}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}
+##    rcSrmRm=$?
+##    echo " Remove RC: $rcSrmRm"
+##    # now do the backup copy using xrootd
+##    echo " Try again:\
+##    xrdcp file:///$pwd/${file} \
+##          root://$REMOTE_SERVER_XRD/${REMOTE_BASE_XRD}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}"
+##    xrdcp file:///$pwd/${file} \
+##          root://$REMOTE_SERVER_XRD/${REMOTE_BASE_XRD}${REMOTE_USER_DIR}/${TASK}/${TMP_PREFIX}/${file}
+##    rcCmsCp=$?
+##    echo " ReCopying: $file"
+##    echo " ReCopy RC: $rcCmsCp"
+##  fi
+}
+
 function downloadFiles {
   # find all input files and loop through to 
 
@@ -662,14 +866,15 @@ function downloadFile {
     ln -s $lfn
   fi
 
+  # setting server list and showing certificate
   serverList="cmsxrootd.fnal.gov cms-xrd-global.cern.ch xrootd.unl.edu"
   #serverList="cms-xrd-global.cern.ch"
+  voms-proxy-info -all
 
   # in case this is private MIT Tier-2 data
   if [ "`echo $lfn | grep store/user/paus`" != "" ]
   then
     serverList="xrootd.cmsaf.mit.edu xrootd1.cmsaf.mit.edu xrootd10.cmsaf.mit.edu "
-    voms-proxy-info -all
   fi
 
   echo ""
@@ -682,8 +887,8 @@ function downloadFile {
     for server in $serverList
     do
       echo " Trying server: $server at "`date`
-  
       echo " Execute:  xrdcp -s root://$server/$lfn ./$gpack.root"
+      which xrdcp
       xrdcp -s root://$server/$lfn ./$gpack.root
       rc="$?"
   

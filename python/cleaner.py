@@ -235,14 +235,14 @@ class Cleaner:
         return
 
     #-----------------------------------------------------------------------------------------------
-    # remove all jobs from the queue
+    # remove all jobs from the queue ( WARNING -- this will not work for different accounts .... )
     #-----------------------------------------------------------------------------------------------
     def removeAllJobs(self):
 
         base = self.task.scheduler.base + "/%s/data"%self.activity
         iwd = base + "/%s/%s/%s"%\
             (self.task.request.config,self.task.request.version,self.task.request.sample.dataset)
-        cmd = 'condor_rm -constraint "Iwd==\\\"%s\\\""'%(iwd)
+        cmd = f'condor_rm -constraint "Iwd==\\\"{iwd}\\\""'
         irc = 0
         rc = 0
 
@@ -262,14 +262,14 @@ class Cleaner:
         return
     
     #-----------------------------------------------------------------------------------------------
-    # remove held jobs from the queue
+    # remove held jobs from the queue ( WARNING -- this will not work for different accounts .... )
     #-----------------------------------------------------------------------------------------------
     def removeHeldJobs(self):
 
         base = self.task.scheduler.base + "/%s/data"%self.activity
         iwd = base + "/%s/%s/%s"%\
             (self.task.request.config,self.task.request.version,self.task.request.sample.dataset)
-        cmd = 'condor_rm -constraint "JobStatus==5 && Iwd==\\\"%s\\\""'%(iwd)
+        cmd = f'condor_rm -constraint "JobStatus==5 && Iwd==\\\"{iwd}\\\""'
         irc = 0
         rc = 0
 

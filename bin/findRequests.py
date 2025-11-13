@@ -68,10 +68,17 @@ def testEnvironment(config,version,py):
         print('\n INFO -- Tier-2 disks are available, start review process.\n')
 
     # Make sure we have a valid ticket, because now we will need it
-    cmd = "voms-proxy-init --valid 168:00 -voms cms >& /dev/null; scp -q `voms-proxy-info -p` paus@localhost:tmp/"
-    os.system(cmd)
-    os.system("voms-proxy-info -timeleft| awk '{print \" certificate valid for \" $1/3600 \" hrs\"}'")
-    print(f" copied to submit at: paus@localhost:tmp/")
+    
+    cmd = "voms-proxy-info -timeleft"
+    #cmd = "voms-proxy-init --valid 168:00 -voms cms >& /dev/null; scp -q `voms-proxy-info -p` paus@localhost:tmp/"
+    myRx = rex.Rex()
+    (rc,out,err) = myRx.executeLocalAction(cmd)
+    if debug > 0:
+        print(" RC: %d\n OUT:\n%s\n ERR:\n%s\n"%(rc,out,err))
+    hoursLeft = int(out)/3600.
+    if (hoursLeft>100):
+        print(f" certificate valid for {hoursLeft:.2f} hr")
+        print(f" copied to submit at: paus@localhost:tmp/")
     
     return
     

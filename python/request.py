@@ -91,10 +91,10 @@ class Request:
         # initialize from scratch
         self.sample.resetQueuedJobs()
 
-        path = self.base + '/' + self.config + '/' + self.version + '/' + self.sample.dataset
-        pattern = "%s %s %s %s"%(self.config,self.version,self.py,self.sample.dataset)
-        cmd = 'condor_q ' + self.scheduler.user \
-            + ' -constraint JobStatus!=5 -format \'%s\n\' Args 2> /dev/null|grep \'' + pattern + '\''
+        script = os.getenv('KRAKEN_SCRIPT')
+        path = f"{self.base}/{self.config}/{self.version}/{self.sample.dataset}"
+        pattern = f"{self.config} {self.version} {self.py} {self.sample.dataset}"
+        cmd = f'condor_q -all -constraint "regexp(\"{script}\", Cmd) && JobStatus!=5" -format \'%s\n\' Args 2> /dev/null|grep \'{pattern}\''
 
         if not self.scheduler.isLocal():
             cmd = 'ssh -x ' + self.scheduler.user + '@' + self.scheduler.host \
@@ -118,9 +118,8 @@ class Request:
         path = self.base + '/' + self.config + '/' + self.version + '/' \
             + self.sample.dataset
         pattern = "%s %s %s %s"%(self.config,self.version,self.py,self.sample.dataset)
-        cmd = 'condor_q ' + self.scheduler.user \
-            + ' -constraint JobStatus==5 -format \'%s\n\' Args 2> /dev/null|grep \'' + pattern + '\''
 
+        cmd = f'condor_q -all -constraint "regexp(\"{script}\", Cmd) && JobStatus==5" -format \'%s\n\' Args 2> /dev/null|grep \'{pattern}\''
         if not self.scheduler.isLocal():
             cmd = 'ssh -x ' + self.scheduler.user + '@' + self.scheduler.host \
                 + ' \"' + cmd + '\"'

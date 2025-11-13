@@ -1,30 +1,23 @@
+# ALMA 9 OR CENTOS 7?
+
 echo "
+ # For CENTOS7 use this
  source /cvmfs/cms.cern.ch/cmsset_default.sh
  cmssw-cc7
  export PS1=\"[\[\033[1;31m\]\$(date +%H:%M)\[\033[1;34m\]-CS7-\[\033[1;30m\]\u@\h:\[\033[1;32m\]\w\[\033[0m\]] \"
+ # Otherwise do nothing!
+
 "
-
-# ALMA 9 OR CENTOS 7?
-
 mkdir -p ~/tmp
 cd ~/tmp
 
+# nanohr D07 nano Muon0+Run2024D-MINIv6NANOv15-v1+MINIAOD 02eeef7b-c85e-4402-aee4-90380e8e3336
 export CONFIG=nanoao
-export VERSION=534
+export VERSION=535
 export PY=nano
-export DSET=ParkingDoubleMuonLowMass0+Run2024C-PromptReco-v1+MINIAOD
-#export FILE=
-
-## 106X_dataRun2_v35 	Run2_2018,run2_nanoAOD_106Xv2
-## 106X_dataRun2_v35 	Run2_2016,run2_nanoAOD_106Xv2
-
-#K0sToMuMu_K0sFilter_TuneCP5_13p6TeV_pythia8-evtgen+Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v15_ext1-v2+MINIAODSIM
-#JpsiTo2Mu_JpsiPt8_TuneCP5_13p6TeV_pythia8+Run3Summer22MiniAODv4-MUO_POG_130X_mcRun3_2022_realistic_v5-v2+MINIAODSIM
-
-#export DSET=DoubleMuon+Run2022C-22Sep2023-v1+MINIAOD
-#ZeroBias+Run2022C-PromptReco-v1+MINIAOD
-#export FILE=5804156f-e3b8-45a1-bac7-542b1536ec75
-#c3684755-30f3-4089-b8c2-97157f933cfa
+export DSET=ParkingDoubleMuonLowMass0+Run2022C-PromptReco-v1+MINIAOD
+#ParkingDoubleMuonLowMass0+Run2025C-PromptReco-v1+MINIAOD
+#export FILE=02eeef7b-c85e-4402-aee4-90380e8e3336
 
 # just for the dark photon scouting data
 export KRAKEN_CONDOR_NCPUS="2"
