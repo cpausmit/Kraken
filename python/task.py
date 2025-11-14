@@ -13,7 +13,7 @@ DEBUG = 1
 #---------------------------------------------------------------------------------------------------
 """
 Class:  Task(tag,config,version,sw,dataset,dbs,jobFile,siteFile)
-Each task in condor is described in this class
+Each task in condor is described in this class.
 """
 #---------------------------------------------------------------------------------------------------
 class Task:
@@ -123,10 +123,10 @@ class Task:
             return False
 
         # we have free capacity log and output data dirs
-        print(" INFO - make local directories ")
-        cmd = "mkdir -p " + self.logs + " " + self.outputData
+        print(" INFO - make local directories")
+        cmd = f"mkdir -p {self.logs} {self.outputData}"
         if not self.scheduler.isLocal():
-            cmd = 'ssh -x ' + self.scheduler.user + '@' + self.scheduler.host + ' ' + cmd
+            cmd = f'ssh -x {self.scheduler.user}@{self.scheduler.host} {cmd}'
         rc = os.system(cmd)
         if rc != 0:
             print(" ERROR - creation of work directory failed. Cannot submit request!")

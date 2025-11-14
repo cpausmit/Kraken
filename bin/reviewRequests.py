@@ -24,6 +24,7 @@ JOBS = os.getenv('KRAKEN_WORK') + '/jobs'
 # of files in this particular request are stored.
 
 filesRecord = {}
+schedulers = {}
 
 #---------------------------------------------------------------------------------------------------
 # H E L P E R
@@ -204,7 +205,7 @@ def findFilesOnDisk(config,version,dataset,debug=0):
         print(" Find completed files for dataset: %s"%(dataset))
 
     myRx = rex.Rex()
-    cmd = "list /cms/store/user/paus/%s/%s/%s 2> /dev/null|grep .root"%(config,version,dataset)
+    cmd = f"list /cms/store/user/paus/{config}/{version}/{dataset} 2> /dev/null | grep .root"
     if debug > 0:
         print(" CMD: %s"%(cmd))
     (rc,out,err) = myRx.executeLocalAction(cmd)
@@ -343,18 +344,27 @@ def removeMissingFileFromDb(requestId,file,debug=0):
         print(" Error (%s): unable to delete data."%(sql))
 
     
-def setupScheduler(local,nJobsMax):
+def setupSchedulers(nJobsMax):
     # Setup the scheduler we are going to use (once for all following submissions)
 
-    scheduler = None
-    if local:
-        scheduler = Scheduler('t3serv019.mit.edu',os.getenv('USER','cmsprod'),'',nJobsMax)
-    else:
-        scheduler = Scheduler(os.getenv('KRAKEN_CONDOR_SCHEDD'),
-                              os.getenv('KRAKEN_REMOTE_USER'),
-                              '/home/submit/%s'%(os.getenv('KRAKEN_REMOTE_USER','paus')),
-                              nJobsMax)
-    return scheduler
+    #scheduler = None
+    #if local:
+    #    scheduler = Scheduler('t3desk000.mit.edu',os.getenv('USER','cmsprod'),'',nJobsMax)
+    #else:
+    #    scheduler = Scheduler(os.getenv('KRAKEN_CONDOR_SCHEDD'),
+    #                          os.getenv('KRAKEN_REMOTE_USER'),
+    #                          #'/home/submit/%s'%(os.getenv('KRAKEN_REMOTE_USER','paus')),
+    #                          '',
+    #                          nJobsMax)
+    #scheduler.show()
+
+
+    # Schedulers are hardcoded here.... cmsprod (local) and paus (remote) as the main users
+    schedulers['cmsprod'] = Scheduler('t3desk000.mit.edu','cmsprod','',nJobsMax)
+    schedulers[os.getenv('KRAKEN_REMOTE_USER')] = \
+                            Scheduler(os.getenv('KRAKEN_CONDOR_SCHEDD'),os.getenv('KRAKEN_REMOTE_USER'),'',nJobsMax)
+
+    return schedulers
 
 def submitTask(task):
     # Submit the task at hand
@@ -463,7 +473,6 @@ usage += "                         --useExistingLfns\n"
 usage += "                         --useExistingJobs\n"
 usage += "                         --useExistingSites\n"
 usage += "                         --displayOnly=<status> [ default: 0, 1-all, 2-incomplete only ]\n"
-usage += "                         --local\n"
 usage += "                         --submit\n"
 usage += "                         --kill\n"
 usage += "                         --cleanup\n"
@@ -472,7 +481,7 @@ usage += "                         --help\n\n"
 
 # Define the valid options which can be specified and check out the command line
 valid = ['config=','version=','py=','pattern=','nJobsMax=','displayOnly=', \
-         'help','cleanup','submit','kill','useExistingLfns','useExistingJobs','useExistingSites','local',
+         'help','cleanup','submit','kill','useExistingLfns','useExistingJobs','useExistingSites',
          'debug']
 try:
     opts, args = getopt.getopt(sys.argv[1:], "", valid)
@@ -496,7 +505,6 @@ kill = False
 useExistingLfns = False
 useExistingJobs = False
 useExistingSites = False
-local = False
 debug = False
 
 # Read new values from the command line
@@ -522,8 +530,6 @@ for opt, arg in opts:
         submit = True
     if opt == "--kill":
         kill = True
-    if opt == "--local":
-        local = True
     if opt == "--useExistingLfns":
         useExistingLfns = True
     if opt == "--useExistingJobs":
@@ -551,8 +557,8 @@ else:
         print(loopRequests)
         
 
-# Get our scheduler ready to use
-scheduler = setupScheduler(local,nJobsMax)
+# Get our schedulers ready to use
+schedulers = setupSchedulers(nJobsMax)
 
 #==================
 # M A I N  L O O P
@@ -657,7 +663,7 @@ for row in loopRequests:
 
     # Get sample info, make request and generate the task
     sample = Sample(datasetName,dbs,useExistingLfns,useExistingLfns,useExistingSites)
-    request = Request(scheduler,sample,config,version,py)
+    request = Request(schedulers,sample,config,version,py)
     task = Task(generateCondorId(),request)
 
     # Submit task

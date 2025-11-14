@@ -4,6 +4,7 @@
 # Author: C.Paus                                                                      (Jun 16, 2016)
 #---------------------------------------------------------------------------------------------------
 import os
+import random
 from scheduler import Scheduler
 from sample import Sample
 
@@ -22,11 +23,12 @@ class Request:
     #-----------------------------------------------------------------------------------------------
     # constructor
     #-----------------------------------------------------------------------------------------------
-    def __init__(self,scheduler=None,sample=None,config='filefi',version='046',py='data'):
+    def __init__(self,schedulers=None,sample=None,config='filefi',version='046',py='data'):
         
         self.base = os.getenv('KRAKEN_SE_BASE')
 
-        self.scheduler = scheduler
+        self.scheduler = None
+        self.owner = None
         self.sample = sample
         self.config = config
         self.version = version
@@ -34,15 +36,27 @@ class Request:
 
         self.establishState()
 
+        # settle the owner of this request
+        if not self.owner:
+            # get random sheduler
+            self.owner = random.choice(list(schedulers.keys()))
+        # get the corresponding scheduler
+        self.scheduler = schedulers[self.owner]
+        print(f" Request owner is: {self.owner}")
+            
     #-----------------------------------------------------------------------------------------------
     # establish the full state of the request (this resets existing info)
     #-----------------------------------------------------------------------------------------------
     def establishState(self):
         print(" -- Establish request status --")
+        # talk to condor
         self.loadQueuedJobs()
         self.loadHeldJobs()
+        # check the file outputs
         self.loadCompletedJobs()
+        # check how often this job was tried already
         self.loadNFailedJobs()
+        # make a list of all missing jobs
         self.sample.createMissingJobs()
         return
         
@@ -63,8 +77,7 @@ class Request:
         self.sample.resetNoCatalogJobs()
         
         # initialize from scratch
-        path = self.base + '/' + self.config + '/' + self.version + '/' \
-            + self.sample.dataset
+        path = f"{self.base}/{self.config}/{self.version}/{self.sample.dataset}"
         # first fully checked files
         cmd = 'list ' + path + '  2> /dev/null | grep root'
         for line in os.popen(cmd).readlines():  # run command
@@ -94,15 +107,18 @@ class Request:
         script = os.getenv('KRAKEN_SCRIPT')
         path = f"{self.base}/{self.config}/{self.version}/{self.sample.dataset}"
         pattern = f"{self.config} {self.version} {self.py} {self.sample.dataset}"
-        cmd = f'condor_q -all -constraint "regexp(\"{script}\", Cmd) && JobStatus!=5" -format \'%s\n\' Args 2> /dev/null|grep \'{pattern}\''
+        cmd = f'condor_q -all -constraint \'regexp(\"{script}\", Cmd) && JobStatus!=5\' -format \'%s \' Owner -format \'%s\n\' Args 2> /dev/null|grep \'{pattern}\''
 
-        if not self.scheduler.isLocal():
-            cmd = 'ssh -x ' + self.scheduler.user + '@' + self.scheduler.host \
-                + ' \"' + cmd + '\"'
-            ##print(" CMD: %s"%(cmd))
+        # you cannot look at the queue when the scheduler is not set ...
+        #if not self.scheduler.isLocal():
+        #    cmd = 'ssh -x ' + self.scheduler.user + '@' + self.scheduler.host \
+        #        + ' \"' + cmd + '\"'
+
         for line in os.popen(cmd).readlines():  # run command
+            #print(f" loadQueuedJobs {line}")
             f    = line.split(' ')
-            file = f[5] + '.root'
+            self.owner = f[0]
+            file = f[6] + '.root'
             self.sample.addQueuedJob(file)
         if DEBUG > 0:
             print(' QUEUED  - Jobs: %6d'%(len(self.sample.queuedJobs)))
@@ -119,13 +135,16 @@ class Request:
             + self.sample.dataset
         pattern = "%s %s %s %s"%(self.config,self.version,self.py,self.sample.dataset)
 
-        cmd = f'condor_q -all -constraint "regexp(\"{script}\", Cmd) && JobStatus==5" -format \'%s\n\' Args 2> /dev/null|grep \'{pattern}\''
-        if not self.scheduler.isLocal():
-            cmd = 'ssh -x ' + self.scheduler.user + '@' + self.scheduler.host \
-                + ' \"' + cmd + '\"'
+        script = os.getenv('KRAKEN_SCRIPT')
+        cmd = f'condor_q -all -constraint \'regexp(\"{script}\", Cmd) && JobStatus==5\' -format \'%s \' Owner -format \'%s\n\' Args 2> /dev/null|grep \'{pattern}\''
+        # you cannot look at the queue when the scheduler is not set ...
+        #if not self.scheduler.isLocal():
+        #    cmd = 'ssh -x ' + self.scheduler.user + '@' + self.scheduler.host \
+        #        + ' \"' + cmd + '\"'
         for line in os.popen(cmd).readlines():  # run command
+            #print(f" loadHeldJobs {line}")
             f    = line.split(' ')
-            file = f[5] + '.root'
+            file = f[6] + '.root'
             self.sample.addHeldJob(file)
 
         if DEBUG > 0:
