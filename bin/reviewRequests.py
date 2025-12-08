@@ -364,6 +364,17 @@ def setupSchedulers(nJobsMax):
     schedulers[os.getenv('KRAKEN_REMOTE_USER')] = \
                             Scheduler(os.getenv('KRAKEN_CONDOR_SCHEDD'),os.getenv('KRAKEN_REMOTE_USER'),'',nJobsMax)
 
+
+    # Make sure we have a valid ticket, because now we will need it
+    cmd = "voms-proxy-init --valid 168:00 -voms cms >& /dev/null"
+    os.system(cmd)
+    os.system("voms-proxy-info -timeleft| awk '{print \" certificate valid for \" $1/3600 \" hrs\"}'")
+    print(f" copied to submit at: paus@localhost:tmp/")
+    for user in schedulers:
+        cmd = f"scp -q `voms-proxy-info -p` {user}@{os.getenv('KRAKEN_CONDOR_SCHEDD')}:tmp/"
+        print(f" storing certificate for {user}: {cmd}")
+        os.system(cmd)
+    
     return schedulers
 
 def submitTask(task):
@@ -425,12 +436,6 @@ def testEnvironment(config,version,py):
         sys.exit(0)
     else:
         print('\n INFO -- Tier-2 disks are available, start review process.\n')
-
-    # Make sure we have a valid ticket, because now we will need it
-    cmd = "voms-proxy-init --valid 168:00 -voms cms >& /dev/null; scp -q `voms-proxy-info -p` paus@localhost:tmp/"
-    os.system(cmd)
-    os.system("voms-proxy-info -timeleft| awk '{print \" certificate valid for \" $1/3600 \" hrs\"}'")
-    print(f" copied to submit at: paus@localhost:tmp/")
     
     return
     
