@@ -371,8 +371,9 @@ def setupSchedulers(nJobsMax):
     os.system("voms-proxy-info -timeleft| awk '{print \" certificate valid for \" $1/3600 \" hrs\"}'")
     print(f" copied to submit at: paus@localhost:tmp/")
     for user in schedulers:
-        cmd = f"scp -q `voms-proxy-info -p` {user}@{os.getenv('KRAKEN_CONDOR_SCHEDD')}:tmp/"
-        print(f" storing certificate for {user}: {cmd}")
+        sched = schedulers[user]
+        cmd = f"scp -q `voms-proxy-info -p` {sched.user}@{sched.host}:tmp/"
+        print(f" storing certificate for {sched.user}: {cmd}")
         os.system(cmd)
     
     return schedulers

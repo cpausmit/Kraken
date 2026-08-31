@@ -1,17 +1,3 @@
-#  DYto2L-2Jets_MLL-50_PTLL-40to100_1J_TuneCP5_13p6TeV_amcatnloFXFX-pythia8+Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v2-v1+MINIAODSIM
-#  DYto2L-2Jets_MLL-50_PTLL-40to100_2J_TuneCP5_13p6TeV_amcatnloFXFX-pythia8+Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v2-v1+MINIAODSIM
-#  DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8+Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v2-v3+MINIAODSIM
-#  DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8+Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v14-v1+MINIAODSIM
-#  DYto2L-4Jets_MLL-50_TuneCP5_13p6TeV_madgraphMLM-pythia8+Run3Summer23MiniAODv4-130X_mcRun3_2023_realistic_v14-v1+MINIAODSIM
-#
-#  Run3Summer23BPixMiniAODv4 
-#  era: Run3_2023
-#  conditions: 130X_mcRun3_2023_realistic_postBPix_v2
-#  
-#  Run3Summer23MiniAODv4 
-#  era: Run3_2023
-#  conditions: 130X_mcRun3_2023_realistic_v14
-#
 #----------------------------------------------------------------------------------------------------
 #  U S E F U L   V A R I A B L E S
 #----------------------------------------------------------------------------------------------------
@@ -74,7 +60,7 @@ function customise {
   then
       echo "Bmm5/NanoAOD/nano_cff.nanoAOD_customizeDileptonPlusX --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeV0ForMuonFake --customise=Bmm5/NanoAOD/nano_cff.nanoAOD_customizeBmmMuonId \
             --customise_commands=\"process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))\""
-  elif [ "$version" == "535" ]
+  elif [ "$version" == "535" ] || [ "$version" == "536" ]
   then
       if [ "`echo $dataset | grep +Run2022`" != "" ] || [ "`echo $dataset | grep +Run3Summer22MiniAODv3`" != "" ] 
       then
@@ -94,7 +80,7 @@ function customise {
     echo "Hrare/NanoAOD/nano_cff.nanoAOD_customizeMesons \
             --customise_commands=\"process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))\""
     
-  elif [ "$version" == "D05" ] || [ "$version" == "D07" ]
+  elif [ "$version" == "D05" ] || [ "$version" == "D07" ] || [ "$version" == "D08" ]
   then
     echo "Hrare/NanoAOD/nano_cff.nanoAOD_customizeMesons_Run3 \
             --customise_commands=\"process.add_(cms.Service('InitRootHandlers',EnableIMT=cms.untracked.bool(False)))\""

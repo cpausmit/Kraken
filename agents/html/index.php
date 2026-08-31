@@ -5,6 +5,7 @@
 <link rel="shortcut icon" type="image/x-icon" href="kraken.png" />
 </head>
 <style>
+pre { font-family: "Noto Sans Mono", monospace; }
 a:link{color:#202020; background-color:transparent; text-decoration:none}
 a:visited{color:#0074AA; background-color:transparent; text-decoration:none}
 a:hover{color:#000090;background-color:transparent; text-decoration:underline}

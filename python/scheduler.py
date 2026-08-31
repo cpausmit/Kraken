@@ -10,7 +10,7 @@ DEBUG = 0
 
 #---------------------------------------------------------------------------------------------------
 """
-Class:  Scheduler(host='submit06.mit.edu',user='paus')
+Class:  Scheduler(host='submit04.mit.edu',user='paus')
 Each sample can be described through this class
 """
 #---------------------------------------------------------------------------------------------------
@@ -20,7 +20,7 @@ class Scheduler:
     #-----------------------------------------------------------------------------------------------
     # constructor
     #-----------------------------------------------------------------------------------------------
-    def __init__(self,host='submit06.mit.edu',user='paus',base='',nMyTotalMax=35000,nTotalMax=100000):
+    def __init__(self,host='submit04.mit.edu',user='paus',base='',nMyTotalMax=35000,nTotalMax=100000):
 
         self.here = socket.gethostname()
         self.host = host
@@ -206,7 +206,7 @@ class Scheduler:
     #-----------------------------------------------------------------------------------------------
     # update on the fly
     #-----------------------------------------------------------------------------------------------
-    def update(self,host='submit06.mit.edu',user='paus',base='',nMyTotalMax=20000,nTotalMax=100000):
+    def update(self,host='submit04.mit.edu',user='paus',base='',nMyTotalMax=20000,nTotalMax=100000):
 
         self.host = host
         self.user = user

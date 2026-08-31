@@ -9,6 +9,7 @@ import os,sys,re,getopt
 def getHeader(config,version):
     header = '<!DOCTYPE html><html><head><title>Kraken Production</title></head>\n' \
         + '<style>\n' \
+        + 'pre { font-family: "Noto Sans Mono", monospace; }\n' \
         + 'a:link{color:#202020; background-color:transparent; text-decoration:none}\n' \
         + 'a:visited{color:#0074AA; background-color:transparent; text-decoration:none}\n' \
         + 'a:hover{color:#000090;background-color:transparent; text-decoration:underline}\n' \

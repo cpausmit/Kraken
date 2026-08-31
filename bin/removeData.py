@@ -132,7 +132,8 @@ def remove(dataset,config,version,dbs,exe):
     # Find the dataset id and request id
     datasetId = getDatasetId(process,setup,tier,cursor,debug)
     requestIds, pys = getRequestIds(datasetId,config,version,cursor,debug)
-
+    print(f" DsetId: {datasetId}  ReqIds: {requestIds}")
+    
     # notify about several pys found
     if len(requestIds)>1:
         print(" ERROR -- multiple request ids with different pys found")
@@ -386,9 +387,9 @@ for line in os.popen(cmd).readlines():  # run command
         print(' Sample(%s): '%(pattern) + dataset)
     if pattern in dataset:
         datasets.append(dataset)
-        
-## there was no match, use the pattern itself as the only dataset
-## --> this should actually never happen because the dataset name will match itself
+
+# there was no match, use the pattern itself as the only dataset
+# --> this should actually never happen because the dataset name will match itself
 if len(datasets)==0:
     print(" INFO -- No matching dataset found.")
 #    print(" No match found, try explicit pattern: %s."%(pattern))

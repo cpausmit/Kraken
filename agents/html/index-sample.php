@@ -58,6 +58,7 @@ $name = array_pop($f);
 print '<title>'.$name.'</title>';
 print '</head>';
 print '<style>';
+print 'pre { font-family: "Noto Sans Mono", monospace; }';
 print 'a:link{color:#202020; background-color:transparent; text-decoration:none}';
 print 'a:visited{color:#0074AA; background-color:transparent; text-decoration:none}';
 print 'a:hover{color:#000090;background-color:transparent; text-decoration:underline}';
