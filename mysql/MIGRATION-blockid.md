@@ -29,7 +29,9 @@ first (10 s and 31 s) and still exist. Drop them once you are satisfied:
 DROP TABLE Blocks_backup_20260922, Lfns_backup_20260922;
 ```
 
-**Do not forget to revoke the temporary DDL grants** -- see the privileges section below.
+The temporary DDL grants were revoked the same day and the revocation verified: `show
+grants` is back to `USAGE` plus the two `SELECT, INSERT, UPDATE, DELETE` lines, and a
+`create table` probe is denied. See the privileges section below.
 
 ## The problem
 
@@ -77,9 +79,9 @@ That covers the timing test too, which needs `CREATE` and `DROP` for its scratch
 **The migration must be run by an account with `ALTER`, `CREATE` and `DROP` on `Bambu`** --
 i.e. the administrative account on the database server t3desk008.mit.edu.
 
-For the 2026-09-22 migration those three were granted to `ssluser` temporarily. **They must
-be revoked afterwards**, from an account holding `GRANT OPTION` (`ssluser` does not, so it
-cannot revoke its own):
+For the 2026-09-22 migration those three were granted to `ssluser` temporarily and
+revoked again the same day. The revoke must be run from an account holding `GRANT OPTION`
+(`ssluser` does not, so it cannot revoke its own):
 
 ```sql
 REVOKE ALTER, CREATE, DROP ON Bambu.* FROM 'ssluser'@'t3%.mit.edu';
