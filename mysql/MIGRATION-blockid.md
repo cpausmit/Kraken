@@ -35,6 +35,21 @@ comparisons work normally, so the half-migrated state is safe in that direction.
 order leaves a window -- narrow at 6.1M, but free to avoid -- in which a new block could
 take an id that `Lfns` cannot store.
 
+## Privileges required -- `ssluser` cannot do this
+
+The account every Kraken script uses holds only `SELECT, INSERT, UPDATE, DELETE` on
+`Bambu`. Attempting any part of this migration with it fails immediately:
+
+```
+ERROR 1142 (42000): ALTER command denied to user 'ssluser'@'T3DESK000.MIT.EDU'
+```
+
+That covers the timing test too, which needs `CREATE` and `DROP` for its scratch copy.
+**The migration must be run by an account with `ALTER`, `CREATE` and `DROP` on `Bambu`** --
+i.e. the administrative account on the database server t3desk008.mit.edu. Either grant
+those to `ssluser` temporarily for the window, or have whoever holds root on that server
+run the statements.
+
 ## Before the maintenance window
 
 1. **Time it on a copy.** The only way to know the length of the outage. MyISAM has no
@@ -51,7 +66,7 @@ take an id that `Lfns` cannot store.
    Expect minutes rather than hours, but measure rather than trust that.
 
 2. **Check free space** on the server (t3desk008). The rebuild needs room for a full copy
-   of the largest table, roughly 1 GB.
+   of the largest table, roughly 1 GB. *Checked 2026-09-22: 394 GB free on `/`, ample.*
 
 3. **Back up `Blocks` and `Lfns`.** Note `mysqldump` cannot connect with the current
    `~cmsprod/.my.cnf` (see [README.md](README.md)); either add a `[client]` group
@@ -66,6 +81,13 @@ take an id that `Lfns` cannot store.
    ```
 
 5. **Stop the Kraken agents** so nothing writes while the tables are locked.
+
+   *Checked 2026-09-22: there is no long-running agent to stop. `show processlist` shows
+   no persistent clients, and t3desk000 runs no Kraken daemon or crontab -- writes come
+   from short-lived batch-job connections (`bin/checkFile.py` and friends), which will
+   simply queue behind the table lock. `Files` grew ~25k rows in a day, so the flow is
+   real but intermittent. If the ALTER turns out to be short, a formal outage may be
+   unnecessary; that depends on the timing test, which is still blocked on privileges.*
 
 ## Verification afterwards
 
