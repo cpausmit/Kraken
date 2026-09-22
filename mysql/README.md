@@ -38,23 +38,20 @@ code.
 FiBS uses a separate database (`Fibs`) on the same server, documented with the FiBS
 project. The two share only the `ssluser` account.
 
-## Capacity: `Blocks.BlockId` is at 73% of its ceiling
+## Capacity: `BlockId` was widened on 2026-09-22
 
-`Blocks.BlockId` is a signed `mediumint`, so it stops at **8,388,607**. As of 2026-09-22
-the counter stands at **6,143,905** -- 73.2%, leaving 2.24M ids. When it runs out, every
-block insert fails and cataloguing stops.
+`Blocks.BlockId` and `Lfns.BlockId` were signed `mediumint`, ceiling 8,388,607, and had
+reached 6,143,905 -- 73.2%, with about 2.24M ids left before block inserts would start
+failing and cataloguing would stop. Both are now `int`, ceiling 2,147,483,647, which at any
+plausible rate is the end of the matter. See
+[MIGRATION-blockid.md](MIGRATION-blockid.md) for what was done and what it cost.
 
-Row count and counter are within two of each other, so essentially nothing has ever been
-deleted: id consumption tracks row growth directly. Averaged over the database's lifetime
-(first rows 2014) that is roughly 500k blocks a year, i.e. **order four years of headroom**
--- but that is a lifetime average, not the current rate, and the current rate is the number
-that matters. Measure it before planning around it.
+`Datasets.DatasetId` (9,398) and `Requests.RequestId` (22,049) are still `mediumint` with
+the same 8,388,607 ceiling, but at 0.1% and 0.3% they are nowhere near it.
 
-Widening `BlockId` also requires widening `Lfns.BlockId`, which must keep the same type.
-Both are multi-million-row MyISAM tables, so the rebuild needs a maintenance window.
-
-`Datasets.DatasetId` (9,398) and `Requests.RequestId` (22,049) share the same ceiling but
-are at 0.1% and 0.3%.
+Still open: `Lfns.NEvents` and `Files.NEvents` are `mediumint`, so a file with more than
+8.4M events is recorded wrong, silently. Row counts and counters here still have no
+timestamp to measure growth against -- see the logging suggestion in the migration note.
 
 ## The tables
 

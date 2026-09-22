@@ -1,6 +1,35 @@
 # Migration: widening `BlockId` from `mediumint` to `int`
 
-**Status: proposed, not yet executed.**
+**Status: executed 2026-09-22.** `Blocks.BlockId` and `Lfns.BlockId` are now `int(11)`.
+The rationale and procedure are kept below as the record of what was done.
+
+## Outcome
+
+| | before | after |
+|---|---|---|
+| `Blocks.BlockId` | `mediumint(9)` AUTO_INCREMENT | `int(11)` AUTO_INCREMENT |
+| `Lfns.BlockId` | `mediumint(9)` | `int(11)` |
+| ceiling | 8,388,607 (73.2% used) | 2,147,483,647 (0.3% used) |
+| `Blocks` rows | 6,143,903 | 6,143,903 |
+| `Lfns` rows | 4,395,223 | 4,395,223 |
+| `max(BlockId)` / counter | 6,143,904 / 6,143,905 | unchanged |
+
+Measured cost: **`ALTER Lfns` 11 s, `ALTER Blocks` 9 s** -- 20 seconds of table lock, so no
+outage window was needed; batch-job writes simply queued. A dry run on a full copy of
+`Lfns` beforehand took 12 s, which is what justified skipping the window.
+
+Verification: row counts and `max(BlockId)` unchanged, and
+`select count(*) from Lfns l join Blocks b on l.BlockId = b.BlockId` returned all
+4,395,223 rows, so every lfn still resolves to its block.
+
+Backups `Blocks_backup_20260922` and `Lfns_backup_20260922` were taken inside the database
+first (10 s and 31 s) and still exist. Drop them once you are satisfied:
+
+```sql
+DROP TABLE Blocks_backup_20260922, Lfns_backup_20260922;
+```
+
+**Do not forget to revoke the temporary DDL grants** -- see the privileges section below.
 
 ## The problem
 
@@ -46,9 +75,24 @@ ERROR 1142 (42000): ALTER command denied to user 'ssluser'@'T3DESK000.MIT.EDU'
 
 That covers the timing test too, which needs `CREATE` and `DROP` for its scratch copy.
 **The migration must be run by an account with `ALTER`, `CREATE` and `DROP` on `Bambu`** --
-i.e. the administrative account on the database server t3desk008.mit.edu. Either grant
-those to `ssluser` temporarily for the window, or have whoever holds root on that server
-run the statements.
+i.e. the administrative account on the database server t3desk008.mit.edu.
+
+For the 2026-09-22 migration those three were granted to `ssluser` temporarily. **They must
+be revoked afterwards**, from an account holding `GRANT OPTION` (`ssluser` does not, so it
+cannot revoke its own):
+
+```sql
+REVOKE ALTER, CREATE, DROP ON Bambu.* FROM 'ssluser'@'t3%.mit.edu';
+SHOW GRANTS FOR 'ssluser'@'t3%.mit.edu';   -- expect USAGE + the two SELECT,INSERT,UPDATE,DELETE lines
+```
+
+No `FLUSH PRIVILEGES` is needed; `GRANT`/`REVOKE` update the in-memory tables directly. The
+account spec must match exactly -- `'ssluser'@'t3%.mit.edu'` and `'ssluser'@'%'` are
+different accounts, and revoking the wrong one gives `ERROR 1141`.
+
+Next time, prefer a throwaway account over granting DDL to the credential that sits on
+every `t3*` node: `CREATE USER 'kraken_ddl'@'t3desk000.mit.edu'`, grant it what it needs,
+and `DROP USER` afterwards -- one statement, nothing to get subtly wrong.
 
 ## Before the maintenance window
 

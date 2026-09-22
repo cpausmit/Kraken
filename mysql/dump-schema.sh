@@ -10,7 +10,11 @@
 DB=${1:-Bambu}
 ORDER="Datasets Blocks Lfns Requests Files"      # logical order, inputs then outputs
 
-all=$(mysql -N -B "$DB" -e "show tables") || exit 1
+SKIP='_backup_|_test$|_test_'                    # scratch tables, not part of the schema
+
+raw=$(mysql -N -B "$DB" -e "show tables") || exit 1
+all=$(echo "$raw" | grep -Ev "$SKIP")
+skipped=$(echo "$raw" | grep -E "$SKIP" | tr '\n' ' ')
 # the listed tables first, then anything else that turned up
 tables=""
 for t in $ORDER; do
@@ -35,6 +39,8 @@ cat <<HDR
 CREATE DATABASE IF NOT EXISTS $DB;
 USE $DB;
 HDR
+
+[ -n "$skipped" ] && echo "-- Skipped as scratch (matching $SKIP): $skipped"
 
 for t in $tables; do
   echo

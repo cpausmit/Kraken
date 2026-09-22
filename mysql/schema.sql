@@ -11,6 +11,7 @@
 
 CREATE DATABASE IF NOT EXISTS Bambu;
 USE Bambu;
+-- Skipped as scratch (matching _backup_|_test$|_test_): Blocks_backup_20260922 Lfns_backup_20260922 
 
 CREATE TABLE `Datasets` (
   `DatasetId` mediumint(9) NOT NULL AUTO_INCREMENT,
@@ -25,7 +26,7 @@ CREATE TABLE `Datasets` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 CREATE TABLE `Blocks` (
-  `BlockId` mediumint(9) NOT NULL AUTO_INCREMENT,
+  `BlockId` int(11) NOT NULL AUTO_INCREMENT,
   `DatasetId` mediumint(9) NOT NULL,
   `BlockName` char(36) NOT NULL,
   PRIMARY KEY (`BlockId`),
@@ -34,7 +35,7 @@ CREATE TABLE `Blocks` (
 
 CREATE TABLE `Lfns` (
   `DatasetId` mediumint(9) NOT NULL,
-  `BlockId` mediumint(9) NOT NULL,
+  `BlockId` int(11) NOT NULL,
   `FileName` varchar(255) DEFAULT NULL,
   `PathName` text DEFAULT NULL,
   `NEvents` mediumint(9) NOT NULL DEFAULT -1,
