@@ -90,7 +90,7 @@ do
           #===================
     
           stdbuf -o0 -e0 \
-          $KRAKEN_BASE/bin/reviewRequests.py --config=$cfg --version=$vrs --cmssw=$py \
+          $KRAKEN_BASE/bin/reviewRequests.py --config=$cfg --version=$vrs --py=$py \
                  --displayOnly=1 >  $KRAKEN_AGENTS_LOG/${daemon}/status-$py
     
           # make sure ascii files get 'dressing'
@@ -102,9 +102,13 @@ do
     
           # Full submit cycle
           #==================
+          # NOTE --exe is not a valid reviewRequests.py option either, so this call still
+          # dies on getopt and submits nothing.  The likely intent is --submit (which
+          # defaults to False), but turning job submission back on is an operational
+          # decision, so it is left as-is rather than changed silently.
 
           stdbuf -o0 -e0 \
-          $KRAKEN_BASE/bin/reviewRequests.py --config=$cfg --version=$vrs --cmssw=$py --exe \
+          $KRAKEN_BASE/bin/reviewRequests.py --config=$cfg --version=$vrs --py=$py --exe \
                                             $KRAKEN_REVIEW_OPTIONS                >> $logFile 2>&1
           echo " "                                                                >> $logFile
     
