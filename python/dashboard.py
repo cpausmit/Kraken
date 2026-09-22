@@ -5,7 +5,7 @@
 #
 # Author: C.Paus                                                                      (Sep 01, 2026)
 #---------------------------------------------------------------------------------------------------
-import os, sys, json, time, subprocess
+import os, re, sys, json, time, subprocess
 
 import kdb
 import jsum
@@ -134,9 +134,43 @@ def _query_condor(schedd, debug=0):
     return rows
 
 #---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------
+# reviewd writes one line per dataset into status-<py>, e.g.
+#
+#     89.53   2327/  2599  EGamma0+Run2024C-MINIv6NANOv15-v1+MINIAOD
+#      0.00      0=     0  GJ-4Jets-2NLO2LO_Bin-PTG-120_...
+#
+# percentage, done, total, dataset.  reviewRequests.py:displayLine() prints '/' while the
+# dataset is incomplete and '=' once done == total, so both separators are valid data.
+# Lines starting with '#' are the header and the TOTAL summary.
+STATUS_LINE = re.compile(r'^\s*([0-9.]+)\s+(\d+)\s*[/=]\s*(\d+)\s+(\S+)\s*$')
+
+def parse_status_counts(path):
+    # dataset -> (n_done, n_total) as reviewd last measured it against storage
+    counts = {}
+    try:
+        with open(path) as f:
+            for line in f:
+                if not line.strip() or line.lstrip().startswith('#'):
+                    continue
+                m = STATUS_LINE.match(line.rstrip('\n'))
+                if m:
+                    counts[m.group(4)] = (int(m.group(2)), int(m.group(3)))
+    except IOError:
+        pass
+    return counts
+
+#---------------------------------------------------------------------------------------------------
 def collect_campaigns(agents_log, active_pys, debug=0):
-    # walk $KRAKEN_AGENTS_LOG/reviewd/<config>/<version>/ the same way index.php used to scan it,
-    # and pull the authoritative per-sample counts from the DB instead of scraping rendered text
+    # walk $KRAKEN_AGENTS_LOG/reviewd/<config>/<version>/ the same way index.php used to scan it.
+    #
+    # Counts come from reviewd's status-<py> files, which are what reviewRequests.py measured
+    # against storage.  They are NOT taken from Requests.RequestNFilesDone: that column is only
+    # ever written by reviewRequests.py, which until 2026-09 skipped the write for any request
+    # still holding the -1 default, so 16879 of 16993 rows are stuck at -1.  Reading it made
+    # every sample report 0 done and, via n_nocatalog = n_total - n_done, every file nocatalog
+    # and every campaign 'warn'.  The DB is used only as a fallback for datasets the status
+    # file does not mention.
     campaigns = {}
     reviewd = os.path.join(agents_log, 'reviewd')
     if not os.path.isdir(reviewd):
@@ -155,9 +189,12 @@ def collect_campaigns(agents_log, active_pys, debug=0):
                 continue
 
             pys = set()
+            status_counts = {}
             for name in os.listdir(version_dir):
                 if name.startswith('status-') and not name.endswith('.html'):
-                    pys.add(name[len('status-'):])
+                    py = name[len('status-'):]
+                    pys.add(py)
+                    status_counts[py] = parse_status_counts(os.path.join(version_dir, name))
 
             samples = {}
             for row in db.find_requests(config, version):
@@ -166,15 +203,24 @@ def collect_campaigns(agents_log, active_pys, debug=0):
                     continue
                 dataset = '%s+%s+%s' % (process, setup, tier)
                 sample_dir = os.path.join(version_dir, dataset)
-                n_total = int(nFiles) if nFiles is not None else 0
-                n_done = int(nFilesDone) if nFilesDone is not None and int(nFilesDone) >= 0 else 0
+
+                # reviewd's storage measurement wins; the DB column is only a fallback
+                measured = status_counts.get(rPy, {}).get(dataset)
+                if measured is not None:
+                    n_done, n_total = measured
+                else:
+                    n_total = int(nFiles) if nFiles is not None else 0
+                    n_done = int(nFilesDone) if nFilesDone is not None and int(nFilesDone) >= 0 else 0
 
                 samples[dataset] = {
                     'id': '%s/%s/%s' % (config, version, dataset),
                     'py': rPy,
                     'n_total': n_total,
                     'n_done': n_done,
-                    'n_nocatalog': max(n_total - n_done, 0),
+                    # NOT n_total - n_done: that is the count still to be produced, which is a
+                    # different thing from output produced but not yet catalogued.  Nothing here
+                    # measures the latter, so do not invent it -- and do not let it drive health.
+                    'n_nocatalog': 0,
                     'n_batch': 0, 'n_idle': 0, 'n_running': 0, 'n_held': 0,
                     'plots': discover_plots(sample_dir),
                     'readme': discover_files(sample_dir, ['README']),
