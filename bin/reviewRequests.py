@@ -612,13 +612,18 @@ for row in loopRequests:
                 #removeMissingFileFromDb(requestId,file)
 
     # what to do when the two numbers disagree
+    lUpdate = False
+
     if dbNFilesDone == -1:
-        # this is a new dataset
-        print('\n INFO - this seems to be a new dataset.')
-        pass
-        
+        # A new dataset: the column still holds its default.  Seed it here -- do NOT fall
+        # through to the comparison below, whose 'files have all disappeared' warning is
+        # meaningless when there was never a previous value.  Leaving it at -1 makes the
+        # dashboard report 0 done and everything nocatalog, because python/dashboard.py
+        # maps any negative RequestNFilesDone to 0 and derives n_nocatalog = n_total - 0.
+        print('\n INFO - this seems to be a new dataset, seeding the counter (%d).'%(nFilesDone))
+        lUpdate = True
+
     elif dbNFilesDone != nFilesDone:
-        lUpdate = False
 
         # assume more files have been found
         if nFilesDone > 0 and nFilesDone > dbNFilesDone:
@@ -634,22 +639,24 @@ for row in loopRequests:
                 print('\n WARNING -- files have all disappeared, very suspicious (%d -> %d now)'\
                     %(dbNFilesDone,nFilesDone))
 
-        # 
-        if lUpdate:
-            sql = 'update Requests set RequestNFilesDone=%d'%(nFilesDone) + \
-                ' where RequestId=%d'%(requestId)
-            if debug:
-                print(' SQL: ' + sql)
+    # lifted out of the elif above: a newly seeded counter (dbNFilesDone == -1) must reach
+    # this write too, otherwise the column stays at its default for the life of the request
+    if lUpdate:
+        sql = 'update Requests set RequestNFilesDone=%d'%(nFilesDone) + \
+            ' where RequestId=%d'%(requestId)
+        if debug:
+            print(' SQL: ' + sql)
 
-            # Try to access the database
-            try:
-                # Execute the SQL command
-                cursor.execute(sql)
-                results = cursor.fetchall()      
-            except:
-                print(" Error (%s): unable to update the database."%(sql))
-                sys.exit(0)
-        
+        # Try to access the database
+        try:
+            # Execute the SQL command
+            cursor.execute(sql)
+            results = cursor.fetchall()
+        except:
+            print(" Error (%s): unable to update the database."%(sql))
+            sys.exit(0)
+
+
     # did we already complete the job?
     if not cleanup:
         if nFilesDone == nFiles:   # this is the case when all is done
