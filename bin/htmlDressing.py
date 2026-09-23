@@ -101,8 +101,16 @@ with open(input,"r") as fileInput:
         if '+' in line:
             f = line.split(' ')
             dataset = f.pop()
+            # status-<py> and incomplete-<py> end the line with the bare dataset, which is
+            # also the directory name.  The queue file (status.py) ends it with the key
+            # '<config>-<version>-<dataset>', so strip that prefix for the href or the link
+            # points at a path that does not exist.  The text keeps the key as printed.
+            target = dataset
+            prefix = config + '-' + version + '-'
+            if target.startswith(prefix):
+                target = target[len(prefix):]
             line = ' '.join(f) \
-                 + ' <a href="' + trunc + dataset + '">' + dataset + '</a>'
+                 + ' <a href="' + trunc + target + '">' + dataset + '</a>'
         else:
             f = line.split(' ')
             if len(f) > 1:
@@ -111,10 +119,13 @@ with open(input,"r") as fileInput:
                 if test == "VERSION:":
                     version = v
 
+        # status <-> incomplete cross-link.  Only for those two: for the queue file 'py'
+        # is just 'queue', so this would emit a link to status-queue.html, which does not
+        # and will not exist.
         if 'missing' in line:
             if type == 'status':
                 line = line.replace('missing','<a href="incomplete-' + py + '.html">missing</a>')
-            else:
+            elif type == 'incomplete':
                 line = line.replace('missing','<a href="status-' + py + '.html">missing</a>')
 
         fileOutput.write(line+'\n')

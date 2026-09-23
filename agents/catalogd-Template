@@ -78,6 +78,17 @@ function generate_catalog {
       $KRAKEN_BASE/bin/reviewRequests.py --config=$cfg --version=$vrs --py=$py \
            --displayOnly=2 >>  $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/incomplete-$py
 
+    # Render each of the three to .html.  The bare files have no extension, so Apache
+    # sends no Content-Type and the browser parses them as HTML: proportional font,
+    # collapsed columns.  The dressed copies are served as text/html inside <pre> and
+    # stay monospace, and the dashboard links them in preference to the bare files.
+    echo " dressing the monitoring files"                                       >> $lF
+    for raw in status-$py incomplete-$py queue
+    do
+      $KRAKEN_BASE/bin/htmlDressing.py \
+        --input=$KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/$raw --version=$vrs  >> $lF 2>&1
+    done
+
     # keep log files up to speed
     synchronizeWeb.py                                                           >> $lF
   

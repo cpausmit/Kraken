@@ -84,7 +84,7 @@ def discover_files(dir, names):
 def discover_rendered(dir, names):
     # Same, but link the htmlDressing'd '<name>.html' in preference to the bare file.
     #
-    # status-<py> and incomplete-<py> carry no extension, so mod_mime gives them no
+    # status-<py>, incomplete-<py> and queue carry no extension, so mod_mime gives them no
     # Content-Type; the browser then parses them as HTML, which means a proportional font
     # and collapsed column spacing -- unreadable for a table of counts.  The .html twin is
     # served as text/html and wraps the text in <pre>, so it stays monospace.
@@ -313,7 +313,7 @@ def collect_campaigns(agents_log, active_pys, debug=0):
                 'plots': discover_plots(version_dir),
                 'status_files': discover_rendered(version_dir, ['status-%s' % py for py in pys]),
                 'incomplete_files': discover_rendered(version_dir, ['incomplete-%s' % py for py in pys]),
-                'queue_file': discover_files(version_dir, ['queue']),
+                'queue_file': discover_rendered(version_dir, ['queue']),
             }
 
     return campaigns
