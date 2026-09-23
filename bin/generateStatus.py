@@ -6,7 +6,7 @@
 #
 # Author: C.Paus                                                                      (Sep 01, 2026)
 #---------------------------------------------------------------------------------------------------
-import os, time, socket
+import os, time
 from optparse import OptionParser
 
 import dashboard
@@ -20,8 +20,9 @@ parser.add_option("--agents-log", dest="agentsLog",
 parser.add_option("--agents-base", dest="agentsBase",
                    default=os.getenv('KRAKEN_AGENTS_BASE'), help="Kraken agents install area")
 parser.add_option("--schedd", dest="schedds", action="append", default=None,
-                   help="condor scheduler host (repeatable); defaults to the local host "
-                        "plus KRAKEN_CONDOR_SCHEDD, matching reviewRequests.py's setupSchedulers()")
+                   help="condor scheduler host (repeatable).  OFF by default: the batch "
+                        "counts come from the queue files the Kraken services write.  Give "
+                        "this only to query condor directly, which then overrides them.")
 parser.add_option("--checkfile-db", dest="checkfileDb",
                    default='/home/tier3/cmsprod/cms/logs/fibs/checkFile/checkFileActivity.db',
                    help="checkFile activity flat-file DB")
@@ -37,9 +38,15 @@ if not options.agentsLog:
     raise SystemExit(" ERROR - KRAKEN_AGENTS_LOG is not set and --agents-log was not given.")
 if not options.out:
     options.out = os.path.join(options.agentsLog, 'status.json')
+# No condor query unless one is asked for explicitly.  Every number on the dashboard is
+# meant to come from the monitoring files the Kraken services themselves write; going to a
+# second source risks the page disagreeing with the files for reasons nobody can see.  The
+# defaults here also did not work: socket.gethostname() is t3desk000, which is not a schedd
+# ("Collector has no record of schedd/submitter"), and KRAKEN_CONDOR_SCHEDD=submit04.mit.edu
+# reports 0 jobs, while the jobs actually sit on the default schedd.  That is what left
+# BATCH/IDLE/RUN/HELD reading zero on every sample.
 if not options.schedds:
-    options.schedds = list(dict.fromkeys(
-        [socket.gethostname()] + ([os.getenv('KRAKEN_CONDOR_SCHEDD')] if os.getenv('KRAKEN_CONDOR_SCHEDD') else [])))
+    options.schedds = []
 
 heartbeat_path = os.path.join(options.agentsLog, 'heartbeat')
 cycle_cfg = os.path.join(options.agentsBase or '', 'cycle.cfg')

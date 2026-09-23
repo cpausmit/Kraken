@@ -225,13 +225,17 @@ def parse_queue_counts(path, config, version):
 def collect_campaigns(agents_log, active_pys, debug=0):
     # walk $KRAKEN_AGENTS_LOG/reviewd/<config>/<version>/ the same way index.php used to scan it.
     #
-    # Counts come from reviewd's status-<py> files, which are what reviewRequests.py measured
-    # against storage.  They are NOT taken from Requests.RequestNFilesDone: that column is only
+    # Every count shown comes from the monitoring files the Kraken services write --
+    # status-<py> for done/total, queue for NOCAT and the batch columns.  The database is used
+    # to enumerate the requests, not to supply their numbers, and nothing here queries condor.
+    # One source, one story: a second source can disagree with the files for reasons that are
+    # invisible on the page.
+    #
+    # In particular, done is NOT read from Requests.RequestNFilesDone.  That column is only
     # ever written by reviewRequests.py, which until 2026-09 skipped the write for any request
     # still holding the -1 default, so 16879 of 16993 rows are stuck at -1.  Reading it made
     # every sample report 0 done and, via n_nocatalog = n_total - n_done, every file nocatalog
-    # and every campaign 'warn'.  The DB is used only as a fallback for datasets the status
-    # file does not mention.
+    # and every campaign 'warn'.
     campaigns = {}
     reviewd = os.path.join(agents_log, 'reviewd')
     if not os.path.isdir(reviewd):
@@ -269,7 +273,10 @@ def collect_campaigns(agents_log, active_pys, debug=0):
 
                 q = queue_counts.get(dataset, {})
 
-                # reviewd's storage measurement wins; then the queue file; the DB column last
+                # status-<py> is reviewd's storage measurement; the queue file is its condor
+                # pass.  A dataset in neither has not been reviewed yet, so it has no measured
+                # done count -- show 0 against the dataset size rather than reaching into
+                # RequestNFilesDone, which would quietly report 0 anyway and looks authoritative.
                 measured = status_counts.get(rPy, {}).get(dataset)
                 if measured is not None:
                     n_done, n_total = measured
@@ -277,7 +284,7 @@ def collect_campaigns(agents_log, active_pys, debug=0):
                     n_done, n_total = q['n_done'], q['n_total']
                 else:
                     n_total = int(nFiles) if nFiles is not None else 0
-                    n_done = int(nFilesDone) if nFilesDone is not None and int(nFilesDone) >= 0 else 0
+                    n_done = 0
 
                 samples[dataset] = {
                     'id': '%s/%s/%s' % (config, version, dataset),
@@ -288,7 +295,9 @@ def collect_campaigns(agents_log, active_pys, debug=0):
                     # it as n_total - n_done: that is work still to be produced, which is a
                     # different thing from output produced but not yet catalogued.
                     'n_nocatalog': q.get('n_nocatalog', 0),
-                    # condor as reviewd last saw it; a live query overrides these in merge_health
+                    # condor as reviewd last saw it.  generateStatus.py does not query condor
+                    # unless --schedd is given explicitly, in which case merge_health lets the
+                    # live answer override these.
                     'n_batch': q.get('n_batch', 0), 'n_idle': q.get('n_idle', 0),
                     'n_running': q.get('n_running', 0), 'n_held': q.get('n_held', 0),
                     'plots': discover_plots(sample_dir),
