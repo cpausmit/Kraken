@@ -256,6 +256,11 @@ def collect_campaigns(agents_log, active_pys, debug=0):
             pys = set()
             status_counts = {}
             for name in os.listdir(version_dir):
+                # '.tmp' is a file catalogd/htmlDressing is still writing; it is renamed into
+                # place when complete.  Without this it would register as a py of its own
+                # ('nano.tmp', 'nano.html.tmp') and add a phantom column to the page.
+                if name.endswith('.tmp'):
+                    continue
                 if name.startswith('status-') and not name.endswith('.html'):
                     py = name[len('status-'):]
                     pys.add(py)

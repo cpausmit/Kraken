@@ -68,13 +68,15 @@ if input == "":
 # Here is where the real action starts -------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------
 
-# find new file name
+# find new file name.  Write to a temporary and rename at the end: the rename is atomic
+# within a filesystem, so a reader always sees a complete page, never one being written.
 htmlFile = input + '.html'
+tmpFile  = htmlFile + '.tmp'
 #print(' ASCII: ' + input)
 #print(' HTML:  ' + htmlFile)
 
 fileInput  = open(input,'r')
-fileOutput = open(htmlFile,'w')
+fileOutput = open(tmpFile,'w')
 line = ' '
 
 trunc = ''
@@ -136,3 +138,6 @@ fileOutput.write(getFooter())
 
 fileInput .close()
 fileOutput.close()
+
+# put the finished page in place in one step
+os.replace(tmpFile, htmlFile)

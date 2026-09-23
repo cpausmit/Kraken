@@ -50,33 +50,40 @@ function generate_catalog {
     # Display only stuff
     #===================
 
-    rm -f $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/status-$py
-    touch $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/status-$py
+    # Each file is built in a .tmp and moved into place with mv, which is atomic within a
+    # filesystem.  Writing in place truncated the file and then took minutes to refill it
+    # (reviewRequests.py scans storage for every dataset), and dashboardd reads these every
+    # KRAKEN_DASHBOARD_CYCLE_SECONDS -- so most reads landed on a file holding nothing but
+    # its 3-line header and the dashboard reported 0 done / 0 total for the whole campaign.
+    # A reader now sees either the previous complete file or the new one, never a partial.
+    D=$KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}
 
-    echo "#"        >> $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/status-$py
-    echo "# "`date` >> $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/status-$py
-    echo "#"        >> $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/status-$py
-    
     echo " generating queue file"                                               >> $lF
     $KRAKEN_BASE/bin/status.py --config=$cfg --version=$vrs \
-                    >  $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/queue 2> /dev/null
+                    >  $D/queue.tmp 2> /dev/null \
+      && mv $D/queue.tmp $D/queue
 
     echo " making status files"                                                 >> $lF
-    stdbuf -o0 -e0 \
-      $KRAKEN_BASE/bin/reviewRequests.py --config=$cfg --version=$vrs --py=$py \
-           --displayOnly=1 >>  $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/status-$py
+    {
+      echo "#"
+      echo "# "`date`
+      echo "#"
+      stdbuf -o0 -e0 \
+        $KRAKEN_BASE/bin/reviewRequests.py --config=$cfg --version=$vrs --py=$py \
+             --displayOnly=1
+    } > $D/status-$py.tmp \
+      && mv $D/status-$py.tmp $D/status-$py
 
-    rm -f $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/incomplete-$py
-    touch $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/incomplete-$py
-
-    echo "#"        >> $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/incomplete-$py
-    echo "# "`date` >> $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/incomplete-$py
-    echo "#"        >> $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/incomplete-$py
-    
     echo " making incomplete status files"                                      >> $lF
-    stdbuf -o0 -e0 \
-      $KRAKEN_BASE/bin/reviewRequests.py --config=$cfg --version=$vrs --py=$py \
-           --displayOnly=2 >>  $KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/incomplete-$py
+    {
+      echo "#"
+      echo "# "`date`
+      echo "#"
+      stdbuf -o0 -e0 \
+        $KRAKEN_BASE/bin/reviewRequests.py --config=$cfg --version=$vrs --py=$py \
+             --displayOnly=2
+    } > $D/incomplete-$py.tmp \
+      && mv $D/incomplete-$py.tmp $D/incomplete-$py
 
     # Render each of the three to .html.  The bare files have no extension, so Apache
     # sends no Content-Type and the browser parses them as HTML: proportional font,
@@ -85,8 +92,7 @@ function generate_catalog {
     echo " dressing the monitoring files"                                       >> $lF
     for raw in status-$py incomplete-$py queue
     do
-      $KRAKEN_BASE/bin/htmlDressing.py \
-        --input=$KRAKEN_AGENTS_LOG/${mydaemon}/${cfg}/${vrs}/$raw --version=$vrs  >> $lF 2>&1
+      $KRAKEN_BASE/bin/htmlDressing.py --input=$D/$raw --version=$vrs           >> $lF 2>&1
     done
 
     # keep log files up to speed
