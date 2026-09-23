@@ -81,6 +81,41 @@ def discover_files(dir, names):
         return []
     return [n for n in names if os.path.exists(os.path.join(dir, n))]
 
+def discover_rendered(dir, names):
+    # Same, but link the htmlDressing'd '<name>.html' in preference to the bare file.
+    #
+    # status-<py> and incomplete-<py> carry no extension, so mod_mime gives them no
+    # Content-Type; the browser then parses them as HTML, which means a proportional font
+    # and collapsed column spacing -- unreadable for a table of counts.  The .html twin is
+    # served as text/html and wraps the text in <pre>, so it stays monospace.
+    #
+    # Falls back to the bare name when no .html has been generated, so a campaign whose
+    # dressing has not run still gets a link rather than disappearing from the list.
+    #
+    # The .html is only preferred while it is at least as new as the text it was rendered
+    # from.  htmlDressing.py is currently missing from the installed bin/, so the twins go
+    # stale while the text keeps being rewritten; linking those would swap an ugly current
+    # page for a tidy out-of-date one.  Once the dressing step runs again the .html wins on
+    # its own, with no further change here.
+    if not os.path.isdir(dir):
+        return []
+
+    def mtime(path):
+        try:
+            return os.path.getmtime(path)
+        except OSError:
+            return None
+
+    out = []
+    for n in names:
+        raw, rendered = os.path.join(dir, n), os.path.join(dir, n + '.html')
+        t_raw, t_rendered = mtime(raw), mtime(rendered)
+        if t_rendered is not None and (t_raw is None or t_rendered >= t_raw):
+            out.append(n + '.html')
+        elif t_raw is not None:
+            out.append(n)
+    return out
+
 #---------------------------------------------------------------------------------------------------
 def collect_condor_jobs(schedds, debug=0):
     # bucket every queued/running/held job by (config,version,py,dataset), keyed off the
@@ -233,8 +268,8 @@ def collect_campaigns(agents_log, active_pys, debug=0):
                 'pys': {py: ('%s:%s:%s' % (config, version, py)) in active_pys for py in sorted(pys)},
                 'samples': samples,
                 'plots': discover_plots(version_dir),
-                'status_files': discover_files(version_dir, ['status-%s' % py for py in pys]),
-                'incomplete_files': discover_files(version_dir, ['incomplete-%s' % py for py in pys]),
+                'status_files': discover_rendered(version_dir, ['status-%s' % py for py in pys]),
+                'incomplete_files': discover_rendered(version_dir, ['incomplete-%s' % py for py in pys]),
                 'queue_file': discover_files(version_dir, ['queue']),
             }
 
