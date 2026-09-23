@@ -89,30 +89,19 @@ def discover_rendered(dir, names):
     # and collapsed column spacing -- unreadable for a table of counts.  The .html twin is
     # served as text/html and wraps the text in <pre>, so it stays monospace.
     #
-    # Falls back to the bare name when no .html has been generated, so a campaign whose
-    # dressing has not run still gets a link rather than disappearing from the list.
+    # The .html is always preferred when it exists; the bare name is only a fallback so a
+    # campaign whose dressing never ran keeps a link instead of a 404.
     #
-    # The .html is only preferred while it is at least as new as the text it was rendered
-    # from.  htmlDressing.py is currently missing from the installed bin/, so the twins go
-    # stale while the text keeps being rewritten; linking those would swap an ugly current
-    # page for a tidy out-of-date one.  Once the dressing step runs again the .html wins on
-    # its own, with no further change here.
+    # Caveat worth knowing: htmlDressing.py is missing from the installed bin/, so the .html
+    # twins are not being regenerated and can lag the text they came from.  They stop lagging
+    # as soon as the dressing step runs again; nothing here needs to change for that.
     if not os.path.isdir(dir):
         return []
-
-    def mtime(path):
-        try:
-            return os.path.getmtime(path)
-        except OSError:
-            return None
-
     out = []
     for n in names:
-        raw, rendered = os.path.join(dir, n), os.path.join(dir, n + '.html')
-        t_raw, t_rendered = mtime(raw), mtime(rendered)
-        if t_rendered is not None and (t_raw is None or t_rendered >= t_raw):
+        if os.path.exists(os.path.join(dir, n + '.html')):
             out.append(n + '.html')
-        elif t_raw is not None:
+        elif os.path.exists(os.path.join(dir, n)):
             out.append(n)
     return out
 
@@ -196,6 +185,43 @@ def parse_status_counts(path):
     return counts
 
 #---------------------------------------------------------------------------------------------------
+# reviewd also drops a 'queue' file per version, holding the condor picture it saw:
+#
+#   TOTAL  DONE NOCAT BATCH  IDLE  RUN HELD  RT[hr] -- Key
+#   ======================================================
+#    1393  1377     0     0     0    0    0     0.0 -- nanosu-A02-DY1JetsToLL_...+...+MINIAODSIM
+#
+# The key is '<config>-<version>-<dataset>'.  This is the only place the batch/idle/running/
+# held counts and a real NOCAT figure are recorded, so it is what the dashboard shows when a
+# live condor query is not available (collect_condor_jobs needs the schedds to be reachable
+# from wherever generateStatus.py runs, which is not always the case).
+QUEUE_LINE = re.compile(
+    r'^\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+[0-9.]+\s+--\s+(\S+)\s*$')
+
+def parse_queue_counts(path, config, version):
+    # dataset -> counts, for the one campaign this queue file belongs to
+    counts = {}
+    prefix = '%s-%s-' % (config, version)
+    try:
+        with open(path) as f:
+            for line in f:
+                m = QUEUE_LINE.match(line.rstrip('\n'))
+                if not m:
+                    continue
+                key = m.group(8)
+                if not key.startswith(prefix):
+                    continue
+                counts[key[len(prefix):]] = {
+                    'n_total': int(m.group(1)), 'n_done': int(m.group(2)),
+                    'n_nocatalog': int(m.group(3)), 'n_batch': int(m.group(4)),
+                    'n_idle': int(m.group(5)), 'n_running': int(m.group(6)),
+                    'n_held': int(m.group(7)),
+                }
+    except IOError:
+        pass
+    return counts
+
+#---------------------------------------------------------------------------------------------------
 def collect_campaigns(agents_log, active_pys, debug=0):
     # walk $KRAKEN_AGENTS_LOG/reviewd/<config>/<version>/ the same way index.php used to scan it.
     #
@@ -231,6 +257,8 @@ def collect_campaigns(agents_log, active_pys, debug=0):
                     pys.add(py)
                     status_counts[py] = parse_status_counts(os.path.join(version_dir, name))
 
+            queue_counts = parse_queue_counts(os.path.join(version_dir, 'queue'), config, version)
+
             samples = {}
             for row in db.find_requests(config, version):
                 (process, setup, tier, dbs, nFiles, rConfig, rVersion, rPy, rId, nFilesDone) = row
@@ -239,10 +267,14 @@ def collect_campaigns(agents_log, active_pys, debug=0):
                 dataset = '%s+%s+%s' % (process, setup, tier)
                 sample_dir = os.path.join(version_dir, dataset)
 
-                # reviewd's storage measurement wins; the DB column is only a fallback
+                q = queue_counts.get(dataset, {})
+
+                # reviewd's storage measurement wins; then the queue file; the DB column last
                 measured = status_counts.get(rPy, {}).get(dataset)
                 if measured is not None:
                     n_done, n_total = measured
+                elif q:
+                    n_done, n_total = q['n_done'], q['n_total']
                 else:
                     n_total = int(nFiles) if nFiles is not None else 0
                     n_done = int(nFilesDone) if nFilesDone is not None and int(nFilesDone) >= 0 else 0
@@ -252,11 +284,13 @@ def collect_campaigns(agents_log, active_pys, debug=0):
                     'py': rPy,
                     'n_total': n_total,
                     'n_done': n_done,
-                    # NOT n_total - n_done: that is the count still to be produced, which is a
-                    # different thing from output produced but not yet catalogued.  Nothing here
-                    # measures the latter, so do not invent it -- and do not let it drive health.
-                    'n_nocatalog': 0,
-                    'n_batch': 0, 'n_idle': 0, 'n_running': 0, 'n_held': 0,
+                    # The queue file is the only place a real NOCAT is recorded.  Never derive
+                    # it as n_total - n_done: that is work still to be produced, which is a
+                    # different thing from output produced but not yet catalogued.
+                    'n_nocatalog': q.get('n_nocatalog', 0),
+                    # condor as reviewd last saw it; a live query overrides these in merge_health
+                    'n_batch': q.get('n_batch', 0), 'n_idle': q.get('n_idle', 0),
+                    'n_running': q.get('n_running', 0), 'n_held': q.get('n_held', 0),
                     'plots': discover_plots(sample_dir),
                     'readme': discover_files(sample_dir, ['README']),
                     'ncounts_err': discover_files(sample_dir, ['ncounts.err']),
@@ -326,8 +360,10 @@ def _sample_health(sample):
         return 'held'
     if sample['n_total'] > 0 and sample['n_done'] >= sample['n_total']:
         return 'ok'
-    if sample['n_batch'] > 0 or sample['n_idle'] > 0 or sample['n_running'] > 0:
-        return 'warn'
+    # Queued, idle or running jobs are work in progress, not a problem: a campaign part way
+    # through production is the normal state and must not be painted yellow.  (This used to
+    # return 'warn' here, which turned every active campaign into a warning the moment real
+    # condor counts were available.)  Only a genuine uncatalogued backlog warns.
     if sample['n_nocatalog'] > 0:
         return 'warn'
     return 'ok'
