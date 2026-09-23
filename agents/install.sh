@@ -102,7 +102,10 @@ then
   cat ./cleanupd-Template \
     | sed -e "s#XX-KRAKEN_BASE-XX#$BASE#" -e "s#XX-KRAKEN_AGENTS_BASE-XX#$AGENTS_BASE#" \
     > ./cleanupd
-  chmod 750 ./catalogd ./cleanupd ./monitord ./reviewd
+  cat ./dashboardd-Template \
+    | sed -e "s#XX-KRAKEN_BASE-XX#$BASE#" -e "s#XX-KRAKEN_AGENTS_BASE-XX#$AGENTS_BASE#" \
+    > ./dashboardd
+  chmod 750 ./catalogd ./cleanupd ./monitord ./reviewd ./dashboardd
 else
   echo ""
   echo " ERROR - setup.sh-Template does not exist."
@@ -157,10 +160,11 @@ fi
 install catalogd
 install monitord
 install cleanupd
+install dashboardd
 
-# install web pages
-#==================
+# install the dashboard (static HTML/CSS/JS + images)
+#=====================================================
 
-su - ${KRAKEN_USER} -c $KRAKEN_AGENTS_BASE/html/install.sh $KRAKEN_BASE $KRAKEN_AGENTS_BASE
+su - ${KRAKEN_USER} -c $KRAKEN_AGENTS_BASE/dashboard/install.sh $KRAKEN_BASE $KRAKEN_AGENTS_BASE
 
 exit 0
