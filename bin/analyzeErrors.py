@@ -291,7 +291,7 @@ print('')
 
 if sys.stdin.isatty() and interactive:
     # running interactively
-    answer = raw_input('Wanna watch error files? [N/y] ')
+    answer = input('Wanna watch error files? [N/y] ')
 else:
     sys.exit(0)
 
@@ -314,7 +314,7 @@ for stub in stubs:
         for line in f:
             print(line[:-1])
         print(' File: %s.%s'%(stub,'err'))
-        answer = raw_input('Remove this held job? [N/y] ')
+        answer = input('Remove this held job? [N/y] ')
 
 if len(sys.argv) < 2:
     print(' End (%d)'%(len(sys.argv)))
@@ -333,7 +333,9 @@ p = subprocess.Popen(list,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 (out, err) = p.communicate()
 rc = p.returncode
 
-out = out.replace('.err','')
+# Popen without text=True hands back bytes; .replace() with str arguments raised
+# TypeError here, so the removal path never ran under python3.
+out = out.decode('utf-8','replace').replace('.err','')
 lines = out.split("\n") 
 for line in lines:
     f = line.split(":")
