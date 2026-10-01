@@ -369,22 +369,51 @@ def collect_agents(agents_log, agent_names=('catalogd', 'cleanupd', 'monitord', 
     return agents
 
 #---------------------------------------------------------------------------------------------------
+# A held job only means it exited non-zero.  Across several hundred thousand jobs some
+# always will, so held is a RATE to keep an eye on, not a state: it is worth flagging when
+# the level stops being reasonable, and silent otherwise.  Same for uncatalogued files.
+# Judged against the jobs this sample actually has in the queue, not an absolute count --
+# 8 held out of 80000 in flight is noise, 8 held out of 10 is a stuck sample.
+TROUBLE_FLOOR    = 25     # never flag a handful, whatever the ratio
+TROUBLE_FRACTION = 0.05   # flag above this share
+
+def _excessive(n, pool):
+    # is n an unreasonable share of pool (pool includes n)?
+    if n < TROUBLE_FLOOR:
+        return False
+    if pool <= 0:
+        return n > 0
+    return n > TROUBLE_FRACTION * pool
+
 def _sample_health(sample):
-    if sample['n_held'] > 0:
-        return 'held'
     if sample['n_total'] > 0 and sample['n_done'] >= sample['n_total']:
         return 'ok'
-    # Queued, idle or running jobs are work in progress, not a problem: a campaign part way
-    # through production is the normal state and must not be painted yellow.  (This used to
-    # return 'warn' here, which turned every active campaign into a warning the moment real
-    # condor counts were available.)  Only a genuine uncatalogued backlog warns.
-    if sample['n_nocatalog'] > 0:
+
+    # queued, idle and running are work in progress; a campaign part way through production
+    # is the normal state and must not be painted yellow for it
+    inflight = sample['n_batch'] + sample['n_idle'] + sample['n_running'] + sample['n_held']
+
+    if _excessive(sample['n_held'], inflight):
+        return 'held'
+    if _excessive(sample['n_nocatalog'], sample['n_total']):
         return 'warn'
     return 'ok'
 
 def merge_health(campaigns, condor_jobs, catalog_lag, heartbeat, catalog_warn_s=3600, catalog_dead_s=14400):
-    # fold condor job counts and catalog lag into the campaign tree, and compute one
-    # health enum per sample/version/config
+    # Fold the three activity signals into one health enum per sample/version/config:
+    #
+    #   running services  -- the heartbeat, touched every cycle by synchronizeWeb.py.  If the
+    #                        agents are down nothing else is being updated either, so no
+    #                        campaign can be called healthy; this was accepted as an argument
+    #                        and then never used, so a full stop went unreported.
+    #   incoming files    -- catalog lag, the age of the newest file completion recorded for
+    #                        this campaign in checkFileActivity.db.
+    #   condor queue      -- the per-sample batch/idle/running/held counts.
+    #
+    # Held and uncatalogued counts are judged as a share of what is in the queue rather than
+    # by absolute number: see _sample_health.
+    hb = (heartbeat or {}).get('health', 'unknown') if isinstance(heartbeat, dict) else (heartbeat or 'unknown')
+
     for config, versions in campaigns.items():
         for version, vnode in versions.items():
             v_health = 'ok'
@@ -411,6 +440,11 @@ def merge_health(campaigns, condor_jobs, catalog_lag, heartbeat, catalog_warn_s=
                 vnode['catalog_lag_s'] = age
             else:
                 vnode['catalog_lag_s'] = None
+
+            # the services themselves: if they are stale or dead, so is every campaign,
+            # because the numbers above stopped being refreshed at the same moment
+            if hb in ('stale', 'dead'):
+                v_health = worse(v_health, hb)
 
             vnode['health'] = v_health
             vnode['active'] = any(vnode['pys'].values())
